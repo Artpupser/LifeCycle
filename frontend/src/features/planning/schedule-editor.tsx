@@ -1,0 +1,16 @@
+import { FormField } from "@/components/form-field";
+import { Input, Select } from "@/components/ui/input";
+import type { Schedule } from "./types";
+
+export function ScheduleEditor({ value, onChange }: { value: Schedule; onChange: (value: Schedule) => void }) {
+  function update<K extends keyof Schedule>(key: K, next: Schedule[K]) { onChange({ ...value, [key]: next }); }
+  return <div className="space-y-5 rounded-xl border border-border p-4"><div className="grid gap-4 sm:grid-cols-2">
+    <FormField id="schedule-start" label="Дата начала"><Input id="schedule-start" type="date" required value={value.start_date} onChange={(event) => update("start_date", event.target.value)} /></FormField>
+    <FormField id="schedule-time" label="Время начала" hint="Пустое значение — задача без точного времени."><Input id="schedule-time" type="time" value={value.time?.slice(0, 5) ?? ""} onChange={(event) => update("time", event.target.value || null)} /></FormField>
+    <FormField id="schedule-duration" label="Длительность, минут"><Input id="schedule-duration" type="number" min={1} max={1440} required value={Number.isNaN(value.duration_minutes) ? "" : value.duration_minutes} onChange={(event) => update("duration_minutes", event.target.valueAsNumber)} /></FormField>
+    <FormField id="schedule-timezone" label="Часовой пояс расписания"><Input id="schedule-timezone" required maxLength={100} value={value.timezone} onChange={(event) => update("timezone", event.target.value)} /></FormField>
+    <FormField id="schedule-repeat" label="Повторение"><Select id="schedule-repeat" value={value.recurrence} onChange={(event) => update("recurrence", event.target.value as Schedule["recurrence"])}><option value="once">Один раз</option><option value="daily">Каждый день</option><option value="weekly">По дням недели</option><option value="interval">Через несколько дней</option></Select></FormField>
+    {value.recurrence === "interval" && <FormField id="schedule-interval" label="Каждые N дней"><Input id="schedule-interval" type="number" min={1} max={3650} required value={Number.isNaN(value.interval_days) ? "" : value.interval_days} onChange={(event) => update("interval_days", event.target.valueAsNumber)} /></FormField>}
+    {value.recurrence !== "once" && <FormField id="schedule-end" label="Повторять до (необязательно)"><Input id="schedule-end" type="date" min={value.start_date} value={value.end_date ?? ""} onChange={(event) => update("end_date", event.target.value || null)} /></FormField>}
+  </div>{value.recurrence === "weekly" && <fieldset><legend className="mb-3 text-sm font-medium">Дни недели</legend><div className="flex flex-wrap gap-3">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((label, index) => <label key={label} className="flex cursor-pointer items-center gap-1.5 text-sm"><input type="checkbox" className="size-4 accent-primary" checked={value.weekdays.includes(index + 1)} onChange={(event) => update("weekdays", event.target.checked ? [...value.weekdays, index + 1].sort() : value.weekdays.filter((day) => day !== index + 1))} />{label}</label>)}</div>{!value.weekdays.length && <p className="mt-2 text-xs text-destructive">Выберите хотя бы один день недели.</p>}</fieldset>}</div>;
+}

@@ -1,0 +1,988 @@
+{
+  "nodes": [
+    {
+      "id": "g0",
+      "type": "group",
+      "label": "Habits Tasks and Workouts",
+      "x": 0,
+      "y": 0,
+      "width": 660,
+      "height": 420,
+      "color": "1"
+    },
+    {
+      "id": "n_project_projective_exercise_circuits",
+      "type": "file",
+      "file": "Exercise circuits.md",
+      "x": 20,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_exercises",
+      "type": "file",
+      "file": "Exercises.md",
+      "x": 220,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_habits",
+      "type": "file",
+      "file": "Habits.md",
+      "x": 420,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_historical_results",
+      "type": "file",
+      "file": "Preserve historical results.md",
+      "x": 20,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_schedule_model",
+      "type": "file",
+      "file": "Shared scheduling model.md",
+      "x": 220,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_sub_habits",
+      "type": "file",
+      "file": "Sub habits.md",
+      "x": 420,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_tasks",
+      "type": "file",
+      "file": "Tasks and Today.md",
+      "x": 20,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_progression",
+      "type": "file",
+      "file": "Workout progression.md",
+      "x": 220,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_workouts",
+      "type": "file",
+      "file": "Workouts.md",
+      "x": 420,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "label": "Graphify Project Navigation",
+      "x": 740,
+      "y": 0,
+      "width": 660,
+      "height": 420,
+      "color": "2"
+    },
+    {
+      "id": "n_agents_ast_update",
+      "type": "file",
+      "file": "AST graph update.md",
+      "x": 760,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_plugins_codex_project_integration",
+      "type": "file",
+      "file": "Codex project integration.md",
+      "x": 960,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_agents_graph_first_navigation",
+      "type": "file",
+      "file": "Graph first navigation.md",
+      "x": 1160,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_agents_graphify",
+      "type": "file",
+      "file": "Graphify knowledge graph.md",
+      "x": 760,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_plugins_graphify",
+      "type": "file",
+      "file": "Graphify plugin.md",
+      "x": 960,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_agents_wiki_navigation",
+      "type": "file",
+      "file": "Wiki navigation.md",
+      "x": 1160,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_plugins_graphifyy",
+      "type": "file",
+      "file": "graphifyy installation.md",
+      "x": 760,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": "LifeCycle Product Planning",
+      "x": 1480,
+      "y": 0,
+      "width": 660,
+      "height": 420,
+      "color": "3"
+    },
+    {
+      "id": "n_project_projective_countdown",
+      "type": "file",
+      "file": "Countdown events.md",
+      "x": 1500,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_daily_planning",
+      "type": "file",
+      "file": "Daily planning.md",
+      "x": 1700,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_acceptance",
+      "type": "file",
+      "file": "End to end completion criteria.md",
+      "x": 1900,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_lifecycle",
+      "type": "file",
+      "file": "LifeCycle.md",
+      "x": 1500,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_nine_stages",
+      "type": "file",
+      "file": "Nine stage development plan.md",
+      "x": 1700,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_intimate_activity",
+      "type": "file",
+      "file": "Sexual activity records.md",
+      "x": 1900,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_settings",
+      "type": "file",
+      "file": "User settings.md",
+      "x": 1500,
+      "y": 240,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g3",
+      "type": "group",
+      "label": "Backend and Infrastructure",
+      "x": 2220,
+      "y": 0,
+      "width": 660,
+      "height": 400,
+      "color": "4"
+    },
+    {
+      "id": "n_project_projective_backend_authority",
+      "type": "file",
+      "file": "Backend data authority.md",
+      "x": 2240,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_docker_compose",
+      "type": "file",
+      "file": "Docker Compose infrastructure.md",
+      "x": 2440,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_garage",
+      "type": "file",
+      "file": "Garage S3 photo storage.md",
+      "x": 2640,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_redis",
+      "type": "file",
+      "file": "Redis.md",
+      "x": 2240,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_backend",
+      "type": "file",
+      "file": "Rust HTTP API backend.md",
+      "x": 2440,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g4",
+      "type": "group",
+      "label": "Frontend Modular Architecture",
+      "x": 0,
+      "y": 500,
+      "width": 660,
+      "height": 400,
+      "color": "5"
+    },
+    {
+      "id": "n_project_projective_module_interfaces",
+      "type": "file",
+      "file": "Explicit module interfaces.md",
+      "x": 20,
+      "y": 580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_modular_architecture",
+      "type": "file",
+      "file": "Modular architecture.md",
+      "x": 220,
+      "y": 580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_frontend",
+      "type": "file",
+      "file": "React TypeScript frontend.md",
+      "x": 420,
+      "y": 580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_spa",
+      "type": "file",
+      "file": "SPA architecture.md",
+      "x": 20,
+      "y": 660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_tailwind",
+      "type": "file",
+      "file": "Tailwind CSS.md",
+      "x": 220,
+      "y": 660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g5",
+      "type": "group",
+      "label": "Notes and Search",
+      "x": 740,
+      "y": 500,
+      "width": 600,
+      "height": 400,
+      "color": "6"
+    },
+    {
+      "id": "n_project_projective_habit_marks",
+      "type": "file",
+      "file": "Habit completion records.md",
+      "x": 760,
+      "y": 580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_markdown",
+      "type": "file",
+      "file": "Markdown descriptions.md",
+      "x": 960,
+      "y": 580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_notes",
+      "type": "file",
+      "file": "Notes and folders.md",
+      "x": 760,
+      "y": 660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_search",
+      "type": "file",
+      "file": "Task and note search.md",
+      "x": 960,
+      "y": 660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g6",
+      "type": "group",
+      "label": "AI Permissions and Profile",
+      "x": 1480,
+      "y": 500,
+      "width": 600,
+      "height": 400,
+      "color": "1"
+    },
+    {
+      "id": "n_project_projective_ai",
+      "type": "file",
+      "file": "AI chat and analysis.md",
+      "x": 1500,
+      "y": 580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_data_permissions",
+      "type": "file",
+      "file": "Explicit AI data permissions.md",
+      "x": 1700,
+      "y": 580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_profile",
+      "type": "file",
+      "file": "User profile.md",
+      "x": 1500,
+      "y": 660,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g7",
+      "type": "group",
+      "label": "Analytics Event Tracking",
+      "x": 2220,
+      "y": 500,
+      "width": 600,
+      "height": 400,
+      "color": "2"
+    },
+    {
+      "id": "n_project_projective_analytics",
+      "type": "file",
+      "file": "Analytics and metrics.md",
+      "x": 2240,
+      "y": 580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_user_events",
+      "type": "file",
+      "file": "Real user events.md",
+      "x": 2440,
+      "y": 580,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g8",
+      "type": "group",
+      "label": "Email Authentication Sessions",
+      "x": 0,
+      "y": 980,
+      "width": 600,
+      "height": 400,
+      "color": "3"
+    },
+    {
+      "id": "n_project_projective_authentication",
+      "type": "file",
+      "file": "Email code authentication.md",
+      "x": 20,
+      "y": 1060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_sessions",
+      "type": "file",
+      "file": "One month sessions.md",
+      "x": 220,
+      "y": 1060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g9",
+      "type": "group",
+      "label": "Database and Migrations",
+      "x": 740,
+      "y": 980,
+      "width": 600,
+      "height": 400,
+      "color": "4"
+    },
+    {
+      "id": "n_project_projective_migrations",
+      "type": "file",
+      "file": "Database migrations.md",
+      "x": 760,
+      "y": 1060,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_project_projective_postgres",
+      "type": "file",
+      "file": "PostgreSQL database.md",
+      "x": 960,
+      "y": 1060,
+      "width": 180,
+      "height": 60
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_project_projective_exercise_circuits_project_projective_exercises",
+      "fromNode": "n_project_projective_exercise_circuits",
+      "toNode": "n_project_projective_exercises",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_workouts_project_projective_exercise_circuits",
+      "fromNode": "n_project_projective_workouts",
+      "toNode": "n_project_projective_exercise_circuits",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_progression_project_projective_exercises",
+      "fromNode": "n_project_projective_progression",
+      "toNode": "n_project_projective_exercises",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_historical_results_project_projective_habits",
+      "fromNode": "n_project_projective_historical_results",
+      "toNode": "n_project_projective_habits",
+      "label": "rationale_for [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_habits_project_projective_schedule_model",
+      "fromNode": "n_project_projective_habits",
+      "toNode": "n_project_projective_schedule_model",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_habits_project_projective_habit_marks",
+      "fromNode": "n_project_projective_habits",
+      "toNode": "n_project_projective_habit_marks",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_habits_project_projective_sub_habits",
+      "fromNode": "n_project_projective_habits",
+      "toNode": "n_project_projective_sub_habits",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_lifecycle_project_projective_habits",
+      "fromNode": "n_project_projective_lifecycle",
+      "toNode": "n_project_projective_habits",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_nine_stages_project_projective_habits",
+      "fromNode": "n_project_projective_nine_stages",
+      "toNode": "n_project_projective_habits",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_habits_project_projective_tasks",
+      "fromNode": "n_project_projective_habits",
+      "toNode": "n_project_projective_tasks",
+      "label": "shares_data_with [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_workouts_project_projective_habits",
+      "fromNode": "n_project_projective_workouts",
+      "toNode": "n_project_projective_habits",
+      "label": "shares_data_with [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_workouts_project_projective_progression",
+      "fromNode": "n_project_projective_workouts",
+      "toNode": "n_project_projective_progression",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_daily_planning_project_projective_tasks",
+      "fromNode": "n_project_projective_daily_planning",
+      "toNode": "n_project_projective_tasks",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_lifecycle_project_projective_tasks",
+      "fromNode": "n_project_projective_lifecycle",
+      "toNode": "n_project_projective_tasks",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_nine_stages_project_projective_tasks",
+      "fromNode": "n_project_projective_nine_stages",
+      "toNode": "n_project_projective_tasks",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_search_project_projective_tasks",
+      "fromNode": "n_project_projective_search",
+      "toNode": "n_project_projective_tasks",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_tasks_project_projective_schedule_model",
+      "fromNode": "n_project_projective_tasks",
+      "toNode": "n_project_projective_schedule_model",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_tasks_project_projective_markdown",
+      "fromNode": "n_project_projective_tasks",
+      "toNode": "n_project_projective_markdown",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_tasks_project_projective_workouts",
+      "fromNode": "n_project_projective_tasks",
+      "toNode": "n_project_projective_workouts",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_historical_results_project_projective_workouts",
+      "fromNode": "n_project_projective_historical_results",
+      "toNode": "n_project_projective_workouts",
+      "label": "rationale_for [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_lifecycle_project_projective_workouts",
+      "fromNode": "n_project_projective_lifecycle",
+      "toNode": "n_project_projective_workouts",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_nine_stages_project_projective_workouts",
+      "fromNode": "n_project_projective_nine_stages",
+      "toNode": "n_project_projective_workouts",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_workouts_project_projective_schedule_model",
+      "fromNode": "n_project_projective_workouts",
+      "toNode": "n_project_projective_schedule_model",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_agents_graphify_agents_ast_update",
+      "fromNode": "n_agents_graphify",
+      "toNode": "n_agents_ast_update",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_agents_graphify_agents_graph_first_navigation",
+      "fromNode": "n_agents_graphify",
+      "toNode": "n_agents_graph_first_navigation",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_agents_graphify_agents_wiki_navigation",
+      "fromNode": "n_agents_graphify",
+      "toNode": "n_agents_wiki_navigation",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_plugins_graphify_agents_graphify",
+      "fromNode": "n_plugins_graphify",
+      "toNode": "n_agents_graphify",
+      "label": "semantically_similar_to [INFERRED]"
+    },
+    {
+      "id": "e_plugins_graphify_plugins_codex_project_integration",
+      "fromNode": "n_plugins_graphify",
+      "toNode": "n_plugins_codex_project_integration",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_plugins_graphify_plugins_graphifyy",
+      "fromNode": "n_plugins_graphify",
+      "toNode": "n_plugins_graphifyy",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_acceptance_project_projective_nine_stages",
+      "fromNode": "n_project_projective_acceptance",
+      "toNode": "n_project_projective_nine_stages",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_lifecycle_project_projective_countdown",
+      "fromNode": "n_project_projective_lifecycle",
+      "toNode": "n_project_projective_countdown",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_lifecycle_project_projective_daily_planning",
+      "fromNode": "n_project_projective_lifecycle",
+      "toNode": "n_project_projective_daily_planning",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_nine_stages_project_projective_daily_planning",
+      "fromNode": "n_project_projective_nine_stages",
+      "toNode": "n_project_projective_daily_planning",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_lifecycle_project_projective_intimate_activity",
+      "fromNode": "n_project_projective_lifecycle",
+      "toNode": "n_project_projective_intimate_activity",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_nine_stages_project_projective_intimate_activity",
+      "fromNode": "n_project_projective_nine_stages",
+      "toNode": "n_project_projective_intimate_activity",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_lifecycle_project_projective_ai",
+      "fromNode": "n_project_projective_lifecycle",
+      "toNode": "n_project_projective_ai",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_lifecycle_project_projective_analytics",
+      "fromNode": "n_project_projective_lifecycle",
+      "toNode": "n_project_projective_analytics",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_lifecycle_project_projective_authentication",
+      "fromNode": "n_project_projective_lifecycle",
+      "toNode": "n_project_projective_authentication",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_lifecycle_project_projective_backend",
+      "fromNode": "n_project_projective_lifecycle",
+      "toNode": "n_project_projective_backend",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_lifecycle_project_projective_frontend",
+      "fromNode": "n_project_projective_lifecycle",
+      "toNode": "n_project_projective_frontend",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_lifecycle_project_projective_notes",
+      "fromNode": "n_project_projective_lifecycle",
+      "toNode": "n_project_projective_notes",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_lifecycle_project_projective_profile",
+      "fromNode": "n_project_projective_lifecycle",
+      "toNode": "n_project_projective_profile",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_lifecycle_project_projective_settings",
+      "fromNode": "n_project_projective_lifecycle",
+      "toNode": "n_project_projective_settings",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_lifecycle_project_projective_nine_stages",
+      "fromNode": "n_project_projective_lifecycle",
+      "toNode": "n_project_projective_nine_stages",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_nine_stages_project_projective_ai",
+      "fromNode": "n_project_projective_nine_stages",
+      "toNode": "n_project_projective_ai",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_nine_stages_project_projective_analytics",
+      "fromNode": "n_project_projective_nine_stages",
+      "toNode": "n_project_projective_analytics",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_nine_stages_project_projective_authentication",
+      "fromNode": "n_project_projective_nine_stages",
+      "toNode": "n_project_projective_authentication",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_nine_stages_project_projective_backend",
+      "fromNode": "n_project_projective_nine_stages",
+      "toNode": "n_project_projective_backend",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_nine_stages_project_projective_docker_compose",
+      "fromNode": "n_project_projective_nine_stages",
+      "toNode": "n_project_projective_docker_compose",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_nine_stages_project_projective_frontend",
+      "fromNode": "n_project_projective_nine_stages",
+      "toNode": "n_project_projective_frontend",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_nine_stages_project_projective_markdown",
+      "fromNode": "n_project_projective_nine_stages",
+      "toNode": "n_project_projective_markdown",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_nine_stages_project_projective_notes",
+      "fromNode": "n_project_projective_nine_stages",
+      "toNode": "n_project_projective_notes",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_nine_stages_project_projective_profile",
+      "fromNode": "n_project_projective_nine_stages",
+      "toNode": "n_project_projective_profile",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_nine_stages_project_projective_settings",
+      "fromNode": "n_project_projective_nine_stages",
+      "toNode": "n_project_projective_settings",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_backend_authority_project_projective_backend",
+      "fromNode": "n_project_projective_backend_authority",
+      "toNode": "n_project_projective_backend",
+      "label": "rationale_for [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_modular_architecture_project_projective_backend",
+      "fromNode": "n_project_projective_modular_architecture",
+      "toNode": "n_project_projective_backend",
+      "label": "rationale_for [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_backend_project_projective_garage",
+      "fromNode": "n_project_projective_backend",
+      "toNode": "n_project_projective_garage",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_backend_project_projective_postgres",
+      "fromNode": "n_project_projective_backend",
+      "toNode": "n_project_projective_postgres",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_backend_project_projective_redis",
+      "fromNode": "n_project_projective_backend",
+      "toNode": "n_project_projective_redis",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_docker_compose_project_projective_backend",
+      "fromNode": "n_project_projective_docker_compose",
+      "toNode": "n_project_projective_backend",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_frontend_project_projective_backend",
+      "fromNode": "n_project_projective_frontend",
+      "toNode": "n_project_projective_backend",
+      "label": "shares_data_with [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_docker_compose_project_projective_garage",
+      "fromNode": "n_project_projective_docker_compose",
+      "toNode": "n_project_projective_garage",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_docker_compose_project_projective_postgres",
+      "fromNode": "n_project_projective_docker_compose",
+      "toNode": "n_project_projective_postgres",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_docker_compose_project_projective_redis",
+      "fromNode": "n_project_projective_docker_compose",
+      "toNode": "n_project_projective_redis",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_markdown_project_projective_garage",
+      "fromNode": "n_project_projective_markdown",
+      "toNode": "n_project_projective_garage",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_modular_architecture_project_projective_frontend",
+      "fromNode": "n_project_projective_modular_architecture",
+      "toNode": "n_project_projective_frontend",
+      "label": "rationale_for [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_frontend_project_projective_spa",
+      "fromNode": "n_project_projective_frontend",
+      "toNode": "n_project_projective_spa",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_frontend_project_projective_tailwind",
+      "fromNode": "n_project_projective_frontend",
+      "toNode": "n_project_projective_tailwind",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_modular_architecture_project_projective_module_interfaces",
+      "fromNode": "n_project_projective_modular_architecture",
+      "toNode": "n_project_projective_module_interfaces",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_habit_marks_project_projective_markdown",
+      "fromNode": "n_project_projective_habit_marks",
+      "toNode": "n_project_projective_markdown",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_notes_project_projective_markdown",
+      "fromNode": "n_project_projective_notes",
+      "toNode": "n_project_projective_markdown",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_search_project_projective_notes",
+      "fromNode": "n_project_projective_search",
+      "toNode": "n_project_projective_notes",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_ai_project_projective_analytics",
+      "fromNode": "n_project_projective_ai",
+      "toNode": "n_project_projective_analytics",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_ai_project_projective_data_permissions",
+      "fromNode": "n_project_projective_ai",
+      "toNode": "n_project_projective_data_permissions",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_ai_project_projective_profile",
+      "fromNode": "n_project_projective_ai",
+      "toNode": "n_project_projective_profile",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_analytics_project_projective_user_events",
+      "fromNode": "n_project_projective_analytics",
+      "toNode": "n_project_projective_user_events",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_authentication_project_projective_sessions",
+      "fromNode": "n_project_projective_authentication",
+      "toNode": "n_project_projective_sessions",
+      "label": "references [EXTRACTED]"
+    },
+    {
+      "id": "e_project_projective_postgres_project_projective_migrations",
+      "fromNode": "n_project_projective_postgres",
+      "toNode": "n_project_projective_migrations",
+      "label": "references [EXTRACTED]"
+    }
+  ]
+}

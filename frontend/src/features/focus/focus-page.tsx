@@ -1,0 +1,30 @@
+import { Pause, Play, Square, Timer, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ErrorState, LoadingState } from "@/components/resource-state";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Select } from "@/components/ui/input";
+import type { Task } from "@/features/planning/types";
+import { usePreferences } from "@/features/settings/preferences-context";
+import { useAction } from "@/hooks/use-action";
+import { useResource } from "@/hooks/use-resource";
+import { api } from "@/lib/api";
+
+type Session = { id: string; task_id: string | null; phase: "work" | "break"; status: "running" | "paused" | "completed" | "cancelled"; duration_seconds: number; elapsed_seconds: number; started_at: string; segment_started_at: string | null; ended_at: string | null; updated_at: string };
+
+function TimerPanel({ initial }: { initial: Session | null }) {
+  const { settings } = usePreferences(); const [session, setSession] = useState(initial); const [taskId, setTaskId] = useState(""); const [now, setNow] = useState(Date.now); const action = useAction(); const tasks = useResource<Task[]>("/tasks");
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 250); return () => window.clearInterval(timer); }, []);
+  const active = session !== null && (session.status === "running" || session.status === "paused");
+  const elapsed = session ? session.elapsed_seconds + (session.status === "running" && session.segment_started_at ? Math.max(0, (now - Date.parse(session.segment_started_at)) / 1000) : 0) : 0;
+  const remaining = session ? Math.max(0, Math.ceil(session.duration_seconds - elapsed)) : settings.pomodoro_work_minutes * 60;
+  function start(phase: "work" | "break") { void action.run(async () => { const result = await api<Session>("/pomodoro", { method: "POST", body: { task_id: taskId || null, phase } }); setSession(result); setNow(Date.now()); }); }
+  function control(command: "pause" | "resume" | "finish" | "cancel") { if (!session) return; void action.run(async () => { const result = await api<Session>(`/pomodoro/${session.id}/${command}`, { method: "POST" }); setSession(result); setNow(Date.now()); }); }
+  return <Card className="mx-auto max-w-xl p-7 text-center sm:p-10"><p className="mb-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">{active ? session.phase === "work" ? "Время сосредоточиться" : "Время отдохнуть" : "Сосредоточьтесь на одном"}</p><div className="relative mx-auto my-8 size-64"><svg viewBox="0 0 256 256" className="size-full -rotate-90" aria-hidden="true"><circle cx="128" cy="128" r="116" fill="none" stroke="var(--border)" strokeWidth="6" /><circle cx="128" cy="128" r="116" fill="none" stroke="var(--primary)" strokeWidth="6" strokeLinecap="round" strokeDasharray={2 * Math.PI * 116} strokeDashoffset={active && session ? (1 - Math.min(1, remaining / session.duration_seconds)) * 2 * Math.PI * 116 : 0} /></svg><div className="absolute inset-0 flex flex-col items-center justify-center"><p className="font-mono text-5xl tabular-nums" role="timer" aria-label="Осталось времени">{String(Math.floor(remaining / 60)).padStart(2, "0")}:{String(remaining % 60).padStart(2, "0")}</p><p className="mt-3 text-sm text-muted-foreground">{active ? session.status === "paused" ? "На паузе" : remaining ? "В процессе" : "Интервал завершён" : session?.status === "completed" ? "Результат сохранён" : session?.status === "cancelled" ? "Сессия отменена" : `${settings.pomodoro_work_minutes} минут для себя`}</p></div></div>
+    {active ? <><p className="mb-6 truncate text-sm text-muted-foreground">{tasks.resource.status === "ready" && session.task_id ? tasks.resource.data.find((task) => task.id === session.task_id)?.title ?? "Связанная задача" : "Без привязки к задаче"}</p><div className="flex flex-wrap justify-center gap-2"><Button disabled={action.busy || !remaining} onClick={() => control(session.status === "paused" ? "resume" : "pause")}>{session.status === "paused" ? <Play /> : <Pause />}{session.status === "paused" ? "Продолжить" : "Пауза"}</Button><Button variant="outline" disabled={action.busy || remaining > 0} onClick={() => control("finish")}><Square />Завершить</Button><Button variant="outline" disabled={action.busy} onClick={() => { if (window.confirm("Отменить текущую сессию фокуса?")) control("cancel"); }}><X />Отменить</Button></div></> : <div className="space-y-4"><label htmlFor="focus-task" className="block text-left text-sm font-medium">Связать с задачей</label><Select id="focus-task" value={taskId} onChange={(event) => setTaskId(event.target.value)}><option value="">Без задачи</option>{tasks.resource.status === "ready" && tasks.resource.data.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}</Select>{tasks.resource.status === "error" && <ErrorState message={tasks.resource.message} retry={tasks.retry} />}<div className="flex flex-wrap justify-center gap-3"><Button disabled={action.busy} onClick={() => start("work")}><Play />Работа · {settings.pomodoro_work_minutes} мин</Button><Button variant="outline" disabled={action.busy} onClick={() => start("break")}><Timer />Отдых · {settings.pomodoro_break_minutes} мин</Button></div></div>}{action.error && <p className="mt-5 text-sm text-destructive" role="alert">{action.error}</p>}<p className="mt-8 text-xs leading-6 text-muted-foreground">Таймер привязан к серверной сессии. Перезагрузка страницы сохраняет ход интервала и паузу.</p></Card>;
+}
+
+export function FocusPage() {
+  const { resource, retry } = useResource<Session | null>("/pomodoro");
+  return <main id="main" className="mx-auto w-full max-w-4xl px-5 py-10 sm:px-10"><div className="mb-8"><p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Пространство для фокуса</p><h1 className="text-3xl font-semibold">Pomodoro</h1></div>{resource.status === "loading" ? <LoadingState /> : resource.status === "error" ? <ErrorState message={resource.message} retry={retry} /> : <TimerPanel initial={resource.data} />}</main>;
+}

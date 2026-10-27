@@ -1,0 +1,137 @@
+name: lifecycle
+
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lifecycle}
+      POSTGRES_USER: ${POSTGRES_USER:-lifecycle}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run python3 scripts/setup_env.py}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks: [services]
+
+  redis:
+    image: redis:8.2.2-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Run python3 scripts/setup_env.py}
+    command: [sh, -c, 'exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"']
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks: [services]
+
+  garage:
+    image: dxflrs/garage:v2.5.0
+    command: [/garage, server, --single-node, --default-bucket]
+    environment:
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:?Run python3 scripts/setup_env.py}
+      GARAGE_DEFAULT_ACCESS_KEY: ${S3_ACCESS_KEY_ID:?Run python3 scripts/setup_env.py}
+      GARAGE_DEFAULT_SECRET_KEY: ${S3_SECRET_ACCESS_KEY:?Run python3 scripts/setup_env.py}
+      GARAGE_DEFAULT_BUCKET: ${S3_BUCKET:-lifecycle}
+    volumes:
+      - ./infra/garage.toml:/etc/garage.toml:ro
+      - garage_meta:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
+    healthcheck:
+      test: [CMD, /garage, status]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    networks: [services]
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      APP_BIND: 0.0.0.0:8080
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:8081}
+      DATABASE_URL: postgres://${POSTGRES_USER:-lifecycle}:${POSTGRES_PASSWORD:?Run python3 scripts/setup_env.py}@postgres:5432/${POSTGRES_DB:-lifecycle}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Run python3 scripts/setup_env.py}@redis:6379
+      S3_ENDPOINT: http://garage:3900
+      S3_REGION: ${S3_REGION:-garage}
+      S3_BUCKET: ${S3_BUCKET:-lifecycle}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?Run python3 scripts/setup_env.py}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?Run python3 scripts/setup_env.py}
+      RUST_LOG: ${RUST_LOG:-lifecycle_api=info,tower_http=info}
+      AUTH_CODE_SECRET: ${AUTH_CODE_SECRET:?Run python3 scripts/setup_env.py}
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?Run python3 scripts/setup_env.py}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_TLS: ${SMTP_TLS:-none}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-LifeCycle <noreply@lifecycle.test>}
+      TRUST_PROXY: ${TRUST_PROXY:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      garage:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, http://127.0.0.1:8080/api/health/ready]
+      interval: 10s
+      timeout: 8s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+    networks: [services]
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - '127.0.0.1:${APP_PORT:-8081}:8080'
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://127.0.0.1:8080/]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks: [services]
+
+  mailpit:
+    image: axllent/mailpit:v1.27.4
+    ports:
+      - '127.0.0.1:8025:8025'
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_MESSAGES: 500
+    volumes:
+      - mailpit_data:/data
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://127.0.0.1:8025/readyz]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks: [services]
+
+networks:
+  services:
+
+volumes:
+  postgres_data:
+  redis_data:
+  garage_meta:
+  garage_data:
+  mailpit_data:
