@@ -36,9 +36,9 @@
     "semantic_hash": ""
   },
   "backend/src/lib.rs": {
-    "mtime": 1793039489.9164813,
-    "seen": 1793104262.5070362,
-    "ast_hash": "442aef7e89be837e90b72e88fb25f58c",
+    "mtime": 1793188968.4210262,
+    "seen": 1793189423.4790213,
+    "ast_hash": "cbd06ee4ec6ba6d2cdae2b7ee4298d3c",
     "semantic_hash": ""
   },
   "backend/src/main.rs": {
@@ -60,9 +60,9 @@
     "semantic_hash": ""
   },
   "compose.yaml": {
-    "mtime": 1793038625.0246506,
-    "seen": 1793038691.5231524,
-    "ast_hash": "4d2de9bc4e022cc60780dabbf8e3bc83",
+    "mtime": 1793188827.0980196,
+    "seen": 1793189423.4792674,
+    "ast_hash": "bfc570c3cc3e42befdfc4abababb9418",
     "semantic_hash": ""
   },
   "frontend/components.json": {
@@ -90,9 +90,9 @@
     "semantic_hash": ""
   },
   "frontend/src/app.tsx": {
-    "mtime": 1793104029.9791365,
-    "seen": 1793104262.5073314,
-    "ast_hash": "b7465104a131e229107c8151afd795ff",
+    "mtime": 1793188898.5020967,
+    "seen": 1793189423.479441,
+    "ast_hash": "b6a00bdac27c32983bc0da093f0b4957",
     "semantic_hash": ""
   },
   "frontend/src/components/ui/button.tsx": {
@@ -174,21 +174,21 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1793104453.4100502,
-    "seen": 1793104455.926484,
-    "ast_hash": "71b687d3403990596508d953eebe462c",
+    "mtime": 1793189312.3460565,
+    "seen": 1793189423.4806938,
+    "ast_hash": "1479916e35394852c6f6f28980fbb15f",
     "semantic_hash": ""
   },
   "backend/README.md": {
-    "mtime": 1793104410.626732,
-    "seen": 1793104455.9264858,
-    "ast_hash": "8aa370aafcce053935d9f64aae2efc99",
+    "mtime": 1793189475.4602103,
+    "seen": 1793189596.2591872,
+    "ast_hash": "bfd79919a256ddce9bfdc18619f9dde3",
     "semantic_hash": ""
   },
   "frontend/README.md": {
-    "mtime": 1793104160.3185134,
-    "seen": 1793104262.508257,
-    "ast_hash": "aded06086b7636c4b06196b0996284dd",
+    "mtime": 1793189390.528032,
+    "seen": 1793189423.4806967,
+    "ast_hash": "2c1add931cb4d3d3487d09a98d84f6cd",
     "semantic_hash": ""
   },
   "frontend/index.html": {
@@ -198,9 +198,9 @@
     "semantic_hash": ""
   },
   "project/ideas.md": {
-    "mtime": 1793037287.0936143,
-    "seen": 1793038365.346275,
-    "ast_hash": "6a8527224a1db4609808c48cbed0b4c2",
+    "mtime": 1793188249.9787967,
+    "seen": 1793189423.4807496,
+    "ast_hash": "c2a592903f342abddb47eef56c388bb0",
     "semantic_hash": ""
   },
   "project/plugins.md": {
@@ -210,21 +210,21 @@
     "semantic_hash": ""
   },
   "project/project_progress.md": {
-    "mtime": 1793104539.973816,
-    "seen": 1793104542.4574482,
-    "ast_hash": "69d69c17516a6b10f6e589444b78b89b",
+    "mtime": 1793189593.9219408,
+    "seen": 1793189596.259307,
+    "ast_hash": "a2b23c50fb32bf7187f534ca938868d7",
     "semantic_hash": ""
   },
   "project/project_projective.md": {
-    "mtime": 1793103540.5157018,
-    "seen": 1793104262.508326,
-    "ast_hash": "a60fc15bee62403149f221a49b3d33f9",
+    "mtime": 1793188248.5937922,
+    "seen": 1793189423.480775,
+    "ast_hash": "0ad388f8fdc98b5bc36741355d1686cb",
     "semantic_hash": ""
   },
   "project/prompts.md": {
-    "mtime": 1793103756.7936776,
-    "seen": 1793104262.5083272,
-    "ast_hash": "63c1bb5a02c71cead49cfd230616c4fd",
+    "mtime": 1793188429.7894237,
+    "seen": 1793189423.4807763,
+    "ast_hash": "8884399065c0b29b7919b04ea7750b8a",
     "semantic_hash": ""
   },
   "frontend/src/assets/logo.svg": {
@@ -366,9 +366,9 @@
     "semantic_hash": ""
   },
   "frontend/src/features/settings/settings-page.tsx": {
-    "mtime": 1793038856.8848252,
-    "seen": 1793039011.1019015,
-    "ast_hash": "a05dffe1151ef91738d5bf503fd4bf6f",
+    "mtime": 1793188898.5020967,
+    "seen": 1793189423.4802873,
+    "ast_hash": "41e37257cf12d331694e22fb052304d8",
     "semantic_hash": ""
   },
   "frontend/src/features/settings/types.ts": {
@@ -408,15 +408,15 @@
     "semantic_hash": ""
   },
   "frontend/src/features/planning/schedule-editor.tsx": {
-    "mtime": 1793104074.4370754,
-    "seen": 1793104262.5077047,
-    "ast_hash": "632a0ca7aff1df02d5b3f970ed47e315",
+    "mtime": 1793189047.4474337,
+    "seen": 1793189423.479996,
+    "ast_hash": "376cd85f5076754839a28a74d4385c06",
     "semantic_hash": ""
   },
   "frontend/src/features/planning/types.ts": {
-    "mtime": 1793104367.6465275,
-    "seen": 1793104455.9258754,
-    "ast_hash": "d26a1bd4e64e165b6dcdeb53a1b2b6d3",
+    "mtime": 1793188898.5020967,
+    "seen": 1793189423.4801128,
+    "ast_hash": "6bb8f54919a0191d7590bea0e5d681b0",
     "semantic_hash": ""
   },
   "frontend/src/lib/dates.ts": {
@@ -426,8 +426,8 @@
     "semantic_hash": ""
   },
   "frontend/test-results/.last-run.json": {
-    "mtime": 1793104484.3736193,
-    "seen": 1793104542.4570978,
+    "mtime": 1793189556.1117177,
+    "seen": 1793189596.2589786,
     "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
     "semantic_hash": ""
   },
@@ -456,9 +456,9 @@
     "semantic_hash": ""
   },
   "backend/src/tasks.rs": {
-    "mtime": 1793104410.7517576,
-    "seen": 1793104455.925003,
-    "ast_hash": "68778b3706ee5f4cc3d241242d92b2c3",
+    "mtime": 1793189236.8230574,
+    "seen": 1793189423.479241,
+    "ast_hash": "add114118d355e86071f8a477e21d579",
     "semantic_hash": ""
   },
   "frontend/e2e/core.spec.ts": {
@@ -504,9 +504,9 @@
     "semantic_hash": ""
   },
   "frontend/src/features/planning/occurrence-list.tsx": {
-    "mtime": 1793104367.7405486,
-    "seen": 1793104455.9257817,
-    "ast_hash": "2512bb7fd1ac7b315898cbb719834386",
+    "mtime": 1793188898.5020967,
+    "seen": 1793189423.4799945,
+    "ast_hash": "8f628f94d5bde94936d57e337e746dec",
     "semantic_hash": ""
   },
   "frontend/src/features/planning/task-editor.tsx": {
@@ -558,15 +558,75 @@
     "semantic_hash": ""
   },
   "frontend/test-results/core-countdown-edits-and-p-8d620-cancellation-work-on-mobile/mobile-countdown.png": {
-    "mtime": 1793104483.850528,
-    "seen": 1793104542.4575229,
-    "ast_hash": "dc10e836c4fea3688a6adea67d2d8009",
+    "mtime": 1793189552.8836102,
+    "seen": 1793189596.2593894,
+    "ast_hash": "d759fb5f9a02e54db8abf8cbf24bebd3",
     "semantic_hash": ""
   },
   "frontend/test-results/core-countdown-edits-and-p-8d620-cancellation-work-on-mobile/mobile-pomodoro.png": {
-    "mtime": 1793104484.068566,
-    "seen": 1793104542.4575245,
-    "ast_hash": "07288c2715ed456cfae586177f19a706",
+    "mtime": 1793189553.1016176,
+    "seen": 1793189596.259391,
+    "ast_hash": "19bb6247d0d6400536960e680b804ee4",
+    "semantic_hash": ""
+  },
+  "backend/src/habits.rs": {
+    "mtime": 1793189475.5122106,
+    "seen": 1793189596.2571294,
+    "ast_hash": "3f27aa0e110f0b0bdd6bda1b197b97f2",
+    "semantic_hash": ""
+  },
+  "frontend/e2e/habits.spec.ts": {
+    "mtime": 1793189371.4981472,
+    "seen": 1793189423.4793499,
+    "ast_hash": "263c9b981789c4d045b1ed698f36e495",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/habits/habit-controls.tsx": {
+    "mtime": 1793189191.850405,
+    "seen": 1793189423.47984,
+    "ast_hash": "96cd421772101acc0ba28331f269c1c7",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/habits/habit-editor.tsx": {
+    "mtime": 1793189047.502416,
+    "seen": 1793189423.4798415,
+    "ast_hash": "71a98178084cdbb03ad11fe16d2f9d30",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/habits/habits-page.tsx": {
+    "mtime": 1793189236.881054,
+    "seen": 1793189423.4798431,
+    "ast_hash": "049e65a64c7e675ebe66b82adf5b7a1b",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/habits/reminders.tsx": {
+    "mtime": 1793188898.4850945,
+    "seen": 1793189423.479844,
+    "ast_hash": "be80dc77ce191e7aa3419c7342fb0bf0",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/habits/types.ts": {
+    "mtime": 1793188864.2479012,
+    "seen": 1793189423.4798453,
+    "ast_hash": "5f19e2d5fb43a8a484b97a840801f5f1",
+    "semantic_hash": ""
+  },
+  "scripts/habits_smoke.py": {
+    "mtime": 1793189475.39721,
+    "seen": 1793189596.2591062,
+    "ast_hash": "ad8ac81b2deec53e7538d64ef800c834",
+    "semantic_hash": ""
+  },
+  "frontend/test-results/habits-habit-children-Mark-10250-oday-and-calendar-on-mobile/mobile-habits.png": {
+    "mtime": 1793189555.1436856,
+    "seen": 1793189596.2593923,
+    "ast_hash": "17804dd14ec64f2fa40d23d0919bc630",
+    "semantic_hash": ""
+  },
+  "graphify-out/memory/query_20261028_121314_067e77b7_\u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u044c_lifecycle_\u043f\u043e\u0441\u043b\u0435_\u044d\u0442\u0430\u043f\u0430_3_\u0438_\u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c_\u044d.md": {
+    "mtime": 1793189594.0659454,
+    "seen": 1793189596.259261,
+    "ast_hash": "761528eafaafce4e243cebe282f80f05",
     "semantic_hash": ""
   },
   "frontend/pnpm-lock.yaml": {

@@ -1,3 +1,4 @@
+import type { HabitConfig, HabitMark } from "@/features/habits/types";
 import { localDate } from "@/lib/dates";
 
 export type Schedule = {
@@ -13,8 +14,8 @@ export type Schedule = {
 
 export type TaskStatus = "todo" | "in_progress" | "completed" | "rejected";
 export type TaskInput = { title: string; description: string; status: TaskStatus; tags: string[]; color: string; priority: "low" | "normal" | "high" | "urgent"; parent_id: string | null; due_at: string | null; schedule: Schedule | null };
-export type Task = TaskInput & { id: string; source_kind: string; source_id: string | null; created_at: string; updated_at: string };
-export type TaskOccurrence = { task: Task; date: string; starts_at: string | null; status: TaskStatus; editable: boolean };
+export type Task = TaskInput & { id: string; source_kind: string; source_id: string | null; habit?: HabitConfig | null; created_at: string; updated_at: string };
+export type TaskOccurrence = { task: Task; date: string; starts_at: string | null; status: TaskStatus; editable: boolean; habit_mark?: HabitMark | null };
 export type DayPlan = { date: string; timezone: string; tasks: TaskOccurrence[] };
 export type CalendarPlan = { from: string; to: string; timezone: string; occurrences: TaskOccurrence[] };
 export const statusLabels: Record<TaskStatus, string> = { todo: "К выполнению", in_progress: "В работе", completed: "Выполнено", rejected: "Отклонено" };

@@ -61,6 +61,8 @@ pub struct Task {
     pub schedule: Option<DbJson<Schedule>>,
     pub source_kind: String,
     pub source_id: Option<Uuid>,
+    #[serde(default)]
+    pub habit: Option<DbJson<crate::habits::HabitConfig>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -70,12 +72,14 @@ pub struct TaskOccurrence {
     pub date: NaiveDate,
     pub starts_at: Option<DateTime<Utc>>,
     pub status: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub habit_mark: Option<crate::habits::HabitMark>,
 }
 #[derive(Serialize)]
 pub struct TaskOccurrenceResponse {
     #[serde(flatten)]
-    occurrence: TaskOccurrence,
-    editable: bool,
+    pub occurrence: TaskOccurrence,
+    pub editable: bool,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -144,7 +148,7 @@ async fn list(
         ));
     }
     let tasks = sqlx::query_as::<_, Task>(
-        "SELECT * FROM app.tasks WHERE user_id=$1 AND archived_at IS NULL
+        "SELECT * FROM app.tasks WHERE user_id=$1 AND archived_at IS NULL AND source_kind='manual'
          AND ($2::text IS NULL OR strpos(lower(title||' '||description),lower($2))>0)
          AND ($3::text IS NULL OR status=$3) AND ($4::text IS NULL OR tags ? $4)
          ORDER BY created_at,id",
@@ -241,13 +245,13 @@ fn schedule_matches_profile_dates(
     false
 }
 
-fn calendar_date(occurrence: &TaskOccurrence, zone: &chrono_tz::Tz) -> NaiveDate {
+pub(crate) fn calendar_date(occurrence: &TaskOccurrence, zone: &chrono_tz::Tz) -> NaiveDate {
     occurrence.starts_at.map_or(occurrence.date, |instant| {
         instant.with_timezone(zone).date_naive()
     })
 }
 
-fn schedule_in_profile_range(
+pub(crate) fn schedule_in_profile_range(
     schedule: &Schedule,
     from: NaiveDate,
     to: NaiveDate,
@@ -327,6 +331,19 @@ async fn save(
     let (today, timezone) = domain::local_today(s, user).await?;
     let mut tx = s.database.begin().await?;
     lock_tasks(&mut tx, user).await?;
+    if !create {
+        let kind: String = sqlx::query_scalar(
+            "SELECT source_kind FROM app.tasks WHERE id=$1 AND user_id=$2 AND archived_at IS NULL",
+        )
+        .bind(id)
+        .bind(user)
+        .fetch_optional(&mut *tx)
+        .await?
+        .ok_or_else(domain::not_found)?;
+        if kind != "manual" {
+            return Err(domain::conflict("Use the source module to edit this task"));
+        }
+    }
     let previous_status = if create {
         None
     } else {
@@ -343,7 +360,7 @@ async fn save(
     };
     if let Some(parent) = v.parent_id {
         let parent_exists = sqlx::query_scalar::<_, Uuid>(
-            "SELECT id FROM app.tasks WHERE id=$1 AND user_id=$2 AND archived_at IS NULL",
+            "SELECT id FROM app.tasks WHERE id=$1 AND user_id=$2 AND archived_at IS NULL AND source_kind='manual'",
         )
         .bind(parent)
         .bind(user)
@@ -452,6 +469,19 @@ async fn archive(
 ) -> Result<StatusCode, ApiError> {
     let mut tx = s.database.begin().await?;
     lock_tasks(&mut tx, u.id).await?;
+    let kind: String = sqlx::query_scalar(
+        "SELECT source_kind FROM app.tasks WHERE id=$1 AND user_id=$2 AND archived_at IS NULL",
+    )
+    .bind(id)
+    .bind(u.id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(domain::not_found)?;
+    if kind != "manual" {
+        return Err(domain::conflict(
+            "Use the source module to archive this task",
+        ));
+    }
     let rows=sqlx::query("UPDATE app.tasks SET archived_at=now(),updated_at=now() WHERE id=$1 AND user_id=$2 AND archived_at IS NULL").bind(id).bind(u.id).execute(&mut *tx).await?.rows_affected();
     if rows == 0 {
         return Err(domain::not_found());
@@ -492,6 +522,9 @@ async fn mark(
     .fetch_optional(&mut *tx)
     .await?
     .ok_or_else(domain::not_found)?;
+    if task.source_kind != "manual" {
+        return Err(domain::conflict("Use habit marks for this occurrence"));
+    }
     if task
         .schedule
         .as_ref()
@@ -543,6 +576,7 @@ pub async fn persist_occurrence(
             None => task.due_at,
         },
         status: status.to_owned(),
+        habit_mark: None,
     };
     let prior=sqlx::query_scalar::<_,String>("SELECT status FROM app.task_occurrences WHERE user_id=$1 AND task_id=$2 AND occurrence_date=$3").bind(user).bind(task.id).bind(date).fetch_optional(&mut *db).await?;
     if prior.as_deref() == Some(status) {
@@ -629,7 +663,7 @@ pub async fn occurrences(
         .parse::<chrono_tz::Tz>()
         .map_err(|_| ApiError::internal())?;
     let active = sqlx::query_as::<_, Task>(
-        "SELECT * FROM app.tasks WHERE user_id=$1 AND archived_at IS NULL",
+        "SELECT * FROM app.tasks WHERE user_id=$1 AND archived_at IS NULL AND source_kind='manual'",
     )
     .bind(user)
     .fetch_all(&s.database)
@@ -658,6 +692,7 @@ pub async fn occurrences(
                     date,
                     starts_at,
                     status: task.status.clone(),
+                    habit_mark: None,
                 },
             );
         }
@@ -668,7 +703,7 @@ pub async fn occurrences(
     let expanded_to = to
         .checked_add_signed(chrono::Duration::days(3))
         .unwrap_or(NaiveDate::MAX);
-    let saved=sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT snapshot FROM app.task_occurrences WHERE user_id=$1 AND occurrence_date BETWEEN $2 AND $3").bind(user).bind(expanded_from).bind(expanded_to).fetch_all(&s.database).await?;
+    let saved=sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT o.snapshot FROM app.task_occurrences o JOIN app.tasks t ON t.id=o.task_id AND t.user_id=o.user_id WHERE o.user_id=$1 AND t.source_kind='manual' AND o.occurrence_date BETWEEN $2 AND $3").bind(user).bind(expanded_from).bind(expanded_to).fetch_all(&s.database).await?;
     for value in saved {
         let occurrence = value.0;
         let key = (occurrence.date, occurrence.task.id);
@@ -698,7 +733,7 @@ pub async fn occurrences(
             &b.task.title,
         ))
     });
-    Ok(rows
+    let mut result: Vec<_> = rows
         .into_iter()
         .map(|occurrence| {
             let editable = edit_rules.get(&occurrence.task.id).is_some_and(|schedule| {
@@ -711,7 +746,16 @@ pub async fn occurrences(
                 editable,
             }
         })
-        .collect())
+        .collect();
+    result.extend(crate::habits::occurrences(s, user, from, to, timezone).await?);
+    result.sort_by_key(|row| {
+        (
+            calendar_date(&row.occurrence, &zone),
+            row.occurrence.starts_at,
+            row.occurrence.task.title.clone(),
+        )
+    });
+    Ok(result)
 }
 fn valid_status(status: &str) -> Result<(), ApiError> {
     if !["todo", "in_progress", "completed", "rejected"].contains(&status) {

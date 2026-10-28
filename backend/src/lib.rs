@@ -5,6 +5,7 @@ pub mod crypto;
 mod csrf;
 pub mod domain;
 pub mod error;
+pub mod habits;
 mod health;
 mod mail;
 mod media;
@@ -37,6 +38,7 @@ pub fn router(state: AppState) -> Router {
         .merge(settings::routes())
         .merge(notes::routes())
         .merge(tasks::routes())
+        .merge(habits::routes())
         .merge(media::routes())
         .merge(countdowns::routes())
         .merge(pomodoro::routes())
