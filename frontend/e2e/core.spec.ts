@@ -60,8 +60,17 @@ test("notes persist Markdown and private uploaded images across editing and fold
   await page.getByLabel("Поиск заметок", { exact: true }).fill("Изменённая заметка");
   await expect(page.getByRole("button", { name: "Изменённая заметка", exact: true })).toBeVisible();
   await page.getByLabel("Папка заметок", { exact: true }).selectOption({ label: "Идеи браузера" });
-  await page.getByRole("button", { name: "Убрать папку", exact: true }).click();
+  page.once("dialog", (dialog) => void dialog.accept());
+  await page.getByRole("button", { name: "Удалить папку", exact: true }).click();
   await expect(page.getByRole("button", { name: "Изменённая заметка", exact: true })).toBeVisible();
+  page.once("dialog", (dialog) => void dialog.dismiss());
+  await page.locator("article").getByRole("button", { name: "Удалить", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Изменённая заметка", exact: true })).toBeVisible();
+  page.once("dialog", (dialog) => void dialog.accept());
+  await page.locator("article").getByRole("button", { name: "Удалить", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Изменённая заметка", exact: true })).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Изменённая заметка", exact: true })).toHaveCount(0);
   expect(failures).toEqual([]);
 });
 
@@ -145,6 +154,9 @@ test("countdown edits and persisted Pomodoro pause, resume and cancellation work
   await expect(page.getByRole("heading", { name: "Изменённый праздник", exact: true })).toBeVisible();
   expect(await page.locator("html").evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(390);
   await page.screenshot({ path: testInfo.outputPath("mobile-countdown.png"), fullPage: true });
+  page.once("dialog", (dialog) => void dialog.accept());
+  await page.getByRole("button", { name: "Удалить событие Изменённый праздник", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Изменённый праздник", exact: true })).toHaveCount(0);
   await page.getByRole("link", { name: "Pomodoro", exact: true }).click();
   await page.getByRole("button", { name: "Начать фокус", exact: true }).click();
   await expect(page.getByRole("button", { name: "Пауза", exact: true })).toBeVisible();

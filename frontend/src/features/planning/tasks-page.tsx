@@ -51,6 +51,6 @@ export function TasksPage() {
     {editing && <TaskEditor task={editing === "new" ? null : editing} tasks={parentTasks} parentId={parentId} close={() => setEditing(null)} saved={() => { setEditing(null); refreshed(); }} />}
     {history && <HistoryDialog task={history} close={() => setHistory(null)} />}
     {selectedTask && <Dialog title={selectedTask.title} onClose={closeDetail}><Markdown value={selectedTask.description} />{selectedTask.due_at && <p className="mt-5 text-sm text-muted-foreground">Дедлайн: {new Date(selectedTask.due_at).toLocaleString("ru-RU", { timeZone: settings.timezone })}</p>}<div className="mt-6 flex flex-wrap gap-2"><Button onClick={() => { setEditing(selectedTask); setParentId(undefined); closeDetail(); }}>Редактировать задачу</Button><Button variant="outline" onClick={() => { setHistory(selectedTask); closeDetail(); }}>История отметок</Button></div></Dialog>}
-    {selectedId && !selectedTask && all.resource.status === "ready" && <HistoryDialog task={{ id: selectedId, title: "Архивная задача" }} close={closeDetail} />}
+    {selectedId && !selectedTask && all.resource.status === "ready" && <HistoryDialog task={{ id: selectedId, title: "Удалённая задача" }} close={closeDetail} />}
   </main>;
 }

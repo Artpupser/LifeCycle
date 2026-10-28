@@ -148,21 +148,25 @@ pub fn routes() -> Router<AppState> {
 }
 
 async fn read(State(state): State<AppState>, user: CurrentUser) -> Result<Json<Profile>, ApiError> {
+    Ok(Json(load(&state, user.id).await?))
+}
+
+pub(crate) async fn load(state: &AppState, user: uuid::Uuid) -> Result<Profile, ApiError> {
     let encrypted = sqlx::query_scalar::<_, Vec<u8>>(
         "SELECT encrypted_data FROM app.profiles WHERE user_id=$1",
     )
-    .bind(user.id)
+    .bind(user)
     .fetch_optional(&state.database)
     .await?;
     let profile = match encrypted {
         None => Profile::default(),
         Some(data) => {
-            let context = format!("profile:{}", user.id);
+            let context = format!("profile:{user}");
             let bytes = state.cipher.decrypt(&data, context.as_bytes())?;
             serde_json::from_slice(&bytes).map_err(|_| ApiError::internal())?
         }
     };
-    Ok(Json(profile))
+    Ok(profile)
 }
 
 async fn update(

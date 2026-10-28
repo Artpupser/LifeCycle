@@ -45,7 +45,7 @@ def schedule_cases(client, body, today):
     before, _ = client.request('GET', path)
     client.request('DELETE', f"/api/habits/{ended['id']}", expected=204)
     after, _ = client.request('GET', path)
-    require(before['missed'] == after['missed'] == 1, 'Archival silently removed a missed occurrence earlier on the same day')
+    require(before['missed'] == after['missed'] == 1, 'Deletion silently removed a missed occurrence earlier on the same day')
 
 
 def run(args):
@@ -118,10 +118,10 @@ def run(args):
     find_occurrence(mixed, manual['id'])
     find_occurrence(mixed, hid)
     first.request('DELETE', f'/api/habits/{hid}', expected=204)
-    require(not listed(first, '/api/habits'), 'Archived habit remains active')
+    require(not listed(first, '/api/habits'), 'Deleted habit remains active')
     preserved = find_occurrence(occurrences(first, today), hid)
-    require(not preserved['editable'] and preserved['habit_mark']['note'] == '# Выполнено', 'Archive destroyed history or kept it editable')
-    require(not any(v['task']['id'] == hid for v in occurrences(first, today + timedelta(days=2))), 'Archive generated future habit tasks')
+    require(not preserved['editable'] and preserved['habit_mark']['note'] == '# Выполнено', 'Deletion destroyed history or kept it editable')
+    require(not any(v['task']['id'] == hid for v in occurrences(first, today + timedelta(days=2))), 'Deletion generated future habit tasks')
     first.request('POST', f'/api/habits/{hid}/marks/{today}', complete, expected=404)
     first.request('GET', f'/api/habits/statistics?from={today}&to={today + timedelta(days=366)}', expected=400)
 
@@ -158,7 +158,7 @@ def run(args):
     first.request('POST', '/api/auth/logout', expected=204)
     second.request('POST', '/api/auth/logout', expected=204)
     print('PASS: habits CRUD/search, ownership/CSRF, shared schedules, Today/calendar, child sums and concurrent idempotent marks.')
-    print('PASS: real statistics/streaks, schedule version history, explicit corrections, archival and task API guards.')
+    print('PASS: real statistics/streaks, schedule version history, explicit corrections, deletion and task API guards.')
     print('PASS: due reminders, settings, account isolation and persistent idempotent acknowledgement.')
     print('PASS: weekly/interval/end rules, profile-day timezone boundaries and real calendar appearances across DST.')
 

@@ -128,10 +128,10 @@ def notes_and_folders(first, second, marker):
     second.request("PUT", f"/api/notes/{note_id}", dict(note_body, folder_id=None), expected=404)
     first.request("DELETE", f"/api/notes/folders/{folder_id}", expected=204)
     saved, _ = first.request("GET", f"/api/notes/{note_id}")
-    require(saved["folder_id"] is None and saved["content"] == content, "Folder archive lost its note")
+    require(saved["folder_id"] is None and saved["content"] == content, "Folder delete lost its note")
     first.request("DELETE", f"/api/notes/{note_id}", expected=204)
-    require(not listed(first, "/api/notes?" + urlencode({"q": marker})), "Archived note remains in active search")
-    print("PASS: folder/note CRUD, Markdown persistence, search, ownership and safe folder archive.")
+    require(not listed(first, "/api/notes?" + urlencode({"q": marker})), "Deleted note remains in active search")
+    print("PASS: folder/note CRUD, Markdown persistence, search, ownership and safe folder delete.")
 
 
 def tasks_and_schedule(first, second, marker, today):
@@ -246,24 +246,24 @@ def tasks_and_schedule(first, second, marker, today):
     first.request("POST", f"/api/tasks/{repeating_id}/occurrences/{today}", {"status": "todo"}, expected=400)
     first.request("DELETE", f"/api/tasks/{repeating_id}", expected=204)
     history = listed(first, f"/api/tasks/{repeating_id}/history")
-    require(any(item["date"] == today.isoformat() and item["status"] == "completed" for item in history), "Archiving a task deleted its completion history")
+    require(any(item["date"] == today.isoformat() and item["status"] == "completed" for item in history), "Deleting a task deleted its completion history")
     calendar, _ = first.request("GET", "/api/calendar?" + urlencode({"from": today.isoformat(), "to": next_due.isoformat()}))
-    archived_occurrence = find_occurrence([item for item in calendar["occurrences"] if item["date"] == today.isoformat()], repeating_id)
-    require(archived_occurrence["status"] == "completed", "Calendar lost an archived task completion")
-    require(archived_occurrence["editable"] is False, "Archived completion advertises an unusable status control")
-    require(all(item["editable"] is False for item in history), "Archived history advertises editable results")
+    deleted_occurrence = find_occurrence([item for item in calendar["occurrences"] if item["date"] == today.isoformat()], repeating_id)
+    require(deleted_occurrence["status"] == "completed", "Calendar lost an deleted task completion")
+    require(deleted_occurrence["editable"] is False, "Deleted completion advertises an unusable status control")
+    require(all(item["editable"] is False for item in history), "Deleted history advertises editable results")
     require(
         not any(item["task"]["id"] == repeating_id and item["date"] != today.isoformat() for item in calendar["occurrences"]),
-        "Archiving a template continued generating its unrecorded future occurrences",
+        "Deleting a template continued generating its unrecorded future occurrences",
     )
-    require(find_occurrence(occurrences(first, today), repeating_id)["task"]["title"] == repeating_body["title"], "Today lost the historical title of an archived completion")
+    require(find_occurrence(occurrences(first, today), repeating_id)["task"]["title"] == repeating_body["title"], "Today lost the historical title of an deleted completion")
     second.request("GET", f"/api/tasks/{repeating_id}/history", expected=404)
     first.request("DELETE", f"/api/tasks/{parent_id}", expected=204)
     saved_child, _ = first.request("GET", f"/api/tasks/{child_id}")
-    require(saved_child["parent_id"] is None, "Archiving a parent lost or orphaned its subtask")
+    require(saved_child["parent_id"] is None, "Deleting a parent lost or orphaned its subtask")
     first.request("DELETE", f"/api/tasks/{child_id}", expected=204)
     print("PASS: task CRUD/search/subtasks, minute schedule, Today/calendar and independent recurring results.")
-    print("PASS: invalid schedules and cross-account writes denied; completion snapshots survive edit/archive.")
+    print("PASS: invalid schedules and cross-account writes denied; completion snapshots survive edit/delete.")
 
 
 def countdowns(first, second, marker, today):
@@ -289,8 +289,8 @@ def countdowns(first, second, marker, today):
     second.request("GET", f"/api/countdowns/{identifier}", expected=404)
     second.request("PUT", f"/api/countdowns/{identifier}", body, expected=404)
     first.request("DELETE", f"/api/countdowns/{identifier}", expected=204)
-    require(not any(item["id"] == identifier for item in listed(first, "/api/countdowns")), "Archived countdown remains active")
-    print("PASS: annual countdown computation, category edits, archive and ownership.")
+    require(not any(item["id"] == identifier for item in listed(first, "/api/countdowns")), "Deleted countdown remains active")
+    print("PASS: annual countdown computation, category edits, delete and ownership.")
 
 
 def pomodoro(first, second, check_completion):

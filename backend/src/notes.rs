@@ -57,23 +57,23 @@ pub fn routes() -> Router<AppState> {
         .route("/api/notes/folders", get(folders).post(create_folder))
         .route(
             "/api/notes/folders/{id}",
-            get(folder).put(update_folder).delete(archive_folder),
+            get(folder).put(update_folder).delete(delete_folder),
         )
         .route("/api/notes", get(notes).post(create_note))
         .route(
             "/api/notes/{id}",
-            get(note).put(update_note).delete(archive_note),
+            get(note).put(update_note).delete(delete_note),
         )
 }
 async fn folders(State(s): State<AppState>, u: CurrentUser) -> Result<Json<Vec<Folder>>, ApiError> {
-    Ok(Json(sqlx::query_as("SELECT id,name,color,created_at,updated_at FROM app.note_folders WHERE user_id=$1 AND archived_at IS NULL ORDER BY name,id").bind(u.id).fetch_all(&s.database).await?))
+    Ok(Json(sqlx::query_as("SELECT id,name,color,created_at,updated_at FROM app.note_folders WHERE user_id=$1 ORDER BY name,id").bind(u.id).fetch_all(&s.database).await?))
 }
 async fn folder(
     State(s): State<AppState>,
     u: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Folder>, ApiError> {
-    Ok(Json(sqlx::query_as("SELECT id,name,color,created_at,updated_at FROM app.note_folders WHERE user_id=$1 AND id=$2 AND archived_at IS NULL").bind(u.id).bind(id).fetch_optional(&s.database).await?.ok_or_else(domain::not_found)?))
+    Ok(Json(sqlx::query_as("SELECT id,name,color,created_at,updated_at FROM app.note_folders WHERE user_id=$1 AND id=$2").bind(u.id).bind(id).fetch_optional(&s.database).await?.ok_or_else(domain::not_found)?))
 }
 async fn create_folder(
     State(s): State<AppState>,
@@ -106,7 +106,7 @@ async fn save_folder(
     let query = if create {
         "INSERT INTO app.note_folders (id,user_id,name,color) VALUES($1,$2,$3,$4) RETURNING id,name,color,created_at,updated_at"
     } else {
-        "UPDATE app.note_folders SET name=$3,color=$4,updated_at=now() WHERE id=$1 AND user_id=$2 AND archived_at IS NULL RETURNING id,name,color,created_at,updated_at"
+        "UPDATE app.note_folders SET name=$3,color=$4,updated_at=now() WHERE id=$1 AND user_id=$2 RETURNING id,name,color,created_at,updated_at"
     };
     let result = sqlx::query_as(query)
         .bind(id)
@@ -132,13 +132,18 @@ async fn save_folder(
     tx.commit().await?;
     Ok(result)
 }
-async fn archive_folder(
+async fn delete_folder(
     State(s): State<AppState>,
     u: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     let mut tx = s.database.begin().await?;
-    let rows=sqlx::query("UPDATE app.note_folders SET archived_at=now(),updated_at=now() WHERE id=$1 AND user_id=$2 AND archived_at IS NULL").bind(id).bind(u.id).execute(&mut *tx).await?.rows_affected();
+    let rows = sqlx::query("DELETE FROM app.note_folders WHERE id=$1 AND user_id=$2")
+        .bind(id)
+        .bind(u.id)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
     if rows == 0 {
         return Err(domain::not_found());
     }
@@ -152,7 +157,7 @@ async fn archive_folder(
     domain::event(
         &mut tx,
         u.id,
-        "folder_archived",
+        "folder_deleted",
         "folder",
         id,
         serde_json::json!({}),
@@ -167,14 +172,14 @@ async fn notes(
     Query(q): Query<Search>,
 ) -> Result<Json<Vec<Note>>, ApiError> {
     q.validate()?;
-    Ok(Json(sqlx::query_as("SELECT id,title,content,tags,color,folder_id,created_at,updated_at FROM app.notes WHERE user_id=$1 AND archived_at IS NULL AND ($2::text IS NULL OR strpos(lower(title||' '||content),lower($2))>0) AND ($3::uuid IS NULL OR folder_id=$3) AND ($4::text IS NULL OR tags ? $4) ORDER BY updated_at DESC,id").bind(u.id).bind(q.q).bind(q.folder_id).bind(q.tag).fetch_all(&s.database).await?))
+    Ok(Json(sqlx::query_as("SELECT id,title,content,tags,color,folder_id,created_at,updated_at FROM app.notes WHERE user_id=$1 AND ($2::text IS NULL OR strpos(lower(title||' '||content),lower($2))>0) AND ($3::uuid IS NULL OR folder_id=$3) AND ($4::text IS NULL OR tags ? $4) ORDER BY updated_at DESC,id").bind(u.id).bind(q.q).bind(q.folder_id).bind(q.tag).fetch_all(&s.database).await?))
 }
 async fn note(
     State(s): State<AppState>,
     u: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Note>, ApiError> {
-    Ok(Json(sqlx::query_as("SELECT id,title,content,tags,color,folder_id,created_at,updated_at FROM app.notes WHERE user_id=$1 AND id=$2 AND archived_at IS NULL").bind(u.id).bind(id).fetch_optional(&s.database).await?.ok_or_else(domain::not_found)?))
+    Ok(Json(sqlx::query_as("SELECT id,title,content,tags,color,folder_id,created_at,updated_at FROM app.notes WHERE user_id=$1 AND id=$2").bind(u.id).bind(id).fetch_optional(&s.database).await?.ok_or_else(domain::not_found)?))
 }
 async fn create_note(
     State(s): State<AppState>,
@@ -207,13 +212,23 @@ async fn save_note(
     domain::tags(&v.tags)?;
     let mut tx = s.database.begin().await?;
     if let Some(folder) = v.folder_id
-        && sqlx::query_scalar::<_,Uuid>("SELECT id FROM app.note_folders WHERE id=$1 AND user_id=$2 AND archived_at IS NULL FOR UPDATE").bind(folder).bind(user).fetch_optional(&mut *tx).await?.is_none() {
-            return Err(ApiError::validation("Folder does not belong to the current user or is archived"));
+        && sqlx::query_scalar::<_, Uuid>(
+            "SELECT id FROM app.note_folders WHERE id=$1 AND user_id=$2 FOR UPDATE",
+        )
+        .bind(folder)
+        .bind(user)
+        .fetch_optional(&mut *tx)
+        .await?
+        .is_none()
+    {
+        return Err(ApiError::validation(
+            "Folder does not belong to the current user or was deleted",
+        ));
     }
     let query = if create {
         "INSERT INTO app.notes (id,user_id,title,content,tags,color,folder_id) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,title,content,tags,color,folder_id,created_at,updated_at"
     } else {
-        "UPDATE app.notes SET title=$3,content=$4,tags=$5,color=$6,folder_id=$7,updated_at=now() WHERE id=$1 AND user_id=$2 AND archived_at IS NULL RETURNING id,title,content,tags,color,folder_id,created_at,updated_at"
+        "UPDATE app.notes SET title=$3,content=$4,tags=$5,color=$6,folder_id=$7,updated_at=now() WHERE id=$1 AND user_id=$2 RETURNING id,title,content,tags,color,folder_id,created_at,updated_at"
     };
     let result = sqlx::query_as(query)
         .bind(id)
@@ -242,20 +257,25 @@ async fn save_note(
     tx.commit().await?;
     Ok(result)
 }
-async fn archive_note(
+async fn delete_note(
     State(s): State<AppState>,
     u: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     let mut tx = s.database.begin().await?;
-    let rows=sqlx::query("UPDATE app.notes SET archived_at=now(),updated_at=now() WHERE id=$1 AND user_id=$2 AND archived_at IS NULL").bind(id).bind(u.id).execute(&mut *tx).await?.rows_affected();
+    let rows = sqlx::query("DELETE FROM app.notes WHERE id=$1 AND user_id=$2")
+        .bind(id)
+        .bind(u.id)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
     if rows == 0 {
         return Err(domain::not_found());
     }
     domain::event(
         &mut tx,
         u.id,
-        "note_archived",
+        "note_deleted",
         "note",
         id,
         serde_json::json!({}),

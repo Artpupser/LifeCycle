@@ -13,6 +13,8 @@ export class ApiError extends Error {
 }
 
 export function apiErrorMessage(status: number, code: string) {
+  if (code === "stale_intimacy") return "Запись изменена в другом окне. Обновите журнал и откройте сохранённую версию.";
+  if (code === "nonexistent_local_time") return "Такого местного времени нет из-за перевода часов. Проверьте время и часовой пояс.";
   if (code === "stale_workout") return "Тренировка изменена в другом окне. Обновите состояние и повторите действие.";
   if (status === 409) return "Действие недоступно в текущем состоянии. Проверьте активную тренировку и связи с планами или привычками, затем обновите данные.";
   if (code === "invalid_code") return "Код неверный или срок его действия истёк. Проверьте письмо или запросите новый код.";

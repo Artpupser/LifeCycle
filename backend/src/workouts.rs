@@ -22,7 +22,6 @@ use uuid::Uuid;
 pub struct Record<T> {
     pub id: Uuid,
     pub data: DbJson<T>,
-    pub archived_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -33,14 +32,12 @@ pub fn routes() -> Router<AppState> {
             "/api/exercises/{id}",
             get(read_exercise)
                 .put(update_exercise)
-                .delete(archive_exercise),
+                .delete(delete_exercise),
         )
         .route("/api/workouts", get(workouts).post(create_workout))
         .route(
             "/api/workouts/{id}",
-            get(read_workout)
-                .put(update_workout)
-                .delete(archive_workout),
+            get(read_workout).put(update_workout).delete(delete_workout),
         )
 }
 async fn exercises(
@@ -49,7 +46,7 @@ async fn exercises(
     Query(q): Query<Search>,
 ) -> Result<Json<Vec<Record<Exercise>>>, ApiError> {
     q.validate()?;
-    Ok(Json(sqlx::query_as("SELECT * FROM app.exercises WHERE user_id=$1 AND archived_at IS NULL AND ($2::text IS NULL OR strpos(lower((data->>'title')||' '||(data->>'description')),lower($2))>0) ORDER BY created_at,id").bind(u.id).bind(q.q).fetch_all(&s.database).await?))
+    Ok(Json(sqlx::query_as("SELECT * FROM app.exercises WHERE user_id=$1 AND ($2::text IS NULL OR strpos(lower((data->>'title')||' '||(data->>'description')),lower($2))>0) ORDER BY created_at,id").bind(u.id).bind(q.q).fetch_all(&s.database).await?))
 }
 async fn workouts(
     State(s): State<AppState>,
@@ -57,7 +54,7 @@ async fn workouts(
     Query(q): Query<Search>,
 ) -> Result<Json<Vec<Record<Workout>>>, ApiError> {
     q.validate()?;
-    Ok(Json(sqlx::query_as("SELECT * FROM app.workouts WHERE user_id=$1 AND archived_at IS NULL AND ($2::text IS NULL OR strpos(lower((data->>'title')||' '||(data->>'description')),lower($2))>0) AND ($3::text IS NULL OR (data->'tags') ? $3) ORDER BY created_at,id").bind(u.id).bind(q.q).bind(q.tag).fetch_all(&s.database).await?))
+    Ok(Json(sqlx::query_as("SELECT * FROM app.workouts WHERE user_id=$1 AND ($2::text IS NULL OR strpos(lower((data->>'title')||' '||(data->>'description')),lower($2))>0) AND ($3::text IS NULL OR (data->'tags') ? $3) ORDER BY created_at,id").bind(u.id).bind(q.q).bind(q.tag).fetch_all(&s.database).await?))
 }
 async fn read_exercise(
     State(s): State<AppState>,
@@ -127,14 +124,13 @@ async fn save_exercise(
         }
     }
     if !create {
-        let old: DbJson<Exercise> = sqlx::query_scalar(
-            "SELECT data FROM app.exercises WHERE user_id=$1 AND id=$2 AND archived_at IS NULL",
-        )
-        .bind(user)
-        .bind(id)
-        .fetch_optional(&mut *tx)
-        .await?
-        .ok_or_else(domain::not_found)?;
+        let old: DbJson<Exercise> =
+            sqlx::query_scalar("SELECT data FROM app.exercises WHERE user_id=$1 AND id=$2")
+                .bind(user)
+                .bind(id)
+                .fetch_optional(&mut *tx)
+                .await?
+                .ok_or_else(domain::not_found)?;
         if old.kind != v.kind && exercise_referenced(&mut tx, user, id).await? {
             return Err(domain::conflict(
                 "Remove exercise from active plans before changing its kind",
@@ -144,7 +140,7 @@ async fn save_exercise(
     let query = if create {
         "INSERT INTO app.exercises(id,user_id,data) VALUES($1,$2,$3) RETURNING *"
     } else {
-        "UPDATE app.exercises SET data=$3,updated_at=now() WHERE id=$1 AND user_id=$2 AND archived_at IS NULL RETURNING *"
+        "UPDATE app.exercises SET data=$3,updated_at=now() WHERE id=$1 AND user_id=$2 RETURNING *"
     };
     let row = sqlx::query_as(query)
         .bind(id)
@@ -174,9 +170,9 @@ async fn exercise_referenced(
     user: Uuid,
     id: Uuid,
 ) -> Result<bool, ApiError> {
-    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.workouts w, jsonb_array_elements(w.data->'rounds') r, jsonb_array_elements(r->'exercises') e WHERE w.user_id=$1 AND w.archived_at IS NULL AND e->>'exercise_id'=$2)").bind(user).bind(id.to_string()).fetch_one(db).await?)
+    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.workouts w, jsonb_array_elements(w.data->'rounds') r, jsonb_array_elements(r->'exercises') e WHERE w.user_id=$1 AND e->>'exercise_id'=$2)").bind(user).bind(id.to_string()).fetch_one(db).await?)
 }
-async fn archive_exercise(
+async fn delete_exercise(
     State(s): State<AppState>,
     u: CurrentUser,
     Path(id): Path<Uuid>,
@@ -185,14 +181,23 @@ async fn archive_exercise(
     tasks::lock_tasks(&mut tx, u.id).await?;
     if exercise_referenced(&mut tx, u.id, id).await? {
         return Err(domain::conflict(
-            "Remove exercise from active plans before archiving",
+            "Remove exercise from active plans before deleting",
         ));
     }
-    if sqlx::query("UPDATE app.exercises SET archived_at=now(),updated_at=now() WHERE user_id=$1 AND id=$2 AND archived_at IS NULL").bind(u.id).bind(id).execute(&mut *tx).await?.rows_affected()==0 {return Err(domain::not_found());}
+    if sqlx::query("DELETE FROM app.exercises WHERE user_id=$1 AND id=$2")
+        .bind(u.id)
+        .bind(id)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected()
+        == 0
+    {
+        return Err(domain::not_found());
+    }
     domain::event(
         &mut tx,
         u.id,
-        "exercise_archived",
+        "exercise_deleted",
         "exercise",
         id,
         serde_json::json!({}),
@@ -223,12 +228,11 @@ pub async fn active_exercises(
     db: &mut PgConnection,
     user: Uuid,
 ) -> Result<BTreeMap<Uuid, Exercise>, ApiError> {
-    let rows: Vec<(Uuid, DbJson<Exercise>)> = sqlx::query_as(
-        "SELECT id,data FROM app.exercises WHERE user_id=$1 AND archived_at IS NULL",
-    )
-    .bind(user)
-    .fetch_all(db)
-    .await?;
+    let rows: Vec<(Uuid, DbJson<Exercise>)> =
+        sqlx::query_as("SELECT id,data FROM app.exercises WHERE user_id=$1")
+            .bind(user)
+            .fetch_all(db)
+            .await?;
     Ok(rows.into_iter().map(|(id, data)| (id, data.0)).collect())
 }
 pub async fn require_active(
@@ -237,7 +241,7 @@ pub async fn require_active(
     id: Uuid,
 ) -> Result<Workout, ApiError> {
     Ok(sqlx::query_scalar::<_, DbJson<Workout>>(
-        "SELECT data FROM app.workouts WHERE user_id=$1 AND id=$2 AND archived_at IS NULL",
+        "SELECT data FROM app.workouts WHERE user_id=$1 AND id=$2",
     )
     .bind(user)
     .bind(id)
@@ -259,7 +263,7 @@ async fn save_workout(
     let query = if create {
         "INSERT INTO app.workouts(id,user_id,data) VALUES($1,$2,$3) RETURNING *"
     } else {
-        "UPDATE app.workouts SET data=$3,updated_at=now() WHERE user_id=$2 AND id=$1 AND archived_at IS NULL RETURNING *"
+        "UPDATE app.workouts SET data=$3,updated_at=now() WHERE user_id=$2 AND id=$1 RETURNING *"
     };
     let row = sqlx::query_as(query)
         .bind(id)
@@ -284,24 +288,33 @@ async fn save_workout(
     tx.commit().await?;
     Ok(row)
 }
-async fn archive_workout(
+async fn delete_workout(
     State(s): State<AppState>,
     u: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     let mut tx = s.database.begin().await?;
     tasks::lock_tasks(&mut tx, u.id).await?;
-    let linked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.tasks WHERE user_id=$1 AND source_kind='habit' AND archived_at IS NULL AND habit->>'workout_id'=$2)").bind(u.id).bind(id.to_string()).fetch_one(&mut *tx).await?;
+    let linked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.tasks WHERE user_id=$1 AND source_kind='habit' AND habit->>'workout_id'=$2)").bind(u.id).bind(id.to_string()).fetch_one(&mut *tx).await?;
     if linked {
         return Err(domain::conflict(
-            "Unlink or archive connected habits before archiving a workout",
+            "Unlink or delete connected habits before deleting a workout",
         ));
     }
-    if sqlx::query("UPDATE app.workouts SET archived_at=now(),updated_at=now() WHERE user_id=$1 AND id=$2 AND archived_at IS NULL").bind(u.id).bind(id).execute(&mut *tx).await?.rows_affected()==0 {return Err(domain::not_found());}
+    if sqlx::query("DELETE FROM app.workouts WHERE user_id=$1 AND id=$2")
+        .bind(u.id)
+        .bind(id)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected()
+        == 0
+    {
+        return Err(domain::not_found());
+    }
     domain::event(
         &mut tx,
         u.id,
-        "workout_archived",
+        "workout_deleted",
         "workout",
         id,
         serde_json::json!({}),

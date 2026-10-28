@@ -65,9 +65,6 @@ async fn start(
     if !["work", "break"].contains(&v.phase.as_str()) {
         return Err(ApiError::validation("Pomodoro phase must be work or break"));
     }
-    if let Some(task) = v.task_id {
-        tasks::get_active(&s, u.id, task).await?;
-    }
     let settings = domain::settings(&s, u.id).await?;
     let duration = if v.phase == "work" {
         settings.pomodoro_work_minutes
@@ -76,6 +73,10 @@ async fn start(
     };
     let id = Uuid::new_v4();
     let mut tx = s.database.begin().await?;
+    tasks::lock_tasks(&mut tx, u.id).await?;
+    if let Some(task) = v.task_id {
+        tasks::get_active(&s, u.id, task).await?;
+    }
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1,17))")
         .bind(u.id.to_string())
         .execute(&mut *tx)

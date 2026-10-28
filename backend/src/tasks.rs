@@ -112,7 +112,7 @@ struct CalendarResponse {
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/tasks", get(list).post(create))
-        .route("/api/tasks/{id}", get(read).put(update).delete(archive))
+        .route("/api/tasks/{id}", get(read).put(update).delete(delete))
         .route(
             "/api/tasks/{id}/occurrences/{date}",
             axum::routing::post(mark),
@@ -123,7 +123,7 @@ pub fn routes() -> Router<AppState> {
 }
 
 pub async fn get_active(state: &AppState, user: Uuid, id: Uuid) -> Result<Task, ApiError> {
-    sqlx::query_as("SELECT * FROM app.tasks WHERE user_id=$1 AND id=$2 AND archived_at IS NULL")
+    sqlx::query_as("SELECT * FROM app.tasks WHERE user_id=$1 AND id=$2")
         .bind(user)
         .bind(id)
         .fetch_optional(&state.database)
@@ -148,7 +148,7 @@ async fn list(
         ));
     }
     let tasks = sqlx::query_as::<_, Task>(
-        "SELECT * FROM app.tasks WHERE user_id=$1 AND archived_at IS NULL AND source_kind='manual'
+        "SELECT * FROM app.tasks WHERE user_id=$1 AND source_kind='manual'
          AND ($2::text IS NULL OR strpos(lower(title||' '||description),lower($2))>0)
          AND ($3::text IS NULL OR status=$3) AND ($4::text IS NULL OR tags ? $4)
          ORDER BY created_at,id",
@@ -332,14 +332,13 @@ async fn save(
     let mut tx = s.database.begin().await?;
     lock_tasks(&mut tx, user).await?;
     if !create {
-        let kind: String = sqlx::query_scalar(
-            "SELECT source_kind FROM app.tasks WHERE id=$1 AND user_id=$2 AND archived_at IS NULL",
-        )
-        .bind(id)
-        .bind(user)
-        .fetch_optional(&mut *tx)
-        .await?
-        .ok_or_else(domain::not_found)?;
+        let kind: String =
+            sqlx::query_scalar("SELECT source_kind FROM app.tasks WHERE id=$1 AND user_id=$2")
+                .bind(id)
+                .bind(user)
+                .fetch_optional(&mut *tx)
+                .await?
+                .ok_or_else(domain::not_found)?;
         if kind != "manual" {
             return Err(domain::conflict("Use the source module to edit this task"));
         }
@@ -349,7 +348,7 @@ async fn save(
     } else {
         Some(
             sqlx::query_scalar::<_, String>(
-                "SELECT status FROM app.tasks WHERE id=$1 AND user_id=$2 AND archived_at IS NULL",
+                "SELECT status FROM app.tasks WHERE id=$1 AND user_id=$2",
             )
             .bind(id)
             .bind(user)
@@ -360,7 +359,7 @@ async fn save(
     };
     if let Some(parent) = v.parent_id {
         let parent_exists = sqlx::query_scalar::<_, Uuid>(
-            "SELECT id FROM app.tasks WHERE id=$1 AND user_id=$2 AND archived_at IS NULL AND source_kind='manual'",
+            "SELECT id FROM app.tasks WHERE id=$1 AND user_id=$2 AND source_kind='manual'",
         )
         .bind(parent)
         .bind(user)
@@ -387,7 +386,7 @@ async fn save(
          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *"
     } else {
         "UPDATE app.tasks SET title=$3,description=$4,status=$5,tags=$6,color=$7,priority=$8,parent_id=$9,due_at=$10,schedule=$11,updated_at=now()
-         WHERE id=$1 AND user_id=$2 AND archived_at IS NULL RETURNING *"
+         WHERE id=$1 AND user_id=$2 RETURNING *"
     };
     let task: Task = sqlx::query_as(query)
         .bind(id)
@@ -462,27 +461,31 @@ pub async fn lock_tasks(db: &mut PgConnection, user: Uuid) -> Result<(), ApiErro
         .await?;
     Ok(())
 }
-async fn archive(
+async fn delete(
     State(s): State<AppState>,
     u: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     let mut tx = s.database.begin().await?;
     lock_tasks(&mut tx, u.id).await?;
-    let kind: String = sqlx::query_scalar(
-        "SELECT source_kind FROM app.tasks WHERE id=$1 AND user_id=$2 AND archived_at IS NULL",
-    )
-    .bind(id)
-    .bind(u.id)
-    .fetch_optional(&mut *tx)
-    .await?
-    .ok_or_else(domain::not_found)?;
+    let kind: String =
+        sqlx::query_scalar("SELECT source_kind FROM app.tasks WHERE id=$1 AND user_id=$2")
+            .bind(id)
+            .bind(u.id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .ok_or_else(domain::not_found)?;
     if kind != "manual" {
         return Err(domain::conflict(
-            "Use the source module to archive this task",
+            "Use the source module to delete this task",
         ));
     }
-    let rows=sqlx::query("UPDATE app.tasks SET archived_at=now(),updated_at=now() WHERE id=$1 AND user_id=$2 AND archived_at IS NULL").bind(id).bind(u.id).execute(&mut *tx).await?.rows_affected();
+    let rows = sqlx::query("DELETE FROM app.tasks WHERE id=$1 AND user_id=$2")
+        .bind(id)
+        .bind(u.id)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
     if rows == 0 {
         return Err(domain::not_found());
     }
@@ -496,7 +499,7 @@ async fn archive(
     domain::event(
         &mut tx,
         u.id,
-        "task_archived",
+        "task_deleted",
         "task",
         id,
         serde_json::json!({}),
@@ -514,14 +517,12 @@ async fn mark(
     valid_status(&v.status)?;
     let mut tx = s.database.begin().await?;
     lock_tasks(&mut tx, u.id).await?;
-    let task: Task = sqlx::query_as(
-        "SELECT * FROM app.tasks WHERE id=$1 AND user_id=$2 AND archived_at IS NULL",
-    )
-    .bind(id)
-    .bind(u.id)
-    .fetch_optional(&mut *tx)
-    .await?
-    .ok_or_else(domain::not_found)?;
+    let task: Task = sqlx::query_as("SELECT * FROM app.tasks WHERE id=$1 AND user_id=$2")
+        .bind(id)
+        .bind(u.id)
+        .fetch_optional(&mut *tx)
+        .await?
+        .ok_or_else(domain::not_found)?;
     if task.source_kind != "manual" {
         return Err(domain::conflict("Use habit marks for this occurrence"));
     }
@@ -594,23 +595,26 @@ async fn history(
     u: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Vec<TaskOccurrenceResponse>>, ApiError> {
-    let (active, schedule) = sqlx::query_as::<_, (bool, Option<DbJson<Schedule>>)>(
-        "SELECT archived_at IS NULL,schedule FROM app.tasks WHERE id=$1 AND user_id=$2",
+    let rule = sqlx::query_as::<_, (Option<DbJson<Schedule>>,)>(
+        "SELECT schedule FROM app.tasks WHERE id=$1 AND user_id=$2 AND source_kind='manual'",
     )
     .bind(id)
     .bind(u.id)
     .fetch_optional(&s.database)
-    .await?
-    .ok_or_else(domain::not_found)?;
-    let rows = sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT snapshot FROM app.task_occurrences WHERE user_id=$1 AND task_id=$2 ORDER BY occurrence_date DESC").bind(u.id).bind(id).fetch_all(&s.database).await?;
+    .await?;
+    let rows = sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT snapshot FROM app.task_occurrences WHERE user_id=$1 AND task_id=$2 AND snapshot->'task'->>'source_kind'='manual' ORDER BY occurrence_date DESC").bind(u.id).bind(id).fetch_all(&s.database).await?;
+    if rule.is_none() && rows.is_empty() {
+        return Err(domain::not_found());
+    }
     Ok(Json(
         rows.into_iter()
             .map(|row| {
                 let occurrence = row.0;
-                let editable = active
-                    && schedule
+                let editable = rule.as_ref().is_some_and(|(schedule,)| {
+                    schedule
                         .as_ref()
-                        .is_none_or(|schedule| schedule.occurs_on(occurrence.date));
+                        .is_none_or(|schedule| schedule.occurs_on(occurrence.date))
+                });
                 TaskOccurrenceResponse {
                     occurrence,
                     editable,
@@ -663,7 +667,7 @@ pub async fn occurrences(
         .parse::<chrono_tz::Tz>()
         .map_err(|_| ApiError::internal())?;
     let active = sqlx::query_as::<_, Task>(
-        "SELECT * FROM app.tasks WHERE user_id=$1 AND archived_at IS NULL AND source_kind='manual'",
+        "SELECT * FROM app.tasks WHERE user_id=$1 AND source_kind='manual'",
     )
     .bind(user)
     .fetch_all(&s.database)
@@ -703,7 +707,7 @@ pub async fn occurrences(
     let expanded_to = to
         .checked_add_signed(chrono::Duration::days(3))
         .unwrap_or(NaiveDate::MAX);
-    let saved=sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT o.snapshot FROM app.task_occurrences o JOIN app.tasks t ON t.id=o.task_id AND t.user_id=o.user_id WHERE o.user_id=$1 AND t.source_kind='manual' AND o.occurrence_date BETWEEN $2 AND $3").bind(user).bind(expanded_from).bind(expanded_to).fetch_all(&s.database).await?;
+    let saved=sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT snapshot FROM app.task_occurrences WHERE user_id=$1 AND snapshot->'task'->>'source_kind'='manual' AND occurrence_date BETWEEN $2 AND $3").bind(user).bind(expanded_from).bind(expanded_to).fetch_all(&s.database).await?;
     for value in saved {
         let occurrence = value.0;
         let key = (occurrence.date, occurrence.task.id);

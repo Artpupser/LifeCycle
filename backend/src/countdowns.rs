@@ -51,14 +51,16 @@ struct Countdown {
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/countdowns", get(list).post(create))
-        .route(
-            "/api/countdowns/{id}",
-            get(read).put(update).delete(archive),
-        )
+        .route("/api/countdowns/{id}", get(read).put(update).delete(delete))
 }
 async fn list(State(s): State<AppState>, u: CurrentUser) -> Result<Json<Vec<Countdown>>, ApiError> {
     let (today, zone) = domain::local_today(&s, u.id).await?;
-    let rows=sqlx::query_as::<_,Row>("SELECT * FROM app.countdowns WHERE user_id=$1 AND archived_at IS NULL ORDER BY target_date,id").bind(u.id).fetch_all(&s.database).await?;
+    let rows = sqlx::query_as::<_, Row>(
+        "SELECT * FROM app.countdowns WHERE user_id=$1 ORDER BY target_date,id",
+    )
+    .bind(u.id)
+    .fetch_all(&s.database)
+    .await?;
     Ok(Json(
         rows.into_iter()
             .map(|r| computed(r, today, &zone))
@@ -70,14 +72,12 @@ async fn read(
     u: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Countdown>, ApiError> {
-    let row = sqlx::query_as::<_, Row>(
-        "SELECT * FROM app.countdowns WHERE id=$1 AND user_id=$2 AND archived_at IS NULL",
-    )
-    .bind(id)
-    .bind(u.id)
-    .fetch_optional(&s.database)
-    .await?
-    .ok_or_else(domain::not_found)?;
+    let row = sqlx::query_as::<_, Row>("SELECT * FROM app.countdowns WHERE id=$1 AND user_id=$2")
+        .bind(id)
+        .bind(u.id)
+        .fetch_optional(&s.database)
+        .await?
+        .ok_or_else(domain::not_found)?;
     let (today, zone) = domain::local_today(&s, u.id).await?;
     Ok(Json(computed(row, today, &zone)?))
 }
@@ -119,7 +119,7 @@ async fn save(
     let query = if create {
         "INSERT INTO app.countdowns(id,user_id,title,category,icon,target_date,repeat_yearly) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *"
     } else {
-        "UPDATE app.countdowns SET title=$3,category=$4,icon=$5,target_date=$6,repeat_yearly=$7,updated_at=now() WHERE id=$1 AND user_id=$2 AND archived_at IS NULL RETURNING *"
+        "UPDATE app.countdowns SET title=$3,category=$4,icon=$5,target_date=$6,repeat_yearly=$7,updated_at=now() WHERE id=$1 AND user_id=$2 RETURNING *"
     };
     let row = sqlx::query_as::<_, Row>(query)
         .bind(id)
@@ -149,20 +149,25 @@ async fn save(
     tx.commit().await?;
     Ok(result)
 }
-async fn archive(
+async fn delete(
     State(s): State<AppState>,
     u: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     let mut tx = s.database.begin().await?;
-    let rows=sqlx::query("UPDATE app.countdowns SET archived_at=now(),updated_at=now() WHERE id=$1 AND user_id=$2 AND archived_at IS NULL").bind(id).bind(u.id).execute(&mut *tx).await?.rows_affected();
+    let rows = sqlx::query("DELETE FROM app.countdowns WHERE id=$1 AND user_id=$2")
+        .bind(id)
+        .bind(u.id)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
     if rows == 0 {
         return Err(domain::not_found());
     }
     domain::event(
         &mut tx,
         u.id,
-        "countdown_archived",
+        "countdown_deleted",
         "countdown",
         id,
         serde_json::json!({}),

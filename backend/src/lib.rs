@@ -1,3 +1,4 @@
+mod analytics;
 pub mod auth;
 pub mod config;
 mod countdowns;
@@ -7,6 +8,7 @@ pub mod domain;
 pub mod error;
 pub mod habits;
 mod health;
+mod intimacy;
 mod mail;
 mod media;
 mod notes;
@@ -47,6 +49,8 @@ pub fn router(state: AppState) -> Router {
         .merge(pomodoro::routes())
         .merge(workouts::routes())
         .merge(workout_sessions::routes())
+        .merge(intimacy::routes())
+        .merge(analytics::routes())
         .fallback(error::not_found)
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),

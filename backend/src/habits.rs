@@ -123,13 +123,14 @@ struct Version {
     task_id: Uuid,
     effective_from: NaiveDate,
     snapshot: DbJson<Task>,
+    ended_at: Option<DateTime<Utc>>,
 }
 
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/habits", get(list).post(create))
         .route("/api/habits/statistics", get(statistics))
-        .route("/api/habits/{id}", get(read).put(update).delete(archive))
+        .route("/api/habits/{id}", get(read).put(update).delete(delete))
         .route("/api/habits/{id}/marks/{date}", post(mark))
         .route("/api/habits/{id}/history", get(history))
         .route("/api/habits/{id}/statistics", get(single_statistics))
@@ -142,7 +143,7 @@ async fn list(
     Query(q): Query<Search>,
 ) -> Result<Json<Vec<Task>>, ApiError> {
     q.validate()?;
-    Ok(Json(sqlx::query_as("SELECT * FROM app.tasks WHERE user_id=$1 AND source_kind='habit' AND archived_at IS NULL AND ($2::text IS NULL OR strpos(lower(title||' '||description),lower($2))>0) AND ($3::text IS NULL OR tags ? $3) ORDER BY created_at,id")
+    Ok(Json(sqlx::query_as("SELECT * FROM app.tasks WHERE user_id=$1 AND source_kind='habit' AND ($2::text IS NULL OR strpos(lower(title||' '||description),lower($2))>0) AND ($3::text IS NULL OR tags ? $3) ORDER BY created_at,id")
         .bind(u.id).bind(q.q).bind(q.tag).fetch_all(&s.database).await?))
 }
 async fn owned(s: &AppState, user: Uuid, id: Uuid) -> Result<Task, ApiError> {
@@ -159,6 +160,14 @@ async fn read(
     Path(id): Path<Uuid>,
 ) -> Result<Json<Task>, ApiError> {
     Ok(Json(owned(&s, u.id, id).await?))
+}
+pub(crate) async fn historical_tasks(s: &AppState, user: Uuid) -> Result<Vec<Task>, ApiError> {
+    Ok(sqlx::query_scalar::<_, DbJson<Task>>("SELECT DISTINCT ON(task_id) snapshot FROM app.habit_versions WHERE user_id=$1 ORDER BY task_id,effective_from DESC")
+        .bind(user).fetch_all(&s.database).await?.into_iter().map(|v|v.0).collect())
+}
+async fn historical_task(s: &AppState, user: Uuid, id: Uuid) -> Result<Task, ApiError> {
+    Ok(sqlx::query_scalar::<_, DbJson<Task>>("SELECT snapshot FROM app.habit_versions WHERE user_id=$1 AND task_id=$2 ORDER BY effective_from DESC LIMIT 1")
+        .bind(user).bind(id).fetch_optional(&s.database).await?.ok_or_else(domain::not_found)?.0)
 }
 async fn create(
     State(s): State<AppState>,
@@ -205,22 +214,28 @@ async fn save(
         crate::workouts::require_active(&mut tx, user, workout).await?;
     }
     if !create {
-        let current: Task = sqlx::query_as("SELECT * FROM app.tasks WHERE id=$1 AND user_id=$2 AND source_kind='habit' AND archived_at IS NULL")
-            .bind(id).bind(user).fetch_optional(&mut *tx).await?.ok_or_else(domain::not_found)?;
+        let current: Task = sqlx::query_as(
+            "SELECT * FROM app.tasks WHERE id=$1 AND user_id=$2 AND source_kind='habit'",
+        )
+        .bind(id)
+        .bind(user)
+        .fetch_optional(&mut *tx)
+        .await?
+        .ok_or_else(domain::not_found)?;
         if current
             .schedule
             .as_ref()
             .is_some_and(|old| old.timezone != v.schedule.timezone)
         {
             return Err(domain::conflict(
-                "Habit timezone is fixed; archive and create a new habit to change it",
+                "Habit timezone is fixed; delete and create a new habit to change it",
             ));
         }
     }
     let query = if create {
         "INSERT INTO app.tasks(id,user_id,title,description,tags,color,schedule,source_kind,source_id,habit) VALUES($1,$2,$3,$4,$5,$6,$7,'habit',$1,$8) RETURNING *"
     } else {
-        "UPDATE app.tasks SET title=$3,description=$4,tags=$5,color=$6,schedule=$7,habit=$8,updated_at=now() WHERE id=$1 AND user_id=$2 AND source_kind='habit' AND archived_at IS NULL RETURNING *"
+        "UPDATE app.tasks SET title=$3,description=$4,tags=$5,color=$6,schedule=$7,habit=$8,updated_at=now() WHERE id=$1 AND user_id=$2 AND source_kind='habit' RETURNING *"
     };
     let task: Task = sqlx::query_as(query)
         .bind(id)
@@ -256,22 +271,28 @@ async fn save(
     tx.commit().await?;
     Ok(task)
 }
-async fn archive(
+async fn delete(
     State(s): State<AppState>,
     u: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     let mut tx = s.database.begin().await?;
     tasks::lock_tasks(&mut tx, u.id).await?;
-    let count=sqlx::query("UPDATE app.tasks SET archived_at=now(),updated_at=now() WHERE id=$1 AND user_id=$2 AND source_kind='habit' AND archived_at IS NULL")
-        .bind(id).bind(u.id).execute(&mut *tx).await?.rows_affected();
+    sqlx::query("UPDATE app.habit_versions SET ended_at=now() WHERE user_id=$1 AND task_id=$2 AND ended_at IS NULL").bind(u.id).bind(id).execute(&mut *tx).await?;
+    let count =
+        sqlx::query("DELETE FROM app.tasks WHERE id=$1 AND user_id=$2 AND source_kind='habit'")
+            .bind(id)
+            .bind(u.id)
+            .execute(&mut *tx)
+            .await?
+            .rows_affected();
     if count == 0 {
         return Err(domain::not_found());
     }
     domain::event(
         &mut tx,
         u.id,
-        "habit_archived",
+        "habit_deleted",
         "habit",
         id,
         serde_json::json!({}),
@@ -386,7 +407,13 @@ async fn editable_occurrence(
     id: Uuid,
     date: NaiveDate,
 ) -> Result<(Task, Option<TaskOccurrence>), ApiError> {
-    let active: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.tasks WHERE user_id=$1 AND id=$2 AND source_kind='habit' AND archived_at IS NULL)").bind(user).bind(id).fetch_one(&mut *db).await?;
+    let active: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM app.tasks WHERE user_id=$1 AND id=$2 AND source_kind='habit')",
+    )
+    .bind(user)
+    .bind(id)
+    .fetch_one(&mut *db)
+    .await?;
     if !active {
         return Err(domain::not_found());
     }
@@ -493,16 +520,15 @@ pub async fn occurrences(
     let zone = timezone
         .parse::<chrono_tz::Tz>()
         .map_err(|_| ApiError::internal())?;
-    let versions=sqlx::query_as::<_,Version>("SELECT task_id,effective_from,snapshot FROM app.habit_versions WHERE user_id=$1 ORDER BY task_id,effective_from")
+    let versions=sqlx::query_as::<_,Version>("SELECT task_id,effective_from,snapshot,ended_at FROM app.habit_versions WHERE user_id=$1 ORDER BY task_id,effective_from")
         .bind(user).fetch_all(&s.database).await?;
-    let archived: BTreeMap<Uuid, Option<DateTime<Utc>>> = sqlx::query_as(
-        "SELECT id,archived_at FROM app.tasks WHERE user_id=$1 AND source_kind='habit'",
-    )
-    .bind(user)
-    .fetch_all(&s.database)
-    .await?
-    .into_iter()
-    .collect();
+    let active: BTreeSet<Uuid> =
+        sqlx::query_scalar("SELECT id FROM app.tasks WHERE user_id=$1 AND source_kind='habit'")
+            .bind(user)
+            .fetch_all(&s.database)
+            .await?
+            .into_iter()
+            .collect();
     let mut output = BTreeMap::new();
     for (index, version) in versions.iter().enumerate() {
         let task = &version.snapshot.0;
@@ -517,7 +543,7 @@ pub async fn occurrences(
             if date < version.effective_from || next.is_some_and(|end| date >= end) {
                 continue;
             }
-            let ended = archived.get(&task.id).copied().flatten();
+            let ended = version.ended_at;
             let local_today = Utc::now()
                 .with_timezone(
                     &schedule
@@ -548,7 +574,7 @@ pub async fn occurrences(
                         status: "todo".into(),
                         habit_mark: None,
                     },
-                    editable: ended.is_none() && date <= local_today,
+                    editable: active.contains(&task.id) && date <= local_today,
                 },
             );
         }
@@ -559,7 +585,7 @@ pub async fn occurrences(
     let upper = to
         .checked_add_signed(Duration::days(3))
         .unwrap_or(NaiveDate::MAX);
-    let saved=sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT o.snapshot FROM app.task_occurrences o JOIN app.tasks t ON t.user_id=o.user_id AND t.id=o.task_id WHERE o.user_id=$1 AND t.source_kind='habit' AND o.occurrence_date BETWEEN $2 AND $3")
+    let saved=sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT snapshot FROM app.task_occurrences WHERE user_id=$1 AND snapshot->'task'->>'source_kind'='habit' AND occurrence_date BETWEEN $2 AND $3")
         .bind(user).bind(lower).bind(upper).fetch_all(&s.database).await?;
     for row in saved {
         let occurrence = row.0;
@@ -570,7 +596,7 @@ pub async fn occurrences(
             output.insert(
                 key,
                 TaskOccurrenceResponse {
-                    editable: archived.get(&occurrence.task.id) == Some(&None),
+                    editable: active.contains(&occurrence.task.id),
                     occurrence,
                 },
             );
@@ -583,13 +609,14 @@ async fn history(
     u: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Vec<TaskOccurrenceResponse>>, ApiError> {
-    owned(&s, u.id, id).await?;
-    let active: bool =
-        sqlx::query_scalar("SELECT archived_at IS NULL FROM app.tasks WHERE user_id=$1 AND id=$2")
-            .bind(u.id)
-            .bind(id)
-            .fetch_one(&s.database)
-            .await?;
+    historical_task(&s, u.id, id).await?;
+    let active: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM app.tasks WHERE user_id=$1 AND id=$2 AND source_kind='habit')",
+    )
+    .bind(u.id)
+    .bind(id)
+    .fetch_one(&s.database)
+    .await?;
     let rows=sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT snapshot FROM app.task_occurrences WHERE user_id=$1 AND task_id=$2 ORDER BY occurrence_date DESC")
         .bind(u.id).bind(id).fetch_all(&s.database).await?;
     Ok(Json(
@@ -604,24 +631,28 @@ async fn history(
 
 #[derive(Serialize, Default, Debug)]
 pub struct HabitStatistics {
-    id: Uuid,
-    title: String,
-    expected: u32,
-    completed: u32,
-    skipped: u32,
-    cancelled: u32,
-    missed: u32,
-    pending: u32,
-    completed_sub_habits: u32,
-    total_sub_habits: u32,
-    completion_rate: f64,
-    current_streak: u32,
-    best_streak: u32,
-    longest_missed_streak: u32,
-    shortest_missed_streak: u32,
-    last_missed_streak: u32,
+    pub(crate) id: Uuid,
+    pub(crate) title: String,
+    pub(crate) expected: u32,
+    pub(crate) completed: u32,
+    pub(crate) skipped: u32,
+    pub(crate) cancelled: u32,
+    pub(crate) missed: u32,
+    pub(crate) pending: u32,
+    pub(crate) completed_sub_habits: u32,
+    pub(crate) total_sub_habits: u32,
+    pub(crate) completion_rate: f64,
+    pub(crate) current_streak: u32,
+    pub(crate) best_streak: u32,
+    pub(crate) longest_missed_streak: u32,
+    pub(crate) shortest_missed_streak: u32,
+    pub(crate) last_missed_streak: u32,
 }
-fn summarize(task: &Task, rows: &[TaskOccurrenceResponse], now: DateTime<Utc>) -> HabitStatistics {
+pub(crate) fn summarize(
+    task: &Task,
+    rows: &[TaskOccurrenceResponse],
+    now: DateTime<Utc>,
+) -> HabitStatistics {
     let mut result = HabitStatistics {
         id: task.id,
         title: task.title.clone(),
@@ -706,12 +737,7 @@ async fn statistics(
     validate_range(q.from, q.to)?;
     let settings = domain::settings(&s, u.id).await?;
     let rows = occurrences(&s, u.id, q.from, q.to, &settings.timezone).await?;
-    let tasks = sqlx::query_as::<_, Task>(
-        "SELECT * FROM app.tasks WHERE user_id=$1 AND source_kind='habit' ORDER BY created_at,id",
-    )
-    .bind(u.id)
-    .fetch_all(&s.database)
-    .await?;
+    let tasks = historical_tasks(&s, u.id).await?;
     let now = Utc::now();
     let mut stats: Vec<_> = tasks
         .iter()
@@ -731,7 +757,7 @@ async fn single_statistics(
     Path(id): Path<Uuid>,
     Query(q): Query<Range>,
 ) -> Result<Json<HabitStatistics>, ApiError> {
-    let task = owned(&s, u.id, id).await?;
+    let task = historical_task(&s, u.id, id).await?;
     let settings = domain::settings(&s, u.id).await?;
     let rows = occurrences(&s, u.id, q.from, q.to, &settings.timezone).await?;
     Ok(Json(summarize(&task, &rows, Utc::now())))
@@ -764,8 +790,13 @@ async fn reminders(
     let receipts:BTreeSet<(Uuid,NaiveDate)>=sqlx::query_as("SELECT task_id,occurrence_date FROM app.habit_reminder_receipts WHERE user_id=$1 AND occurrence_date BETWEEN $2 AND $3")
         .bind(u.id).bind(now.date_naive()-Duration::days(4)).bind(now.date_naive()+Duration::days(4)).fetch_all(&s.database).await?.into_iter().collect();
     let mut output = vec![];
-    let current: BTreeMap<Uuid, DbJson<HabitConfig>> = sqlx::query_as("SELECT id,habit FROM app.tasks WHERE user_id=$1 AND source_kind='habit' AND archived_at IS NULL")
-        .bind(u.id).fetch_all(&s.database).await?.into_iter().collect();
+    let current: BTreeMap<Uuid, DbJson<HabitConfig>> =
+        sqlx::query_as("SELECT id,habit FROM app.tasks WHERE user_id=$1 AND source_kind='habit'")
+            .bind(u.id)
+            .fetch_all(&s.database)
+            .await?
+            .into_iter()
+            .collect();
     for row in rows {
         let o = row.occurrence;
         let Some(config) = current.get(&o.task.id) else {

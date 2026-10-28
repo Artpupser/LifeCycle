@@ -65,7 +65,7 @@ test("habit children, Markdown marks and historical snapshots integrate with Tod
   await expect(page.getByRole("dialog")).toContainText("2/2");
   await page.getByRole("button", { name: "Закрыть окно", exact: true }).click();
   page.once("dialog", (dialog) => void dialog.accept());
-  await page.getByRole("button", { name: "Архивировать привычку", exact: true }).click();
+  await page.getByRole("button", { name: "Удалить привычку", exact: true }).click();
   await expect(page.getByRole("button", { name: "Изменить привычку", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Открыть историю", exact: true }).click();
   await expect(page.getByRole("dialog").getByLabel("Результат Утренний ритм", { exact: true })).toBeDisabled();
