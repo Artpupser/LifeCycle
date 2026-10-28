@@ -13,6 +13,8 @@ export class ApiError extends Error {
 }
 
 export function apiErrorMessage(status: number, code: string) {
+  if (code === "stale_workout") return "Тренировка изменена в другом окне. Обновите состояние и повторите действие.";
+  if (status === 409) return "Действие недоступно в текущем состоянии. Проверьте активную тренировку и связи с планами или привычками, затем обновите данные.";
   if (code === "invalid_code") return "Код неверный или срок его действия истёк. Проверьте письмо или запросите новый код.";
   if (code === "unauthenticated") return "Сессия завершена. Войдите снова.";
   if (code === "mail_unavailable") return "Почтовый сервис временно недоступен. Повторите попытку позже.";

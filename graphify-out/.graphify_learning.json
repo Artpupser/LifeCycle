@@ -1,5 +1,70 @@
 {
-  "generated_at": "2026-10-28T11:57:49.782558+00:00",
-  "nodes": {},
+  "generated_at": "2026-10-28T12:20:27.145370+00:00",
+  "nodes": {
+    "backend_src_habits": {
+      "code_fingerprint": "f4ff328849fa0d4135edfafc711396555165effdbc7a2617f982f576a32a7224",
+      "label": "habits.rs",
+      "last": "2026-10-28T12:13:14.066251+00:00",
+      "provenance": [
+        {
+          "date": "2026-10-28T12:13:14.066251+00:00",
+          "outcome": "useful",
+          "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
+        }
+      ],
+      "score": 0.999884194,
+      "source_file": "backend/src/habits.rs",
+      "status": "tentative",
+      "uses": 1
+    },
+    "backend_src_schedule": {
+      "code_fingerprint": "30b70cbabf2425b8f6228a2f44dae522f24a7560dc19755b9bbb0d1545e42053",
+      "label": "schedule.rs",
+      "last": "2026-10-28T12:13:14.066251+00:00",
+      "provenance": [
+        {
+          "date": "2026-10-28T12:13:14.066251+00:00",
+          "outcome": "useful",
+          "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
+        }
+      ],
+      "score": 0.999884194,
+      "source_file": "backend/src/schedule.rs",
+      "status": "tentative",
+      "uses": 1
+    },
+    "backend_src_tasks": {
+      "code_fingerprint": "e64fb7d0c799fd0313dc861b9ede9d4338a10ac5cc74f9ae4817e067c5f94595",
+      "label": "tasks.rs",
+      "last": "2026-10-28T12:13:14.066251+00:00",
+      "provenance": [
+        {
+          "date": "2026-10-28T12:13:14.066251+00:00",
+          "outcome": "useful",
+          "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
+        }
+      ],
+      "score": 0.999884194,
+      "source_file": "backend/src/tasks.rs",
+      "status": "tentative",
+      "uses": 1
+    },
+    "project_project_progress": {
+      "code_fingerprint": "0a701efee74b212f8f364daf57b0282aa8e9b50ec4cf760d96f320305959e798",
+      "label": "project_progress.md",
+      "last": "2026-10-28T12:13:14.066251+00:00",
+      "provenance": [
+        {
+          "date": "2026-10-28T12:13:14.066251+00:00",
+          "outcome": "useful",
+          "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
+        }
+      ],
+      "score": 0.999884194,
+      "source_file": "project/project_progress.md",
+      "status": "tentative",
+      "uses": 1
+    }
+  },
   "version": 1
 }

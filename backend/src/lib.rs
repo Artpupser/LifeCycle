@@ -16,6 +16,9 @@ pub mod schedule;
 pub mod settings;
 pub mod state;
 pub mod tasks;
+mod workout_plan;
+mod workout_sessions;
+pub mod workouts;
 
 use std::time::Duration;
 
@@ -42,6 +45,8 @@ pub fn router(state: AppState) -> Router {
         .merge(media::routes())
         .merge(countdowns::routes())
         .merge(pomodoro::routes())
+        .merge(workouts::routes())
+        .merge(workout_sessions::routes())
         .fallback(error::not_found)
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),

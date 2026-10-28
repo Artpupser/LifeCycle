@@ -36,9 +36,9 @@
     "semantic_hash": ""
   },
   "backend/src/lib.rs": {
-    "mtime": 1793188968.4210262,
-    "seen": 1793189423.4790213,
-    "ast_hash": "cbd06ee4ec6ba6d2cdae2b7ee4298d3c",
+    "mtime": 1793190326.2959278,
+    "seen": 1793191339.7636263,
+    "ast_hash": "79a6ef218731af8d96dd04ab5aed3a6b",
     "semantic_hash": ""
   },
   "backend/src/main.rs": {
@@ -90,9 +90,9 @@
     "semantic_hash": ""
   },
   "frontend/src/app.tsx": {
-    "mtime": 1793188898.5020967,
-    "seen": 1793189423.479441,
-    "ast_hash": "b6a00bdac27c32983bc0da093f0b4957",
+    "mtime": 1793190754.065281,
+    "seen": 1793191339.764102,
+    "ast_hash": "152cc869cb3f3ab56039ebd4451dbade",
     "semantic_hash": ""
   },
   "frontend/src/components/ui/button.tsx": {
@@ -174,21 +174,21 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1793189312.3460565,
-    "seen": 1793189423.4806938,
-    "ast_hash": "1479916e35394852c6f6f28980fbb15f",
+    "mtime": 1793191292.366945,
+    "seen": 1793191339.765469,
+    "ast_hash": "a1f605c6d3853f8f46fe94cd0b3246e7",
     "semantic_hash": ""
   },
   "backend/README.md": {
-    "mtime": 1793189134.4243624,
-    "seen": 1793189423.4806952,
-    "ast_hash": "6fa2a74adcde8269b87e6842f6fa1cf6",
+    "mtime": 1793191183.0945935,
+    "seen": 1793191339.7654705,
+    "ast_hash": "a238cf56b6b37d2e6097e206c82392c4",
     "semantic_hash": ""
   },
   "frontend/README.md": {
-    "mtime": 1793189390.528032,
-    "seen": 1793189423.4806967,
-    "ast_hash": "2c1add931cb4d3d3487d09a98d84f6cd",
+    "mtime": 1793191292.2739432,
+    "seen": 1793191339.7654717,
+    "ast_hash": "36e1e732363de7c96308812f9a26234e",
     "semantic_hash": ""
   },
   "frontend/index.html": {
@@ -210,9 +210,9 @@
     "semantic_hash": ""
   },
   "project/project_progress.md": {
-    "mtime": 1793189134.4243624,
-    "seen": 1793189423.480774,
-    "ast_hash": "49ba36bc1ce592c1ee2457210c7919e3",
+    "mtime": 1793190178.0056741,
+    "seen": 1793191339.7655888,
+    "ast_hash": "401c4ca8dc80a132749892aaed2baeb0",
     "semantic_hash": ""
   },
   "project/project_projective.md": {
@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "project/prompts.md": {
-    "mtime": 1793188429.7894237,
-    "seen": 1793189423.4807763,
-    "ast_hash": "8884399065c0b29b7919b04ea7750b8a",
+    "mtime": 1793189969.4709253,
+    "seen": 1793191339.765611,
+    "ast_hash": "fcfdd5ec2ff818ccc5e2b2343c872a99",
     "semantic_hash": ""
   },
   "frontend/src/assets/logo.svg": {
@@ -276,9 +276,9 @@
     "semantic_hash": ""
   },
   "frontend/src/lib/api.ts": {
-    "mtime": 1793038624.949644,
-    "seen": 1793038691.5234072,
-    "ast_hash": "c7f7ff75e97e47cd383704ab39468456",
+    "mtime": 1793190754.0012794,
+    "seen": 1793191339.7651598,
+    "ast_hash": "2a09df38690849ce6dafed9b4073ce29",
     "semantic_hash": ""
   },
   "scripts/auth_smoke.py": {
@@ -426,8 +426,8 @@
     "semantic_hash": ""
   },
   "frontend/test-results/.last-run.json": {
-    "mtime": 1793189412.1649816,
-    "seen": 1793189423.480503,
+    "mtime": 1793191016.9360046,
+    "seen": 1793191339.7652578,
     "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
     "semantic_hash": ""
   },
@@ -504,9 +504,9 @@
     "semantic_hash": ""
   },
   "frontend/src/features/planning/occurrence-list.tsx": {
-    "mtime": 1793188898.5020967,
-    "seen": 1793189423.4799945,
-    "ast_hash": "8f628f94d5bde94936d57e337e746dec",
+    "mtime": 1793190754.065281,
+    "seen": 1793191339.7647212,
+    "ast_hash": "bacff50482242a43641acf236cc85c72",
     "semantic_hash": ""
   },
   "frontend/src/features/planning/task-editor.tsx": {
@@ -558,21 +558,21 @@
     "semantic_hash": ""
   },
   "frontend/test-results/core-countdown-edits-and-p-8d620-cancellation-work-on-mobile/mobile-countdown.png": {
-    "mtime": 1793189408.9249842,
-    "seen": 1793189423.4808044,
-    "ast_hash": "38830e93ab768af521f125e8647fb853",
+    "mtime": 1793191005.825764,
+    "seen": 1793191339.7656376,
+    "ast_hash": "2be39452f150e0f186ae5f9775af7141",
     "semantic_hash": ""
   },
   "frontend/test-results/core-countdown-edits-and-p-8d620-cancellation-work-on-mobile/mobile-pomodoro.png": {
-    "mtime": 1793189409.157984,
-    "seen": 1793189423.4808056,
-    "ast_hash": "19bb6247d0d6400536960e680b804ee4",
+    "mtime": 1793191006.0447688,
+    "seen": 1793191339.7656388,
+    "ast_hash": "25a22212a1dbeb88f9e1329deb2024aa",
     "semantic_hash": ""
   },
   "backend/src/habits.rs": {
-    "mtime": 1793189056.1317053,
-    "seen": 1793189423.4789934,
-    "ast_hash": "e514954f72d630f04ad5302fa5bf3821",
+    "mtime": 1793191270.8544827,
+    "seen": 1793191339.7635984,
+    "ast_hash": "e23fe8773a19b2d7d65ac951337ede06",
     "semantic_hash": ""
   },
   "frontend/e2e/habits.spec.ts": {
@@ -588,9 +588,9 @@
     "semantic_hash": ""
   },
   "frontend/src/features/habits/habit-editor.tsx": {
-    "mtime": 1793189047.502416,
-    "seen": 1793189423.4798415,
-    "ast_hash": "71a98178084cdbb03ad11fe16d2f9d30",
+    "mtime": 1793190754.065281,
+    "seen": 1793191339.7645197,
+    "ast_hash": "d031647f182dd0cff1a7e1927dac36f3",
     "semantic_hash": ""
   },
   "frontend/src/features/habits/habits-page.tsx": {
@@ -606,21 +606,105 @@
     "semantic_hash": ""
   },
   "frontend/src/features/habits/types.ts": {
-    "mtime": 1793188864.2479012,
-    "seen": 1793189423.4798453,
-    "ast_hash": "5f19e2d5fb43a8a484b97a840801f5f1",
+    "mtime": 1793190753.9072773,
+    "seen": 1793191339.7645776,
+    "ast_hash": "7388607cba04351353e8d25c23ff2702",
     "semantic_hash": ""
   },
   "scripts/habits_smoke.py": {
-    "mtime": 1793189344.0954518,
-    "seen": 1793189423.480631,
-    "ast_hash": "160745f1bb6335c6daecad26bd2e41d4",
+    "mtime": 1793189475.39721,
+    "seen": 1793189596.2591062,
+    "ast_hash": "ad8ac81b2deec53e7538d64ef800c834",
     "semantic_hash": ""
   },
   "frontend/test-results/habits-habit-children-Mark-10250-oday-and-calendar-on-mobile/mobile-habits.png": {
-    "mtime": 1793189411.1829822,
-    "seen": 1793189423.4808068,
-    "ast_hash": "17804dd14ec64f2fa40d23d0919bc630",
+    "mtime": 1793191008.1038134,
+    "seen": 1793191339.76564,
+    "ast_hash": "b81c07bbf3685a7ac63446a3e2f8f27e",
+    "semantic_hash": ""
+  },
+  "graphify-out/memory/query_20261028_121314_067e77b7_\u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u044c_lifecycle_\u043f\u043e\u0441\u043b\u0435_\u044d\u0442\u0430\u043f\u0430_3_\u0438_\u0432\u044b\u043f\u043e\u043b\u043d\u0438\u0442\u044c_\u044d.md": {
+    "mtime": 1793189594.0659454,
+    "seen": 1793189596.259261,
+    "ast_hash": "761528eafaafce4e243cebe282f80f05",
+    "semantic_hash": ""
+  },
+  "backend/src/workout_plan.rs": {
+    "mtime": 1793191094.539683,
+    "seen": 1793191339.7638705,
+    "ast_hash": "790c1a14bf507ac4fa79936aea175849",
+    "semantic_hash": ""
+  },
+  "backend/src/workout_sessions.rs": {
+    "mtime": 1793191270.8854833,
+    "seen": 1793191339.763872,
+    "ast_hash": "8bc08ad1392beeec3e189c9fc3ae0d3f",
+    "semantic_hash": ""
+  },
+  "backend/src/workouts.rs": {
+    "mtime": 1793190781.3238778,
+    "seen": 1793191339.7638733,
+    "ast_hash": "55e58d1af2429e52d33571c6ecf4c903",
+    "semantic_hash": ""
+  },
+  "frontend/e2e/workouts.spec.ts": {
+    "mtime": 1793190988.7293935,
+    "seen": 1793191339.7640145,
+    "ast_hash": "9cd28d3814ea3072d4060e7c06701a8c",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/workouts/exercise-editor.tsx": {
+    "mtime": 1793190516.0510225,
+    "seen": 1793191339.7651024,
+    "ast_hash": "f94571115bc38f6ffb25712a116f684a",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/workouts/types.ts": {
+    "mtime": 1793190831.481974,
+    "seen": 1793191339.7651038,
+    "ast_hash": "185c03071e31707ed10b7f1709f179a2",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/workouts/workout-editor.tsx": {
+    "mtime": 1793190516.0830233,
+    "seen": 1793191339.765105,
+    "ast_hash": "3de39ea4bef3f70119c5f538fe8689d1",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/workouts/workout-launcher.tsx": {
+    "mtime": 1793190753.847276,
+    "seen": 1793191339.7651062,
+    "ast_hash": "87361950e4b70fd506c62fdf60dd27e2",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/workouts/workout-session-page.tsx": {
+    "mtime": 1793191094.4696815,
+    "seen": 1793191339.7651074,
+    "ast_hash": "01c5f44060a333e28f4812c9bec900c8",
+    "semantic_hash": ""
+  },
+  "frontend/src/features/workouts/workouts-page.tsx": {
+    "mtime": 1793190831.481974,
+    "seen": 1793191339.7651086,
+    "ast_hash": "647afa4856599bee9e738e8fc45dd0e3",
+    "semantic_hash": ""
+  },
+  "scripts/workouts_smoke.py": {
+    "mtime": 1793191337.2179086,
+    "seen": 1793191339.7654495,
+    "ast_hash": "b4ab8e622695ff45b43fb017fb361828",
+    "semantic_hash": ""
+  },
+  "frontend/test-results/workouts-mobile-workout-bu-92e51-tion-with-immutable-history/mobile-builder.png": {
+    "mtime": 1793191009.8548512,
+    "seen": 1793191339.7656412,
+    "ast_hash": "9a0718b9a134852427d5ce98bd9cf4c4",
+    "semantic_hash": ""
+  },
+  "frontend/test-results/workouts-mobile-workout-bu-92e51-tion-with-immutable-history/mobile-result.png": {
+    "mtime": 1793191010.6648688,
+    "seen": 1793191339.7656424,
+    "ast_hash": "941613aabbf30ee8d5456bc93b739397",
     "semantic_hash": ""
   },
   "frontend/pnpm-lock.yaml": {

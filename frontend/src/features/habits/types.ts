@@ -1,7 +1,7 @@
 import type { Schedule, Task } from "@/features/planning/types";
 
 export type SubHabit = { id: string; title: string; description: string };
-export type HabitConfig = { icon: string; sub_habits: SubHabit[]; reminder_enabled: boolean; reminder_minutes_before: number | null };
+export type HabitConfig = { icon: string; sub_habits: SubHabit[]; reminder_enabled: boolean; reminder_minutes_before: number | null; workout_id?: string | null };
 export type HabitStatus = "pending" | "completed" | "skipped" | "cancelled";
 export type HabitMark = { status: HabitStatus; completed_sub_habits: string[]; note: string; marked_at?: string | null };
 export type HabitInput = { title: string; description: string; tags: string[]; color: string; schedule: Schedule; habit: HabitConfig };
