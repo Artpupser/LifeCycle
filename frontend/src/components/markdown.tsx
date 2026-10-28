@@ -11,8 +11,8 @@ function safeMarkdownUrl(url: string, image = false) {
   return /^(https?:\/\/|mailto:|#[a-z0-9_-]*$)/i.test(url) || /^\/(?![/\\])[^\\]*$/.test(url) ? url : "";
 }
 
-export function Markdown({ value }: { value: string }) {
-  return <div className="markdown min-w-0 break-words text-sm leading-7"><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml urlTransform={(url, key) => safeMarkdownUrl(url, key === "src")} components={{ a: ({ href, children }) => href ? <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-4">{children}</a> : <span>{children}</span>, img: ({ src, alt }) => src ? <img src={src} alt={alt ?? ""} className="my-4 max-h-96 max-w-full rounded-xl object-contain" loading="lazy" /> : <span className="text-muted-foreground">{alt || "Изображение недоступно"}</span> }}>{value}</ReactMarkdown></div>;
+export function Markdown({ value, allowImages = true }: { value: string; allowImages?: boolean }) {
+  return <div className="markdown min-w-0 break-words text-sm leading-7"><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml urlTransform={(url, key) => key === "src" && !allowImages ? "" : safeMarkdownUrl(url, key === "src")} components={{ a: ({ href, children }) => href ? <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-4">{children}</a> : <span>{children}</span>, img: ({ src, alt }) => src ? <img src={src} alt={alt ?? ""} className="my-4 max-h-96 max-w-full rounded-xl object-contain" loading="lazy" /> : <span className="text-muted-foreground">{alt || "Изображение недоступно"}</span> }}>{value}</ReactMarkdown></div>;
 }
 
 export function MarkdownEditor({ id, value, onChange, onUploading }: { id: string; value: string; onChange: (value: string) => void; onUploading?: (uploading: boolean) => void }) {

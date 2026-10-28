@@ -98,7 +98,7 @@ struct ProfileMetrics {
     weight_kg: Option<f64>,
 }
 #[derive(Serialize)]
-struct Report {
+pub(crate) struct Report {
     from: NaiveDate,
     to: NaiveDate,
     timezone: String,
@@ -242,17 +242,40 @@ async fn report(
 ) -> Result<Json<Report>, ApiError> {
     let Query(q) = query.map_err(|_| ApiError::validation("Invalid analytics range"))?;
     q.validate()?;
-    let settings = domain::settings(&s, u.id).await?;
+    Ok(Json(build_report(&s, u.id, q.from, q.to, None).await?))
+}
+pub(crate) async fn ai_report(
+    s: &AppState,
+    user: Uuid,
+    from: NaiveDate,
+    to: NaiveDate,
+) -> Result<serde_json::Value, ApiError> {
+    let report = build_report(s, user, from, to, Some(Privacy::default())).await?;
+    serde_json::to_value(report).map_err(|_| ApiError::internal())
+}
+async fn build_report(
+    s: &AppState,
+    user: Uuid,
+    from: NaiveDate,
+    to: NaiveDate,
+    allowed: Option<Privacy>,
+) -> Result<Report, ApiError> {
+    let q = Range { from, to };
+    q.validate()?;
+    let settings = domain::settings(s, user).await?;
     let zone = settings
         .timezone
         .parse::<chrono_tz::Tz>()
         .map_err(|_| ApiError::internal())?;
     let now = Utc::now();
     let mut guard = s.database.begin().await?;
-    tasks::lock_tasks(&mut guard, u.id).await?;
-    let allowed = privacy(&s, u.id).await?;
-    let rows = tasks::occurrences(&s, u.id, q.from, q.to, &settings.timezone).await?;
-    let templates = habits::historical_tasks(&s, u.id).await?;
+    tasks::lock_tasks(&mut guard, user).await?;
+    let allowed = match allowed {
+        Some(value) => value,
+        None => privacy(s, user).await?,
+    };
+    let rows = tasks::occurrences(s, user, q.from, q.to, &settings.timezone).await?;
+    let templates = habits::historical_tasks(s, user).await?;
     let stats = templates
         .iter()
         .map(|task| habits::summarize(task, &rows, now))
@@ -287,7 +310,7 @@ async fn report(
         }
     }
     let events:Vec<(NaiveDate,String,i64)>=sqlx::query_as("SELECT (occurred_at AT TIME ZONE $2)::date,event_type,count(*) FROM app.activity_events WHERE user_id=$1 AND (occurred_at AT TIME ZONE $2)::date BETWEEN $3 AND $4 AND entity_type IN ('note','folder','task','habit','exercise','workout','workout_session','countdown','pomodoro') GROUP BY 1,2")
-        .bind(u.id).bind(&settings.timezone).bind(q.from).bind(q.to).fetch_all(&s.database).await?;
+        .bind(user).bind(&settings.timezone).bind(q.from).bind(q.to).fetch_all(&s.database).await?;
     let mut event_types = BTreeMap::new();
     for (date, kind, count) in events {
         if let Some(day) = days.get_mut(&date) {
@@ -296,7 +319,7 @@ async fn report(
         *event_types.entry(kind).or_insert(0) += count;
     }
     let focus:Vec<(NaiveDate,i64,i64,i64)>=sqlx::query_as("SELECT (ended_at AT TIME ZONE $2)::date,count(*) FILTER(WHERE status='completed'),count(*) FILTER(WHERE status='cancelled'),coalesce(sum(elapsed_seconds) FILTER(WHERE status='completed'),0)::bigint FROM app.pomodoro_sessions WHERE user_id=$1 AND phase='work' AND status IN ('completed','cancelled') AND (ended_at AT TIME ZONE $2)::date BETWEEN $3 AND $4 GROUP BY 1")
-        .bind(u.id).bind(&settings.timezone).bind(q.from).bind(q.to).fetch_all(&s.database).await?;
+        .bind(user).bind(&settings.timezone).bind(q.from).bind(q.to).fetch_all(&s.database).await?;
     let mut pomodoro = TimerMetrics::default();
     for (date, completed, cancelled, seconds) in focus {
         pomodoro.completed += completed;
@@ -307,7 +330,7 @@ async fn report(
         }
     }
     let sessions:Vec<(NaiveDate,String,i64,i64,i64)>=sqlx::query_as("SELECT (s.ended_at AT TIME ZONE $2)::date,s.status,coalesce((SELECT sum((r->>'elapsed_seconds')::bigint) FROM jsonb_array_elements(s.results) r),0)::bigint+s.elapsed_seconds,(SELECT count(*) FROM jsonb_array_elements(s.results) r WHERE r->>'status'='completed' AND s.snapshot->'steps'->((r->>'step_index')::integer)->'exercise'<>'null'::jsonb),coalesce((SELECT sum((r->>'actual_repetitions')::bigint) FROM jsonb_array_elements(s.results) r WHERE r->>'status'='completed'),0)::bigint FROM app.workout_sessions s WHERE s.user_id=$1 AND s.status IN ('completed','partial','cancelled') AND (s.ended_at AT TIME ZONE $2)::date BETWEEN $3 AND $4")
-        .bind(u.id).bind(&settings.timezone).bind(q.from).bind(q.to).fetch_all(&s.database).await?;
+        .bind(user).bind(&settings.timezone).bind(q.from).bind(q.to).fetch_all(&s.database).await?;
     let mut workouts = WorkoutMetrics::default();
     for (date, status, seconds, steps, repetitions) in sessions {
         match status.as_str() {
@@ -326,14 +349,14 @@ async fn report(
     }
     let profile = if allowed.include_profile {
         Some(profile_metrics(
-            profile::load(&s, u.id).await?,
+            profile::load(s, user).await?,
             now.with_timezone(&zone).date_naive(),
         ))
     } else {
         None
     };
     let intimacy = if allowed.include_intimacy {
-        Some(intimacy::analytics_summary(&s, u.id, q.from, q.to, &settings.timezone).await?)
+        Some(intimacy::analytics_summary(s, user, q.from, q.to, &settings.timezone).await?)
     } else {
         None
     };
@@ -355,7 +378,7 @@ async fn report(
         intimacy,
     };
     guard.commit().await?;
-    Ok(Json(result))
+    Ok(result)
 }
 
 #[cfg(test)]

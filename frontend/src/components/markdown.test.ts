@@ -6,6 +6,11 @@ import { Markdown } from "./markdown";
 const render = (value: string) => renderToStaticMarkup(createElement(Markdown, { value }));
 
 describe("saved Markdown rendering", () => {
+  it("AI output cannot load authenticated or external images", () => {
+    const html = renderToStaticMarkup(createElement(Markdown, { value: "![private](/api/media/123e4567-e89b-12d3-a456-426614174000) ![external](https://example.com/image.png)", allowImages: false }));
+    expect(html).not.toContain("<img");
+    expect(html).not.toContain("src=");
+  });
   it("renders GFM tables, task lists and formatting", () => {
     const html = render("| План | Статус |\n| --- | --- |\n| **Работа** | ~~позже~~ |\n\n- [x] Готово\n- [ ] Осталось");
     expect(html).toContain("<table>");

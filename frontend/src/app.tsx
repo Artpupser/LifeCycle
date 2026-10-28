@@ -1,3 +1,4 @@
+import { AiPage } from "@/features/ai/ai-page";
 import { AnalyticsPage } from "@/features/analytics/analytics-page";
 import { IntimacyPage } from "@/features/intimacy/intimacy-page";
 import { HabitsPage } from "@/features/habits/habits-page";
@@ -38,7 +39,7 @@ function Shell({ children }: { children: ReactNode }) {
     finally { setPending(false); }
   }
 
-  const navigation = user ? [{ to: "/today", label: "Сегодня", icon: CalendarDays }, { to: "/habits", label: "Привычки", icon: Activity }, { to: "/workouts", label: "Тренировки", icon: Activity }, { to: "/sex", label: "Интимный журнал", icon: Heart }, { to: "/tasks", label: "Задачи", icon: ClipboardList }, { to: "/calendar", label: "Календарь", icon: CalendarDays }, { to: "/notes", label: "Заметки", icon: NotebookPen }, { to: "/countdowns", label: "Отсчёты", icon: CalendarClock }, { to: "/pomodoro", label: "Pomodoro", icon: Timer }, { to: "/analytics", label: "Аналитика", icon: Activity }, { to: "/profile", label: "Профиль", icon: UserRound }, { to: "/settings", label: "Настройки", icon: Settings2 }, { to: "/status", label: "Подключение", icon: Activity }] : [{ to: "/login", label: "Войти", icon: UserRound }, { to: "/status", label: "Подключение", icon: Activity }];
+  const navigation = user ? [{ to: "/today", label: "Сегодня", icon: CalendarDays }, { to: "/habits", label: "Привычки", icon: Activity }, { to: "/workouts", label: "Тренировки", icon: Activity }, { to: "/sex", label: "Интимный журнал", icon: Heart }, { to: "/tasks", label: "Задачи", icon: ClipboardList }, { to: "/calendar", label: "Календарь", icon: CalendarDays }, { to: "/notes", label: "Заметки", icon: NotebookPen }, { to: "/countdowns", label: "Отсчёты", icon: CalendarClock }, { to: "/pomodoro", label: "Pomodoro", icon: Timer }, { to: "/analytics", label: "Аналитика", icon: Activity }, { to: "/ai", label: "AI-помощник", icon: Activity }, { to: "/profile", label: "Профиль", icon: UserRound }, { to: "/settings", label: "Настройки", icon: Settings2 }, { to: "/status", label: "Подключение", icon: Activity }] : [{ to: "/login", label: "Войти", icon: UserRound }, { to: "/status", label: "Подключение", icon: Activity }];
 
   return <div className="flex min-h-svh flex-col bg-background text-foreground">
     <a href="#main" className="sr-only z-50 rounded-lg bg-primary px-4 py-3 text-primary-foreground focus:not-sr-only focus:absolute focus:left-4 focus:top-4">Перейти к содержимому</a>
@@ -75,6 +76,7 @@ function AuthenticatedApp() {
     <Route path="/notes" element={<NotesPage />} />
     <Route path="/countdowns" element={<CountdownsPage />} />
     <Route path="/pomodoro" element={<PomodoroPage />} />
+    <Route path="/ai" element={<AiPage />} />
     <Route path="/analytics" element={<AnalyticsPage />} />
     <Route path="/profile" element={<ProfilePage />} />
     <Route path="/settings" element={<SettingsPage />} />
@@ -87,7 +89,7 @@ function AppContent() {
   const { user, loading, error, reload } = useAuth();
   if (loading || error) return <Shell><Routes><Route path="/status" element={<HealthPage />} /><Route path="*" element={<main id="main" className="mx-auto max-w-4xl px-5 py-10 sm:px-10">{loading ? <LoadingState /> : <ErrorState message={error!} retry={reload} />}</main>} /></Routes></Shell>;
   if (user) return <AuthenticatedApp key={user.id} />;
-  return <Shell><Routes><Route path="/status" element={<HealthPage />} /><Route path="/login" element={<LoginPage />} /><Route path="/" element={<Navigate to="/login" replace />} /><Route path="/analytics" element={<Navigate to="/login" replace />} /><Route path="/profile" element={<Navigate to="/login" replace />} /><Route path="/settings" element={<Navigate to="/login" replace />} /><Route path="/today" element={<Navigate to="/login" replace />} /><Route path="/tasks" element={<Navigate to="/login" replace />} /><Route path="/habits" element={<Navigate to="/login" replace />} /><Route path="/sex" element={<Navigate to="/login" replace />} /><Route path="/workouts/*" element={<Navigate to="/login" replace />} /><Route path="/calendar" element={<Navigate to="/login" replace />} /><Route path="/notes" element={<Navigate to="/login" replace />} /><Route path="/countdowns" element={<Navigate to="/login" replace />} /><Route path="/pomodoro" element={<Navigate to="/login" replace />} /><Route path="*" element={<NotFound />} /></Routes></Shell>;
+  return <Shell><Routes><Route path="/status" element={<HealthPage />} /><Route path="/login" element={<LoginPage />} /><Route path="/" element={<Navigate to="/login" replace />} /><Route path="/ai" element={<Navigate to="/login" replace />} /><Route path="/analytics" element={<Navigate to="/login" replace />} /><Route path="/profile" element={<Navigate to="/login" replace />} /><Route path="/settings" element={<Navigate to="/login" replace />} /><Route path="/today" element={<Navigate to="/login" replace />} /><Route path="/tasks" element={<Navigate to="/login" replace />} /><Route path="/habits" element={<Navigate to="/login" replace />} /><Route path="/sex" element={<Navigate to="/login" replace />} /><Route path="/workouts/*" element={<Navigate to="/login" replace />} /><Route path="/calendar" element={<Navigate to="/login" replace />} /><Route path="/notes" element={<Navigate to="/login" replace />} /><Route path="/countdowns" element={<Navigate to="/login" replace />} /><Route path="/pomodoro" element={<Navigate to="/login" replace />} /><Route path="*" element={<NotFound />} /></Routes></Shell>;
 }
 
 export function App() {

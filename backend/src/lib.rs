@@ -1,3 +1,6 @@
+mod ai;
+mod ai_context;
+mod ai_provider;
 mod analytics;
 pub mod auth;
 pub mod config;
@@ -51,6 +54,7 @@ pub fn router(state: AppState) -> Router {
         .merge(workout_sessions::routes())
         .merge(intimacy::routes())
         .merge(analytics::routes())
+        .merge(ai::routes())
         .fallback(error::not_found)
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),

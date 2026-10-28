@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-28T13:12:34.561627+00:00",
+  "generated_at": "2026-10-28T14:32:07.094014+00:00",
   "nodes": {
     "backend_src_crypto": {
       "code_fingerprint": "3ab3ae5dd761fe4c38155d1e4faf7dea38f3eb4a773e23a6000ce1ce3f7cb54f",
@@ -12,13 +12,29 @@
           "q": "Stage 6 intimacy journal architecture, privacy and integration after Stage 5"
         }
       ],
-      "score": 0.999999973,
+      "score": 0.998724527,
       "source_file": "backend/src/crypto.rs",
       "status": "tentative",
       "uses": 1
     },
+    "backend_src_domain": {
+      "code_fingerprint": "0bad8739e392c8b64ce516547ce21ba2d4822a60953b2dd7fe6138a099f9668a",
+      "label": "domain.rs",
+      "last": "2026-10-28T13:56:38.377387+00:00",
+      "provenance": [
+        {
+          "date": "2026-10-28T13:56:38.377387+00:00",
+          "outcome": "useful",
+          "q": "Stage 7 analytics and deletion integration with tasks notes calendar schedule Markdown"
+        }
+      ],
+      "score": 0.999430905,
+      "source_file": "backend/src/domain.rs",
+      "status": "tentative",
+      "uses": 1
+    },
     "backend_src_habits": {
-      "code_fingerprint": "7801fedde1c9b824466a527c99b047118a023b59c2b18e06fae183dac9817355",
+      "code_fingerprint": "aced999be07c7d27ba26d2b971ecf1ec944c0665fa7bc714c342fbee5596cd95",
       "label": "habits.rs",
       "last": "2026-10-28T12:45:01.194111+00:00",
       "provenance": [
@@ -33,13 +49,13 @@
           "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
         }
       ],
-      "score": 1.998606271,
+      "score": 1.996057155,
       "source_file": "backend/src/habits.rs",
       "status": "preferred",
       "uses": 2
     },
     "backend_src_intimacy": {
-      "code_fingerprint": "66241093742e9112175baf0ba5af655679e640107265147043b7680815491c7a",
+      "code_fingerprint": "4733c73ce5c7f758688ec6524fbe872e7120c3d627effb794f299929a2d08376",
       "label": "intimacy.rs",
       "last": "2026-10-28T13:12:34.462376+00:00",
       "provenance": [
@@ -49,7 +65,7 @@
           "q": "Stage 6 intimacy journal architecture, privacy and integration after Stage 5"
         }
       ],
-      "score": 0.999999973,
+      "score": 0.998724527,
       "source_file": "backend/src/intimacy.rs",
       "status": "tentative",
       "uses": 1
@@ -70,13 +86,13 @@
           "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
         }
       ],
-      "score": 1.998606271,
+      "score": 1.996057155,
       "source_file": "backend/src/schedule.rs",
       "status": "preferred",
       "uses": 2
     },
     "backend_src_tasks": {
-      "code_fingerprint": "e64fb7d0c799fd0313dc861b9ede9d4338a10ac5cc74f9ae4817e067c5f94595",
+      "code_fingerprint": "6f36330532780c538871b2d58b52034458da79d90aef084bf027de10ea96860f",
       "label": "tasks.rs",
       "last": "2026-10-28T12:13:14.066251+00:00",
       "provenance": [
@@ -86,7 +102,7 @@
           "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
         }
       ],
-      "score": 0.999048313,
+      "score": 0.99777408,
       "source_file": "backend/src/tasks.rs",
       "status": "tentative",
       "uses": 1
@@ -102,7 +118,7 @@
           "q": "Stage 5 workout integration with habits Today calendar and schedule"
         }
       ],
-      "score": 0.999557958,
+      "score": 0.998283075,
       "source_file": "backend/src/workout_plan.rs",
       "status": "tentative",
       "uses": 1
@@ -118,13 +134,13 @@
           "q": "Stage 5 workout integration with habits Today calendar and schedule"
         }
       ],
-      "score": 0.999557958,
+      "score": 0.998283075,
       "source_file": "backend/src/workout_sessions.rs",
       "status": "tentative",
       "uses": 1
     },
     "backend_src_workouts": {
-      "code_fingerprint": "3c0adc02570f788298e4d39a5fcbced7027ea15ca21a27efed34cabff4010545",
+      "code_fingerprint": "b79802a999d81708ec6a1f8ec3953095325dffc4403829d8b1b508a50387492d",
       "label": "workouts.rs",
       "last": "2026-10-28T12:45:01.194111+00:00",
       "provenance": [
@@ -134,13 +150,13 @@
           "q": "Stage 5 workout integration with habits Today calendar and schedule"
         }
       ],
-      "score": 0.999557958,
+      "score": 0.998283075,
       "source_file": "backend/src/workouts.rs",
       "status": "tentative",
       "uses": 1
     },
     "frontend_src_app": {
-      "code_fingerprint": "63736c988d9e7d176d4636b62b06ee7033e87d145069d56f25576f9794737738",
+      "code_fingerprint": "476cfc69626c15b4319e41f2f494d93aafa3d388b51d4e165d1592a2c7ae2e79",
       "label": "app.tsx",
       "last": "2026-10-28T13:12:34.462376+00:00",
       "provenance": [
@@ -150,13 +166,29 @@
           "q": "Stage 6 intimacy journal architecture, privacy and integration after Stage 5"
         }
       ],
-      "score": 0.999999973,
+      "score": 0.998724527,
       "source_file": "frontend/src/app.tsx",
       "status": "tentative",
       "uses": 1
     },
+    "frontend_src_components_markdown_markdown": {
+      "code_fingerprint": "9aaaf49f996bb6d5d404f180a12ceb7581995c72df90e94ae547f3ca3c098c57",
+      "label": "Markdown()",
+      "last": "2026-10-28T13:56:38.377387+00:00",
+      "provenance": [
+        {
+          "date": "2026-10-28T13:56:38.377387+00:00",
+          "outcome": "useful",
+          "q": "Stage 7 analytics and deletion integration with tasks notes calendar schedule Markdown"
+        }
+      ],
+      "score": 0.999430905,
+      "source_file": "frontend/src/components/markdown.tsx",
+      "status": "tentative",
+      "uses": 1
+    },
     "project_project_progress": {
-      "code_fingerprint": "5c705ed47632433239c009c158bae657d951e9060e73c54c3e0a7359098099b5",
+      "code_fingerprint": "7747308924276618b5cf31a0fb7a39f1fdf08372bde98b2288685c49de637c64",
       "label": "project_progress.md",
       "last": "2026-10-28T13:12:34.462376+00:00",
       "provenance": [
@@ -171,7 +203,7 @@
           "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
         }
       ],
-      "score": 1.999048286,
+      "score": 1.996498607,
       "source_file": "project/project_progress.md",
       "status": "preferred",
       "uses": 2

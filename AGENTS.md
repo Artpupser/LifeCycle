@@ -22,3 +22,6 @@ Rules:
 - After modifying code, execute graphify update .
 - Never assume graph results are always up to date.
 - Avoid reading unrelated source files.
+
+## Files policy
+- Not touch files `project/ideas.md`, `project/prompts.md`, `project/plugins.md`
