@@ -244,7 +244,7 @@ pub async fn authenticate(state: &AppState, headers: &HeaderMap) -> Result<Curre
     .ok_or_else(ApiError::unauthenticated)
 }
 
-fn session_token(headers: &HeaderMap) -> Option<&str> {
+pub(crate) fn session_token(headers: &HeaderMap) -> Option<&str> {
     headers
         .get(header::COOKIE)?
         .to_str()

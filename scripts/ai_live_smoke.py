@@ -12,7 +12,9 @@ from core_smoke import login
 
 
 def run(args):
-    key = os.environ.get('OPENAI_API_KEY') or getpass.getpass('OpenAI API key (hidden): ')
+    provider = args.provider
+    label = 'OpenRouter' if provider == 'openrouter' else 'OpenAI'
+    key = os.environ.get('OPENROUTER_API_KEY' if provider == 'openrouter' else 'OPENAI_API_KEY') or getpass.getpass(label + ' API key (hidden): ')
     require(bool(key), 'An API key is required for a real OpenAI check')
     base = origin_url(args.url)
     client = login(base, base, Client(args.mailpit_url), 30)
@@ -21,7 +23,7 @@ def run(args):
 
     def save(**changes):
         nonlocal config
-        body = {k: config[k] for k in ['revision', 'model', 'enabled', 'permissions']}
+        body = {k: config[k] for k in ['revision', 'model', 'enabled', 'permissions', 'provider', 'auth_mode']}
         body.update(changes)
         config, _ = client.request('PUT', '/api/ai/settings', body)
 
@@ -38,9 +40,9 @@ def run(args):
         while turn['status'] == 'pending' and time.monotonic() < deadline:
             time.sleep(0.5)
             turn, _ = client.request('GET', path + '/' + request['request_id'])
-        require(turn['status'] == 'completed', 'OpenAI request failed: ' + str(turn.get('error_code')))
+        require(turn['status'] == 'completed', 'Provider request failed: ' + str(turn.get('error_code')))
         require(bool(turn['data']['answer']) and turn['data']['request'] == p['request'], 'Successful response does not match the approved request')
-        require(turn['data']['usage']['total_tokens'] > 0, 'Real OpenAI usage is absent')
+        require(turn['data']['usage']['total_tokens'] > 0, 'Real provider usage is absent')
         again, _ = client.request('POST', path, request)
         require(again['id'] == turn['id'], 'Successful request retry was not idempotent')
         return turn
@@ -48,14 +50,14 @@ def run(args):
     try:
         marker = 'LC' + uuid4().hex[:12].upper()
         note, _ = client.request('POST', '/api/notes', {'title': 'Synthetic OpenAI acceptance', 'content': 'Контрольное слово: **' + marker + '**.'}, expected=201)
-        save(api_key=key, enabled=True, model=args.model, permissions={**config['permissions'], 'notes': True})
+        save(provider=provider, auth_mode="api_key", api_key=key, enabled=True, model=args.model or ("openai/gpt-4.1-mini" if provider == "openrouter" else "gpt-4.1-mini"), permissions={**config['permissions'], 'notes': True})
         key = ''
         chat, _ = client.request('POST', '/api/ai/chats', expected=201)
         p = preview('Назови контрольное слово из разрешённой заметки. Ответь только этим словом.')
         require(marker in json.dumps(p) and p['history_turns'] == 0, 'Approved synthetic context is wrong')
         first = send(p)
         require(marker in first['data']['answer'], 'Model did not use the explicitly allowed note')
-        print('Real OpenAI response used the approved synthetic note; usage recorded.')
+        print('Real provider response used the approved synthetic note; usage recorded.')
         p = preview('Повтори контрольное слово из своего предыдущего ответа. Ответь только словом.')
         require(p['history_turns'] == 1, 'Successful chat history is absent from the next request')
         second = send(p)
@@ -66,10 +68,10 @@ def run(args):
         require(p['history_turns'] == 0 and marker not in json.dumps(p), 'Revoked data or old history entered a new request')
         third = send(p)
         require(marker not in third['data']['answer'], 'Revoked synthetic data appeared in a new answer')
-        print('Real OpenAI response after revocation excluded prior context and history.')
+        print('Real provider response after revocation excluded prior context and history.')
         history, _ = client.request('GET', f"/api/ai/chats/{chat['id']}")
         require(len(history['messages']) == 3 and all(t['status'] == 'completed' for t in history['messages']), 'Completed chat did not persist')
-        print('Live OpenAI acceptance passed with three real responses; no personal account data was sent.')
+        print('Live provider acceptance passed with three real responses; no personal account data was sent.')
     finally:
         if chat:
             client.request('DELETE', f"/api/ai/chats/{chat['id']}", expected=204)
@@ -85,7 +87,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--url', default='http://localhost:8081')
     parser.add_argument('--mailpit-url', default='http://localhost:8025')
-    parser.add_argument('--model', default='gpt-4.1-mini')
+    parser.add_argument('--provider', choices=['openai', 'openrouter'], default='openai')
+    parser.add_argument('--model')
     try:
         run(parser.parse_args())
     except (SmokeFailure, KeyError, ValueError) as error:

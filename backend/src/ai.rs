@@ -1,5 +1,5 @@
 use crate::{
-    ai_context, ai_provider,
+    ai_context, ai_login, ai_provider,
     auth::CurrentUser,
     domain,
     error::{ApiError, ApiJson},
@@ -31,16 +31,23 @@ pub(crate) struct Permissions {
 }
 
 #[derive(sqlx::FromRow)]
-struct Config {
-    model: String,
-    enabled: bool,
+pub(crate) struct Config {
+    pub(crate) model: String,
+    pub(crate) enabled: bool,
     permissions: DbJson<Permissions>,
     encrypted_key: Option<Vec<u8>>,
-    revision: i64,
+    encrypted_openrouter_key: Option<Vec<u8>>,
+    pub(crate) provider: String,
+    pub(crate) auth_mode: String,
+    pub(crate) active_account_id: Option<Uuid>,
+    pub(crate) revision: i64,
 }
 #[derive(Serialize)]
 struct ConfigView {
-    provider: &'static str,
+    provider: String,
+    auth_mode: String,
+    active_account_id: Option<Uuid>,
+    login_available: bool,
     model: String,
     enabled: bool,
     permissions: Permissions,
@@ -48,25 +55,39 @@ struct ConfigView {
     revision: i64,
 }
 impl Config {
-    fn view(self) -> ConfigView {
+    fn view(self, s: &AppState) -> ConfigView {
+        let key_present = self.selected_key().is_some();
         ConfigView {
-            provider: "openai",
+            provider: self.provider,
+            auth_mode: self.auth_mode,
+            active_account_id: self.active_account_id,
+            login_available: ai_login::available(s),
             model: self.model,
             enabled: self.enabled,
             permissions: self.permissions.0,
-            key_present: self.encrypted_key.is_some(),
+            key_present,
             revision: self.revision,
         }
     }
     fn ready(&self) -> Result<(), ApiError> {
-        if !self.enabled || self.encrypted_key.is_none() {
+        if !self.enabled
+            || (self.auth_mode == "login" && self.active_account_id.is_none())
+            || (self.auth_mode == "api_key" && self.selected_key().is_none())
+        {
             return Err(ApiError::new(
                 StatusCode::CONFLICT,
                 "ai_not_configured",
-                "Configure an API key and enable OpenAI first",
+                "Connect the selected provider and enable AI first",
             ));
         }
         Ok(())
+    }
+    fn selected_key(&self) -> Option<&Vec<u8>> {
+        if self.provider == "openrouter" {
+            self.encrypted_openrouter_key.as_ref()
+        } else {
+            self.encrypted_key.as_ref()
+        }
     }
 }
 #[derive(Deserialize)]
@@ -79,6 +100,8 @@ struct ConfigInput {
     api_key: Option<String>,
     #[serde(default)]
     remove_key: bool,
+    provider: Option<String>,
+    auth_mode: Option<String>,
 }
 #[derive(Serialize, sqlx::FromRow)]
 struct Chat {
@@ -119,6 +142,7 @@ struct TurnRow {
     id: Uuid,
     config_revision: i64,
     model: String,
+    provider: String,
     status: String,
     error_code: Option<String>,
     encrypted_data: Vec<u8>,
@@ -130,6 +154,7 @@ struct Turn {
     id: Uuid,
     config_revision: i64,
     model: String,
+    provider: String,
     status: String,
     error_code: Option<String>,
     data: TurnData,
@@ -137,7 +162,7 @@ struct Turn {
     finished_at: Option<DateTime<Utc>>,
 }
 const TURN_COLUMNS: &str =
-    "id,config_revision,model,status,error_code,encrypted_data,created_at,finished_at";
+    "id,config_revision,model,provider,status,error_code,encrypted_data,created_at,finished_at";
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -151,29 +176,49 @@ pub fn routes() -> Router<AppState> {
             get(read_turn).delete(cancel_turn),
         )
 }
-fn stale() -> ApiError {
+pub(crate) fn stale() -> ApiError {
     ApiError::new(
         StatusCode::CONFLICT,
         "ai_stale",
         "Settings, conversation or preview changed; review a new preview",
     )
 }
-fn seal<T: Serialize>(s: &AppState, context: &str, value: &T) -> Result<Vec<u8>, ApiError> {
+pub(crate) fn seal<T: Serialize>(
+    s: &AppState,
+    context: &str,
+    value: &T,
+) -> Result<Vec<u8>, ApiError> {
     s.cipher.encrypt(
         &serde_json::to_vec(value).map_err(|_| ApiError::internal())?,
         context.as_bytes(),
     )
 }
-fn open<T: DeserializeOwned>(s: &AppState, context: &str, bytes: &[u8]) -> Result<T, ApiError> {
+pub(crate) fn open<T: DeserializeOwned>(
+    s: &AppState,
+    context: &str,
+    bytes: &[u8],
+) -> Result<T, ApiError> {
     serde_json::from_slice(&s.cipher.decrypt(bytes, context.as_bytes())?)
         .map_err(|_| ApiError::internal())
 }
-async fn config(db: &mut PgConnection, user: Uuid) -> Result<Config, ApiError> {
+pub(crate) async fn config(db: &mut PgConnection, user: Uuid) -> Result<Config, ApiError> {
     sqlx::query("INSERT INTO app.ai_settings(user_id) VALUES($1) ON CONFLICT DO NOTHING")
         .bind(user)
         .execute(&mut *db)
         .await?;
-    Ok(sqlx::query_as("SELECT model,enabled,permissions,encrypted_key,revision FROM app.ai_settings WHERE user_id=$1 FOR UPDATE").bind(user).fetch_one(db).await?)
+    Ok(sqlx::query_as("SELECT model,enabled,permissions,encrypted_key,encrypted_openrouter_key,provider,auth_mode,active_account_id,revision FROM app.ai_settings WHERE user_id=$1 FOR UPDATE").bind(user).fetch_one(db).await?)
+}
+pub(crate) async fn invalidate(db: &mut PgConnection, user: Uuid) -> Result<(), ApiError> {
+    sqlx::query("DELETE FROM app.ai_previews WHERE user_id=$1")
+        .bind(user)
+        .execute(&mut *db)
+        .await?;
+    sqlx::query("UPDATE app.ai_turns SET status='cancelled',error_code='ai_permissions_changed',finished_at=now() WHERE user_id=$1 AND status='pending'").bind(user).execute(&mut *db).await?;
+    sqlx::query("DELETE FROM app.ai_login_attempts WHERE user_id=$1")
+        .bind(user)
+        .execute(db)
+        .await?;
+    Ok(())
 }
 async fn expire(db: &mut PgConnection, user: Uuid) -> Result<(), ApiError> {
     sqlx::query("UPDATE app.ai_turns SET status='failed',error_code='ai_interrupted',finished_at=now() WHERE user_id=$1 AND status='pending' AND created_at<now()-interval '2 minutes'").bind(user).execute(&mut *db).await?;
@@ -188,24 +233,27 @@ async fn read_config(
     u: CurrentUser,
 ) -> Result<Json<ConfigView>, ApiError> {
     let mut tx = s.database.begin().await?;
-    let v = config(&mut tx, u.id).await?.view();
+    let v = config(&mut tx, u.id).await?.view(&s);
     expire(&mut tx, u.id).await?;
     tx.commit().await?;
     Ok(Json(v))
 }
-fn valid_model(model: &str) -> bool {
+fn valid_model(model: &str, provider: &str) -> bool {
     !model.is_empty()
         && model.len() <= 100
-        && model
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b"-_.:".contains(&b))
+        && model.bytes().all(|b| {
+            b.is_ascii_alphanumeric()
+                || b"-_.:".contains(&b)
+                || (provider == "openrouter" && b == b'/')
+        })
+        && !model.contains("://")
 }
 async fn update_config(
     State(s): State<AppState>,
     u: CurrentUser,
     ApiJson(v): ApiJson<ConfigInput>,
 ) -> Result<Json<ConfigView>, ApiError> {
-    if !valid_model(&v.model) || (v.remove_key && v.api_key.is_some()) {
+    if v.remove_key && v.api_key.is_some() {
         return Err(ApiError::validation(
             "Use a valid Responses API model ID and one key action",
         ));
@@ -220,32 +268,55 @@ async fn update_config(
     if old.revision != v.revision {
         return Err(stale());
     }
-    let encrypted_key = if v.remove_key {
-        None
-    } else if let Some(key) = &v.api_key {
-        Some(seal(&s, &format!("ai:key:{}", u.id), key)?)
-    } else {
-        old.encrypted_key
-    };
-    if v.enabled && encrypted_key.is_none() {
+    let provider = v.provider.as_deref().unwrap_or(&old.provider);
+    let auth_mode = v.auth_mode.as_deref().unwrap_or(&old.auth_mode);
+    if !["openai", "openrouter"].contains(&provider)
+        || !["api_key", "login"].contains(&auth_mode)
+        || (auth_mode == "login" && provider != "openai")
+        || !valid_model(&v.model, provider)
+        || (auth_mode == "login" && (v.api_key.is_some() || v.remove_key))
+    {
         return Err(ApiError::validation(
-            "An API key is required to enable OpenAI",
+            "Invalid provider, authentication method or model",
+        ));
+    }
+    let mut encrypted_key = old.encrypted_key.clone();
+    let mut encrypted_openrouter_key = old.encrypted_openrouter_key.clone();
+    let selected = if provider == "openrouter" {
+        &mut encrypted_openrouter_key
+    } else {
+        &mut encrypted_key
+    };
+    if v.remove_key {
+        *selected = None;
+    } else if let Some(key) = &v.api_key {
+        let context = if provider == "openrouter" {
+            format!("ai:openrouter-key:{}", u.id)
+        } else {
+            format!("ai:key:{}", u.id)
+        };
+        *selected = Some(seal(&s, &context, key)?);
+    }
+    if v.enabled
+        && ((auth_mode == "api_key" && selected.is_none())
+            || (auth_mode == "login" && old.active_account_id.is_none()))
+    {
+        return Err(ApiError::validation(
+            "Connect the selected provider before enabling AI",
         ));
     }
     let changed = old.model != v.model
         || old.enabled != v.enabled
         || old.permissions.0 != v.permissions
+        || old.provider != provider
+        || old.auth_mode != auth_mode
         || v.api_key.is_some()
         || v.remove_key;
     let revision = old.revision + i64::from(changed);
-    sqlx::query("UPDATE app.ai_settings SET model=$2,enabled=$3,permissions=$4,encrypted_key=$5,revision=$6,updated_at=now() WHERE user_id=$1")
-        .bind(u.id).bind(&v.model).bind(v.enabled).bind(DbJson(&v.permissions)).bind(&encrypted_key).bind(revision).execute(&mut *tx).await?;
+    sqlx::query("UPDATE app.ai_settings SET model=$2,enabled=$3,permissions=$4,encrypted_key=$5,revision=$6,updated_at=now(),provider=$7,auth_mode=$8,encrypted_openrouter_key=$9 WHERE user_id=$1")
+        .bind(u.id).bind(&v.model).bind(v.enabled).bind(DbJson(&v.permissions)).bind(&encrypted_key).bind(revision).bind(provider).bind(auth_mode).bind(&encrypted_openrouter_key).execute(&mut *tx).await?;
     if changed {
-        sqlx::query("DELETE FROM app.ai_previews WHERE user_id=$1")
-            .bind(u.id)
-            .execute(&mut *tx)
-            .await?;
-        sqlx::query("UPDATE app.ai_turns SET status='cancelled',error_code='ai_permissions_changed',finished_at=now() WHERE user_id=$1 AND status='pending'").bind(u.id).execute(&mut *tx).await?;
+        invalidate(&mut tx, u.id).await?;
     }
     tx.commit().await?;
     Ok(Json(
@@ -254,9 +325,13 @@ async fn update_config(
             enabled: v.enabled,
             permissions: DbJson(v.permissions),
             encrypted_key,
+            encrypted_openrouter_key,
+            provider: provider.to_owned(),
+            auth_mode: auth_mode.to_owned(),
+            active_account_id: old.active_account_id,
             revision,
         }
-        .view(),
+        .view(&s),
     ))
 }
 async fn chats(State(s): State<AppState>, u: CurrentUser) -> Result<Json<Vec<Chat>>, ApiError> {
@@ -307,6 +382,7 @@ fn turn(s: &AppState, user: Uuid, chat: Uuid, row: TurnRow) -> Result<Turn, ApiE
         id: row.id,
         config_revision: row.config_revision,
         model: row.model,
+        provider: row.provider,
         status: row.status,
         error_code: row.error_code,
         data,
@@ -397,7 +473,14 @@ async fn preview(
     let context = ai_context::build(&s, u.id, &c.permissions.0, v.from, v.to).await?;
     let history = allowed_history(&messages, c.revision);
     let history_turns = history.len() / 2;
-    let request = ai_provider::payload(&c.model, history, &context, &v.message);
+    let request = ai_provider::payload(
+        &c.provider,
+        c.auth_mode == "login",
+        &c.model,
+        history,
+        &context,
+        &v.message,
+    );
     if serde_json::to_vec(&request)
         .map_err(|_| ApiError::internal())?
         .len()
@@ -515,7 +598,7 @@ async fn send(
         &data,
     )?;
     rate_limit(&s, u.id, v.request_id).await?;
-    sqlx::query("INSERT INTO app.ai_turns(id,user_id,chat_id,preview_id,config_revision,model,status,encrypted_data) VALUES($1,$2,$3,$4,$5,$6,'pending',$7)").bind(v.request_id).bind(u.id).bind(chat_id).bind(v.preview_id).bind(c.revision).bind(&c.model).bind(encrypted).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO app.ai_turns(id,user_id,chat_id,preview_id,config_revision,model,status,encrypted_data,provider) VALUES($1,$2,$3,$4,$5,$6,'pending',$7,$8)").bind(v.request_id).bind(u.id).bind(chat_id).bind(v.preview_id).bind(c.revision).bind(&c.model).bind(encrypted).bind(&c.provider).execute(&mut *tx).await?;
     sqlx::query("UPDATE app.ai_chats SET version=version+1 WHERE id=$1 AND user_id=$2")
         .bind(chat_id)
         .bind(u.id)
@@ -569,14 +652,19 @@ async fn generate(s: AppState, user: Uuid, chat: Uuid, id: Uuid) -> Result<(), A
     if row.status != "pending" || row.config_revision != c.revision || c.ready().is_err() {
         return Ok(());
     }
-    let key: String = open(
-        &s,
-        &format!("ai:key:{user}"),
-        c.encrypted_key.as_ref().unwrap(),
-    )?;
+    let credential = if c.auth_mode == "login" {
+        ai_login::access(&s, &mut tx, user, c.active_account_id.unwrap()).await
+    } else {
+        let context = if c.provider == "openrouter" {
+            format!("ai:openrouter-key:{user}")
+        } else {
+            format!("ai:key:{user}")
+        };
+        open::<String>(&s, &context, c.selected_key().unwrap()).map_err(|_| "ai_credentials")
+    };
     tx.commit().await?;
     let result = tokio::select! {
-        result=ai_provider::generate(&key,&row.data.request)=>result,
+        result=async { match credential { Ok(key) => ai_provider::generate(&c.provider,&key,&row.data.request).await, Err(code) => Err(code) } }=>result,
         _=wait_for_cancel(&s,user,chat,id)=>return Ok(()),
     };
     let mut tx = s.database.begin().await?;
@@ -625,9 +713,9 @@ mod tests {
             Permissions::default()
         );
         assert!(serde_json::from_value::<Permissions>(json!({"everything":true})).is_err());
-        assert!(valid_model("gpt-4.1-mini"));
-        assert!(!valid_model("https://other-host/"));
-        assert!(!valid_model("gpt\r\nsecret"));
+        assert!(valid_model("gpt-4.1-mini", "openai"));
+        assert!(!valid_model("https://other-host/", "openrouter"));
+        assert!(!valid_model("gpt\r\nsecret", "openai"));
     }
     #[test]
     fn permission_changes_exclude_old_messages_from_new_requests() {
@@ -635,6 +723,7 @@ mod tests {
             id: Uuid::new_v4(),
             config_revision: revision,
             model: "model".into(),
+            provider: "openai".into(),
             status: status.into(),
             error_code: None,
             data: TurnData {

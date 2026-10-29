@@ -4,6 +4,7 @@ import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/input";
+import { AiSettings } from "@/features/ai/ai-settings";
 import { api, errorMessage } from "@/lib/api";
 import { usePreferences } from "./preferences-context";
 import type { Settings } from "./types";
@@ -55,5 +56,6 @@ export function SettingsPage() {
         <Button type="submit" disabled={pending || !dirty}>{pending ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <Save aria-hidden="true" />}{pending ? "Сохраняем…" : "Сохранить настройки"}</Button>
       </div>
     </form>
+    <AiSettings />
   </main>;
 }

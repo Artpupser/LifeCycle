@@ -1,5 +1,6 @@
 mod ai;
 mod ai_context;
+mod ai_login;
 mod ai_provider;
 mod analytics;
 pub mod auth;
@@ -55,6 +56,7 @@ pub fn router(state: AppState) -> Router {
         .merge(intimacy::routes())
         .merge(analytics::routes())
         .merge(ai::routes())
+        .merge(ai_login::routes())
         .fallback(error::not_found)
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
@@ -65,7 +67,7 @@ pub fn router(state: AppState) -> Router {
             StatusCode::REQUEST_TIMEOUT,
             Duration::from_secs(10),
         ))
-        .layer(TraceLayer::new_for_http())
+        .layer(TraceLayer::new_for_http().make_span_with(|request: &axum::http::Request<axum::body::Body>| tracing::info_span!("http", method = %request.method(), path = request.uri().path())))
         .layer(SetResponseHeaderLayer::overriding(
             header::X_CONTENT_TYPE_OPTIONS,
             HeaderValue::from_static("nosniff"),
