@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 #[serde(default, deny_unknown_fields)]
 pub struct Settings {
     pub timezone: String,
+    pub time_format: String,
     pub language: String,
     pub theme: String,
     pub reminders_enabled: bool,
@@ -23,6 +24,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             timezone: "UTC".to_owned(),
+            time_format: "24h".to_owned(),
             language: "ru".to_owned(),
             theme: "system".to_owned(),
             reminders_enabled: false,
@@ -44,6 +46,9 @@ impl Settings {
             return Err(ApiError::validation(
                 "Only Russian language is currently supported",
             ));
+        }
+        if !["12h", "24h"].contains(&self.time_format.as_str()) {
+            return Err(ApiError::validation("Unsupported time format"));
         }
         if !["system", "light", "dark"].contains(&self.theme.as_str()) {
             return Err(ApiError::validation("Unsupported theme"));
@@ -102,5 +107,15 @@ mod tests {
         s.timezone = "UTC".into();
         s.pomodoro_work_minutes = 0;
         assert!(s.validate().is_err());
+    }
+    #[test]
+    fn time_format_preserves_stored_settings_and_rejects_unknown_values() {
+        let mut settings: Settings =
+            serde_json::from_str(r#"{"timezone":"Europe/Moscow"}"#).unwrap();
+        assert_eq!(settings.time_format, "24h");
+        settings.time_format = "12h".into();
+        assert!(settings.validate().is_ok());
+        settings.time_format = "unknown".into();
+        assert!(settings.validate().is_err());
     }
 }

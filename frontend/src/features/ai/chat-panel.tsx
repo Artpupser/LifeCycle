@@ -8,16 +8,17 @@ import { Input, Select, Textarea } from "@/components/ui/input";
 import { usePreferences } from "@/features/settings/preferences-context";
 import { useResource } from "@/hooks/use-resource";
 import { ApiError, api, apiErrorMessage, errorMessage } from "@/lib/api";
-import { dayDifference, localDate, shiftDate } from "@/lib/dates";
+import { dateTimeLabel, dayDifference, localDate, shiftDate } from "@/lib/dates";
 import { providerName, promptTemplates, type AiConfig, type Chat, type ChatDraft, type Preview, type Turn } from "./types";
 
 function RequestView({ request, provider }: { request: unknown; provider: string }) {
   return <details className="min-w-0 rounded-xl border border-border p-3"><summary className="cursor-pointer text-sm text-primary">Точный запрос {providerName(provider)}</summary><pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-all text-xs leading-5">{JSON.stringify(request, null, 2)}</pre></details>;
 }
 function Message({ turn, revision, onCancel }: { turn: Turn; revision: number; onCancel: () => void }) {
+  const { settings } = usePreferences();
   const question = turn.data.request.input.at(-1)?.content ?? "";
   return <article className="min-w-0 space-y-4 rounded-2xl border border-border p-4 sm:p-5">
-    <div><p className="mb-2 text-xs font-medium text-muted-foreground">Вы · {new Date(turn.created_at).toLocaleString("ru-RU")}</p><p className="whitespace-pre-wrap break-words text-sm leading-6">{question}</p></div>
+    <div><p className="mb-2 text-xs font-medium text-muted-foreground">Вы · {dateTimeLabel(turn.created_at, settings.timezone, settings.time_format)}</p><p className="whitespace-pre-wrap break-words text-sm leading-6">{question}</p></div>
     <div className="space-y-3 border-t border-border pt-4"><p className="text-xs font-medium text-primary">{providerName(turn.provider)} · {turn.model}</p>{turn.status === "pending" ? <div className="space-y-3"><p role="status" className="text-sm">Модель готовит ответ. Можно вернуться к чату позже.</p><Button variant="outline" size="sm" onClick={onCancel}>Остановить ответ</Button></div> : turn.status === "completed" && turn.data.answer ? <Markdown value={turn.data.answer} allowImages={false} /> : <p className="text-sm text-destructive">{apiErrorMessage(502, turn.error_code ?? "ai_interrupted")}</p>}
       {turn.data.usage?.total_tokens != null && <p className="text-xs text-muted-foreground">Токены: вход {turn.data.usage.input_tokens ?? "—"}, выход {turn.data.usage.output_tokens ?? "—"}, всего {turn.data.usage.total_tokens}.</p>}
       {turn.config_revision !== revision && <p className="text-xs text-muted-foreground">Эта пара исключена из новых запросов: настройки доступа изменились.</p>}
@@ -49,7 +50,6 @@ export function ChatPanel({ chat, config, dirty, draft, onDraft }: { chat: Chat;
     const timer = window.setInterval(() => { if (pending) refresh(); setNow(Date.now()); }, 1500);
     return () => window.clearInterval(timer);
   }, [pending, preview, refresh]);
-  useEffect(() => { const focus = () => refresh(); window.addEventListener("focus", focus); return () => window.removeEventListener("focus", focus); }, [refresh]);
   function invalidate() { setPreview(null); attempt.current = null; setAmbiguous(false); }
   async function prepare(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(null); invalidate();

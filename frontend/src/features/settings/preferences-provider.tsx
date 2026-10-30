@@ -3,7 +3,9 @@ import { PreferencesContext } from "./preferences-context";
 import type { Settings } from "./types";
 
 export function PreferencesProvider({ initial, children }: { initial: Settings; children: ReactNode }) {
-  const [settings, updateSettings] = useState(initial);
+  const [saved, setSaved] = useState<{ source: Settings; value: Settings } | null>(null);
+  const settings = saved?.source === initial ? saved.value : initial;
+  const updateSettings = (value: Settings) => setSaved({ source: initial, value });
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const apply = () => { document.documentElement.dataset.theme = settings.theme === "system" ? media.matches ? "dark" : "light" : settings.theme; };

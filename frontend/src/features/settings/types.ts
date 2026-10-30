@@ -1,5 +1,6 @@
 export type Settings = {
   timezone: string;
+  time_format: "12h" | "24h";
   language: "ru";
   theme: "system" | "light" | "dark";
   reminders_enabled: boolean;

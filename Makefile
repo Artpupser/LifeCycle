@@ -1,4 +1,6 @@
-.PHONY: setup check up down smoke graph
+COMPOSE ?= podman compose
+
+.PHONY: setup check up down smoke acceptance graph
 
 setup:
 	python3 scripts/setup_env.py
@@ -11,16 +13,19 @@ check:
 	pnpm --dir frontend lint
 	pnpm --dir frontend test
 	pnpm --dir frontend build
-	docker compose config --quiet
+	$(COMPOSE) config --quiet
 
 up: setup
-	docker compose up --build --wait --wait-timeout 180
+	$(COMPOSE) up -d --build --force-recreate
 
 down:
-	docker compose down
+	$(COMPOSE) down
 
 smoke:
 	python3 scripts/smoke.py
+
+acceptance:
+	python3 scripts/acceptance.py --check-migrations
 
 graph:
 	graphify update .

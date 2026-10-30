@@ -198,6 +198,7 @@ def run(args):
 
     settings = {
         "timezone": "Europe/Moscow",
+        "time_format": "12h",
         "language": "ru",
         "theme": "dark",
         "reminders_enabled": True,
@@ -206,11 +207,16 @@ def run(args):
         "pomodoro_work_minutes": 30,
         "pomodoro_break_minutes": 7,
     }
+    legacy_settings = {key: value for key, value in settings.items() if key != "time_format"}
+    first.request("PUT", "/api/settings", legacy_settings)
+    saved, _ = first.request("GET", "/api/settings")
+    require(saved == dict(legacy_settings, time_format="24h"), "Legacy settings did not receive the compatible clock default")
     first.request("PUT", "/api/settings", settings)
     saved, _ = first.request("GET", "/api/settings")
     require(saved == settings, "Settings did not persist unchanged")
     invalid = dict(settings, timezone="Invalid/Timezone")
     first.request("PUT", "/api/settings", invalid, expected=400)
+    first.request("PUT", "/api/settings", dict(settings, time_format="invalid"), expected=400)
     saved, _ = first.request("GET", "/api/settings")
     require(saved == settings, "Invalid settings changed saved data")
     changed = dict(profile, nickname="cross-origin-change")

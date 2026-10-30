@@ -1,6 +1,80 @@
 {
-  "generated_at": "2026-10-28T14:32:07.094014+00:00",
+  "generated_at": "2026-10-29T16:45:09.719073+00:00",
   "nodes": {
+    "backend_src_ai": {
+      "code_fingerprint": "91486daa9c3a3476f7fe9be7ffe9617ed7e924b6b536726541ccb8320976e7ec",
+      "label": "ai.rs",
+      "last": "2026-10-29T14:23:25.917726+00:00",
+      "provenance": [
+        {
+          "date": "2026-10-29T14:23:25.917726+00:00",
+          "outcome": "useful",
+          "q": "Stage 8 AI recovery and provider authentication"
+        }
+      ],
+      "score": 0.997728515,
+      "source_file": "backend/src/ai.rs",
+      "status": "tentative",
+      "uses": 1
+    },
+    "backend_src_ai_context": {
+      "code_fingerprint": "a01914175a22a24ef378abd68d9dd94ae41b2035a065453448f61dd4471a3413",
+      "label": "ai_context.rs",
+      "last": "2026-10-29T14:23:25.917726+00:00",
+      "provenance": [
+        {
+          "date": "2026-10-29T14:23:25.917726+00:00",
+          "outcome": "useful",
+          "q": "Stage 8 AI recovery and provider authentication"
+        }
+      ],
+      "score": 0.997728515,
+      "source_file": "backend/src/ai_context.rs",
+      "status": "tentative",
+      "uses": 1
+    },
+    "backend_src_ai_login": {
+      "code_fingerprint": "6cb852e06a0aaf2a76d8c08ef4b86f97bee1d7e10ccbc95c0bb4c1a60f8313e7",
+      "label": "ai_login.rs",
+      "last": "2026-10-29T14:42:23.050781+00:00",
+      "provenance": [
+        {
+          "date": "2026-10-29T14:42:23.050781+00:00",
+          "outcome": "useful",
+          "q": "Stage 8 external ChatGPT acceptance after catalog and composer fixes"
+        },
+        {
+          "date": "2026-10-29T14:23:25.917726+00:00",
+          "outcome": "useful",
+          "q": "Stage 8 AI recovery and provider authentication"
+        }
+      ],
+      "score": 1.995760475,
+      "source_file": "backend/src/ai_login.rs",
+      "status": "preferred",
+      "uses": 2
+    },
+    "backend_src_ai_provider": {
+      "code_fingerprint": "0104c0303629d83868f126d68ae84bb5cf2ce7f15d1ad21d172c3996956f6df5",
+      "label": "ai_provider.rs",
+      "last": "2026-10-29T14:42:23.050781+00:00",
+      "provenance": [
+        {
+          "date": "2026-10-29T14:42:23.050781+00:00",
+          "outcome": "useful",
+          "q": "Stage 8 external ChatGPT acceptance after catalog and composer fixes"
+        },
+        {
+          "date": "2026-10-29T14:23:25.917726+00:00",
+          "outcome": "useful",
+          "q": "Stage 8 AI recovery and provider authentication"
+        }
+      ],
+      "score": 1.995760475,
+      "source_file": "backend/src/ai_provider.rs",
+      "status": "preferred",
+      "uses": 2
+    },
     "backend_src_crypto": {
       "code_fingerprint": "3ab3ae5dd761fe4c38155d1e4faf7dea38f3eb4a773e23a6000ce1ce3f7cb54f",
       "label": "crypto.rs",
@@ -12,7 +86,7 @@
           "q": "Stage 6 intimacy journal architecture, privacy and integration after Stage 5"
         }
       ],
-      "score": 0.998724527,
+      "score": 0.97383257,
       "source_file": "backend/src/crypto.rs",
       "status": "tentative",
       "uses": 1
@@ -28,7 +102,7 @@
           "q": "Stage 7 analytics and deletion integration with tasks notes calendar schedule Markdown"
         }
       ],
-      "score": 0.999430905,
+      "score": 0.974521342,
       "source_file": "backend/src/domain.rs",
       "status": "tentative",
       "uses": 1
@@ -49,7 +123,7 @@
           "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
         }
       ],
-      "score": 1.996057155,
+      "score": 1.946307932,
       "source_file": "backend/src/habits.rs",
       "status": "preferred",
       "uses": 2
@@ -65,7 +139,7 @@
           "q": "Stage 6 intimacy journal architecture, privacy and integration after Stage 5"
         }
       ],
-      "score": 0.998724527,
+      "score": 0.97383257,
       "source_file": "backend/src/intimacy.rs",
       "status": "tentative",
       "uses": 1
@@ -86,7 +160,7 @@
           "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
         }
       ],
-      "score": 1.996057155,
+      "score": 1.946307932,
       "source_file": "backend/src/schedule.rs",
       "status": "preferred",
       "uses": 2
@@ -102,7 +176,7 @@
           "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
         }
       ],
-      "score": 0.99777408,
+      "score": 0.972905812,
       "source_file": "backend/src/tasks.rs",
       "status": "tentative",
       "uses": 1
@@ -118,7 +192,7 @@
           "q": "Stage 5 workout integration with habits Today calendar and schedule"
         }
       ],
-      "score": 0.998283075,
+      "score": 0.97340212,
       "source_file": "backend/src/workout_plan.rs",
       "status": "tentative",
       "uses": 1
@@ -134,7 +208,7 @@
           "q": "Stage 5 workout integration with habits Today calendar and schedule"
         }
       ],
-      "score": 0.998283075,
+      "score": 0.97340212,
       "source_file": "backend/src/workout_sessions.rs",
       "status": "tentative",
       "uses": 1
@@ -150,13 +224,13 @@
           "q": "Stage 5 workout integration with habits Today calendar and schedule"
         }
       ],
-      "score": 0.998283075,
+      "score": 0.97340212,
       "source_file": "backend/src/workouts.rs",
       "status": "tentative",
       "uses": 1
     },
     "frontend_src_app": {
-      "code_fingerprint": "476cfc69626c15b4319e41f2f494d93aafa3d388b51d4e165d1592a2c7ae2e79",
+      "code_fingerprint": "7eb03b606472071afb007c6308bc655a216c90c79ba96a90ec3cb33985f7af73",
       "label": "app.tsx",
       "last": "2026-10-28T13:12:34.462376+00:00",
       "provenance": [
@@ -166,13 +240,13 @@
           "q": "Stage 6 intimacy journal architecture, privacy and integration after Stage 5"
         }
       ],
-      "score": 0.998724527,
+      "score": 0.97383257,
       "source_file": "frontend/src/app.tsx",
       "status": "tentative",
       "uses": 1
     },
     "frontend_src_components_markdown_markdown": {
-      "code_fingerprint": "9aaaf49f996bb6d5d404f180a12ceb7581995c72df90e94ae547f3ca3c098c57",
+      "code_fingerprint": "b587109699c57043e4a44fdd87ebaef4befb4e17f815b80893733c1e6633b0f3",
       "label": "Markdown()",
       "last": "2026-10-28T13:56:38.377387+00:00",
       "provenance": [
@@ -182,13 +256,13 @@
           "q": "Stage 7 analytics and deletion integration with tasks notes calendar schedule Markdown"
         }
       ],
-      "score": 0.999430905,
+      "score": 0.974521342,
       "source_file": "frontend/src/components/markdown.tsx",
       "status": "tentative",
       "uses": 1
     },
     "project_project_progress": {
-      "code_fingerprint": "7747308924276618b5cf31a0fb7a39f1fdf08372bde98b2288685c49de637c64",
+      "code_fingerprint": "aef46d482a9d8e39e14db60222e3a4148c60b197452867945ea5ac1e65f3bf66",
       "label": "project_progress.md",
       "last": "2026-10-28T13:12:34.462376+00:00",
       "provenance": [
@@ -203,7 +277,7 @@
           "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
         }
       ],
-      "score": 1.996498607,
+      "score": 1.946738381,
       "source_file": "project/project_progress.md",
       "status": "preferred",
       "uses": 2

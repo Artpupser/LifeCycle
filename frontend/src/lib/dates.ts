@@ -16,8 +16,17 @@ export function dateLabel(date: string, options: Intl.DateTimeFormatOptions = { 
   return new Intl.DateTimeFormat("ru-RU", { ...options, timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
 }
 
-export function instantLabel(instant: string, timezone: string) {
-  return new Intl.DateTimeFormat("ru-RU", { timeZone: timezone, hour: "2-digit", minute: "2-digit" }).format(new Date(instant));
+export function instantLabel(instant: string, timezone: string, format: "12h" | "24h" = "24h") {
+  return new Intl.DateTimeFormat("ru-RU", { timeZone: timezone, hour: "2-digit", minute: "2-digit", hourCycle: format === "12h" ? "h12" : "h23" }).format(new Date(instant));
+}
+
+export function dateTimeLabel(instant: string, timezone: string, format: "12h" | "24h" = "24h") {
+  return `${dateLabel(localDate(timezone, new Date(instant)), { day: "numeric", month: "long", year: "numeric" })} · ${instantLabel(instant, timezone, format)}`;
+}
+
+export function minuteOfDay(instant: string, timezone: string) {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: timezone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(instant));
+  return Number(parts.find((part) => part.type === "hour")!.value) * 60 + Number(parts.find((part) => part.type === "minute")!.value);
 }
 
 export function localDateTimeInput(instant: string) {

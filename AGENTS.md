@@ -24,4 +24,4 @@ Rules:
 - Avoid reading unrelated source files.
 
 ## Files policy
-- Not touch files `project/ideas.md`, `project/prompts.md`, `project/plugins.md`
+- Not touch files `project/ideas.md`, `project/prompts.md`, `project/plugins.md`, `project/help.md`

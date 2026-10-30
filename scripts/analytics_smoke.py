@@ -113,11 +113,13 @@ def run(args):
     future = today + timedelta(days=3)
     future_report, _ = first.request('GET', f'/api/analytics?from={future}&to={future}')
     require(future_report['habits']['expected'] == 0 and future_report['event_count'] == 0, 'Deleted templates generate future metrics')
+    surrounding = f'/api/analytics?from={yesterday}&to={today + timedelta(days=1)}'
+    baseline, _ = first.request('GET', surrounding)
     for zone in ['Asia/Tokyo', 'America/Los_Angeles']:
         settings['timezone'] = zone
         first.request('PUT', '/api/settings', settings)
-        shifted, _ = first.request('GET', path)
-        require(shifted['event_count'] == report['event_count'] and shifted['timezone'] == zone, 'Profile zone changed total event count within surrounding days')
+        shifted, _ = first.request('GET', surrounding)
+        require(shifted['event_count'] == baseline['event_count'] and shifted['timezone'] == zone, 'Profile zone changed total event count within surrounding days')
     settings['timezone'] = 'UTC'
     first.request('PUT', '/api/settings', settings)
     dst, _ = first.request('GET', '/api/analytics?from=2026-03-28&to=2026-03-30')
