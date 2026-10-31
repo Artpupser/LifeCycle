@@ -1,0 +1,108 @@
+import { execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { expect, test } from "@playwright/test";
+
+// The completed turn is a labeled encrypted fixture, not a simulated successful inference.
+test("AI proposal is reviewed in the real editor, confirmed once, restored after reload and undone", async ({ page, request }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const failures: string[] = [];
+  page.on("pageerror", (error) => failures.push(error.message));
+  await page.goto("/ai");
+  const origin = new URL(page.url()).origin;
+  const email = `ai-upgrade-${Date.now()}-${randomUUID()}@example.test`;
+  expect((await page.request.post("/api/auth/request-code", { headers: { Origin: origin }, data: { email } })).status()).toBe(202);
+  let code = "";
+  const mailpit = process.env.MAILPIT_URL ?? "http://localhost:8025";
+  await expect.poll(async () => {
+    const inbox = await (await request.get(`${mailpit}/api/v1/messages`)).json();
+    const found = inbox.messages.find((item: { To: { Address: string }[] }) => item.To.some((to) => to.Address === email));
+    if (!found) return false;
+    const detail = await (await request.get(`${mailpit}/api/v1/message/${found.ID}`)).json();
+    code = detail.Text.match(/\b\d{6}\b/)?.[0] ?? "";
+    return code.length === 6;
+  }).toBe(true);
+  const identity = await (await page.request.post("/api/auth/verify-code", { headers: { Origin: origin }, data: { email, code } })).json();
+  async function write(path: string, data?: unknown, method = "POST") {
+    const response = await page.request.fetch(`/api${path}`, { method, headers: { Origin: origin }, data });
+    expect(response.ok()).toBe(true);
+    return response.status() === 204 ? null : response.json();
+  }
+  let config = await (await page.request.get("/api/ai/settings")).json();
+  await write("/ai/settings", { revision: config.revision, model: config.model, enabled: false, permissions: { ...config.permissions, workouts: true, changes: true } }, "PUT");
+  const chat = await write("/ai/chats");
+  execFileSync("python3", ["../scripts/ai_test_fixture.py"], { input: JSON.stringify({ user: identity.user.id, chat: chat.id, turn: randomUUID(), account: randomUUID() }) });
+  await page.goto("/ai");
+  await page.getByRole("button", { name: "Настройки AI", exact: true }).click();
+  await expect(page.getByText(/synthetic@example.test/)).toBeVisible();
+  await page.getByRole("button", { name: "Удалить привязку ChatGPT", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Удалить привязку навсегда", exact: true }).click();
+  await expect(page.getByText(/synthetic@example.test/)).toHaveCount(0);
+  await page.reload();
+  expect(await (await page.request.get("/api/ai/accounts")).json()).toEqual([]);
+  config = await (await page.request.get("/api/ai/settings")).json();
+  const id = randomUUID();
+  const proposal = { summary: "Синтетическое предложение: техника упражнения", actions: [{ entity: "exercise", operation: "create", id, expected_updated_at: null, data: { title: "Подъём рук для проверки UI", kind: "repetitions", description: "**Медленно** и без рывков", images: [], sources: [] } }] };
+  execFileSync("python3", ["../scripts/ai_test_fixture.py"], { input: JSON.stringify({ user: identity.user.id, chat: chat.id, turn: randomUUID(), revision: config.revision, answer: `Предлагаю проверить технику.\n\`\`\`lifecycle-actions\n${JSON.stringify(proposal)}\n\`\`\`` }) });
+  await page.goto("/ai");
+  await page.getByRole("button", { name: "Проверить изменения из ответа", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("button", { name: "Подтвердить и сохранить изменения", exact: true })).toBeDisabled();
+  expect((await page.request.get(`/api/exercises/${id}`)).status()).toBe(404);
+  await dialog.getByRole("button", { name: "Изменить предложение 1", exact: true }).click();
+  await page.getByLabel("Название упражнения", { exact: true }).fill("Название проверено пользователем");
+  await page.getByRole("button", { name: "Сохранить упражнение", exact: true }).click();
+  await expect(page.getByRole("dialog").getByRole("heading", { name: "Проверка изменений AI" })).toBeVisible();
+  await page.getByRole("checkbox", { name: "Я проверил все изменения и хочу сохранить их", exact: true }).check();
+  await page.getByRole("button", { name: "Подтвердить и сохранить изменения", exact: true }).click();
+  await expect(dialog.getByText("Изменения сохранены.", { exact: false })).toBeVisible();
+  const saved = await (await page.request.get(`/api/exercises/${id}`)).json();
+  expect(saved.data.title).toBe("Название проверено пользователем");
+  await page.reload();
+  await page.getByText("История изменений AI", { exact: true }).click();
+  const journal = page.getByRole("region", { name: "Журнал изменений AI", exact: true });
+  await journal.getByRole("article").filter({ hasText: "Применено" }).getByRole("button", { name: "Открыть изменения" }).click();
+  await dialog.getByRole("checkbox", { name: "Подтверждаю отмену этих изменений", exact: true }).check();
+  await dialog.getByRole("button", { name: "Отменить сохранённые изменения", exact: true }).click();
+  await expect(dialog.getByText(/^Отменено\./)).toBeVisible();
+  expect((await page.request.get(`/api/exercises/${id}`)).status()).toBe(404);
+  await page.screenshot({ path: testInfo.outputPath("ai-action-review.png"), fullPage: true });
+  expect(await page.locator("html").evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(390);
+  config = await (await page.request.get("/api/ai/settings")).json();
+  config = await write("/ai/settings", { revision: config.revision, model: config.model, enabled: false, permissions: { ...config.permissions, workouts: false, tasks: true, notes: true, changes: true } }, "PUT");
+  const personalChat = await write("/ai/chats");
+  const noteId = randomUUID();
+  const taskId = randomUUID();
+  const day = new Date().toISOString().slice(0, 10);
+  const personalProposal = { summary: "Синтетический план дня: заметка и задача", actions: [
+    { entity: "note", operation: "create", id: noteId, expected_updated_at: null, data: { title: "План из AI", content: "# План дня\n\n**Первый шаг**\n<script>throw new Error('injected')</script>", tags: [], color: "#226677", folder_id: null } },
+    { entity: "task", operation: "create", id: taskId, expected_updated_at: null, data: { title: "Шаг из плана AI", description: "**Проверить факты**", schedule: { start_date: day, time: "13:15", timezone: "UTC", duration_minutes: 20, recurrence: "once", interval_days: 1, weekdays: [], end_date: null } } },
+  ] };
+  execFileSync("python3", ["../scripts/ai_test_fixture.py"], { input: JSON.stringify({ user: identity.user.id, chat: personalChat.id, turn: randomUUID(), revision: config.revision, answer: `Предлагаю два связанных шага для проверки.\n\`\`\`lifecycle-actions\n${JSON.stringify(personalProposal)}\n\`\`\`` }) });
+  await page.goto("/ai");
+  await page.getByRole("button", { name: "Проверить изменения из ответа", exact: true }).click();
+  await dialog.getByRole("button", { name: "Изменить предложение 1", exact: true }).click();
+  await page.getByLabel("Название заметки", { exact: true }).fill("План проверен перед сохранением");
+  await page.getByRole("button", { name: "Сохранить заметку", exact: true }).click();
+  await dialog.getByRole("button", { name: "Изменить предложение 2", exact: true }).click();
+  await page.getByLabel("Название задачи", { exact: true }).fill("Шаг проверен перед сохранением");
+  await page.getByRole("button", { name: "Сохранить задачу", exact: true }).click();
+  await dialog.getByRole("checkbox", { name: "Я проверил все изменения и хочу сохранить их", exact: true }).check();
+  await dialog.getByRole("button", { name: "Подтвердить и сохранить изменения", exact: true }).click();
+  await expect(dialog.getByText("Изменения сохранены.", { exact: false })).toBeVisible();
+  const calendar = await (await page.request.get(`/api/calendar?from=${day}&to=${day}`)).json();
+  expect(calendar.occurrences.find((item: { task: { id: string } }) => item.task.id === taskId).starts_at).toContain("T13:15:00");
+  await page.goto("/notes");
+  await expect(page.getByRole("button", { name: "План проверен перед сохранением", exact: true })).toBeVisible();
+  await expect(page.getByText("Первый шаг", { exact: true })).toBeVisible();
+  await page.goto("/tasks");
+  await expect(page.getByText("Шаг проверен перед сохранением", { exact: true }).first()).toBeVisible();
+  await page.goto("/ai");
+  await page.getByText("История изменений AI", { exact: true }).click();
+  await journal.getByRole("article").filter({ hasText: "Синтетический план дня" }).filter({ hasText: "Применено" }).getByRole("button", { name: "Открыть изменения" }).click();
+  await dialog.getByRole("checkbox", { name: "Подтверждаю отмену этих изменений", exact: true }).check();
+  await dialog.getByRole("button", { name: "Отменить сохранённые изменения", exact: true }).click();
+  await expect(dialog.getByText(/^Отменено\./)).toBeVisible();
+  expect((await page.request.get(`/api/notes/${noteId}`)).status()).toBe(404);
+  expect((await page.request.get(`/api/tasks/${taskId}`)).status()).toBe(404);
+  expect(failures).toEqual([]);
+});

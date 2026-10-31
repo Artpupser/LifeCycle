@@ -19,9 +19,9 @@ use uuid::Uuid;
 
 type PlannedStart = (NaiveDate, Option<DateTime<Utc>>);
 
-#[derive(Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
-struct TaskInput {
+pub(crate) struct TaskInput {
     title: String,
     description: String,
     status: String,
@@ -312,6 +312,19 @@ async fn save(
     v: TaskInput,
     create: bool,
 ) -> Result<Task, ApiError> {
+    let mut tx = s.database.begin().await?;
+    let task = save_in(s, &mut tx, user, id, v, create).await?;
+    tx.commit().await?;
+    Ok(task)
+}
+pub(crate) async fn save_in(
+    s: &AppState,
+    tx: &mut PgConnection,
+    user: Uuid,
+    id: Uuid,
+    v: TaskInput,
+    create: bool,
+) -> Result<Task, ApiError> {
     domain::text(&v.title, 1, 200)?;
     domain::text(&v.description, 0, 200000)?;
     domain::tags(&v.tags)?;
@@ -329,8 +342,7 @@ async fn save(
         }
     }
     let (today, timezone) = domain::local_today(s, user).await?;
-    let mut tx = s.database.begin().await?;
-    lock_tasks(&mut tx, user).await?;
+    lock_tasks(tx, user).await?;
     if !create {
         let kind: String =
             sqlx::query_scalar("SELECT source_kind FROM app.tasks WHERE id=$1 AND user_id=$2")
@@ -435,11 +447,11 @@ async fn save(
             || task.due_at.is_some()
             || matches!(task.status.as_str(), "completed" | "rejected")
         {
-            persist_occurrence(&mut tx, user, &task, date, &task.status).await?;
+            persist_occurrence(tx, user, &task, date, &task.status).await?;
         }
     }
     domain::event(
-        &mut tx,
+        tx,
         user,
         if create {
             "task_created"
@@ -451,7 +463,6 @@ async fn save(
         serde_json::json!({"status":task.status}),
     )
     .await?;
-    tx.commit().await?;
     Ok(task)
 }
 pub async fn lock_tasks(db: &mut PgConnection, user: Uuid) -> Result<(), ApiError> {
@@ -467,11 +478,16 @@ async fn delete(
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     let mut tx = s.database.begin().await?;
-    lock_tasks(&mut tx, u.id).await?;
+    delete_in(&mut tx, u.id, id).await?;
+    tx.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+pub(crate) async fn delete_in(tx: &mut PgConnection, user: Uuid, id: Uuid) -> Result<(), ApiError> {
+    lock_tasks(tx, user).await?;
     let kind: String =
         sqlx::query_scalar("SELECT source_kind FROM app.tasks WHERE id=$1 AND user_id=$2")
             .bind(id)
-            .bind(u.id)
+            .bind(user)
             .fetch_optional(&mut *tx)
             .await?
             .ok_or_else(domain::not_found)?;
@@ -482,7 +498,7 @@ async fn delete(
     }
     let rows = sqlx::query("DELETE FROM app.tasks WHERE id=$1 AND user_id=$2")
         .bind(id)
-        .bind(u.id)
+        .bind(user)
         .execute(&mut *tx)
         .await?
         .rows_affected();
@@ -493,20 +509,11 @@ async fn delete(
         "UPDATE app.tasks SET parent_id=NULL,updated_at=now() WHERE parent_id=$1 AND user_id=$2",
     )
     .bind(id)
-    .bind(u.id)
+    .bind(user)
     .execute(&mut *tx)
     .await?;
-    domain::event(
-        &mut tx,
-        u.id,
-        "task_deleted",
-        "task",
-        id,
-        serde_json::json!({}),
-    )
-    .await?;
-    tx.commit().await?;
-    Ok(StatusCode::NO_CONTENT)
+    domain::event(tx, user, "task_deleted", "task", id, serde_json::json!({})).await?;
+    Ok(())
 }
 async fn mark(
     State(s): State<AppState>,

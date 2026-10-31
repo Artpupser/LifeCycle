@@ -270,12 +270,28 @@ async fn build_report(
     let now = Utc::now();
     let mut guard = s.database.begin().await?;
     tasks::lock_tasks(&mut guard, user).await?;
+    let ai_mode = allowed.is_some();
     let allowed = match allowed {
         Some(value) => value,
         None => privacy(s, user).await?,
     };
-    let rows = tasks::occurrences(s, user, q.from, q.to, &settings.timezone).await?;
-    let templates = habits::historical_tasks(s, user).await?;
+    let mut rows = tasks::occurrences(s, user, q.from, q.to, &settings.timezone).await?;
+    let mut templates = habits::historical_tasks(s, user).await?;
+    if ai_mode {
+        let shared: Vec<Uuid> =
+            sqlx::query_scalar("SELECT id FROM app.workouts WHERE user_id=$1 AND ai_shared")
+                .bind(user)
+                .fetch_all(&s.database)
+                .await?;
+        let visible = |t: &tasks::Task| {
+            t.habit
+                .as_ref()
+                .and_then(|h| h.workout_id)
+                .is_none_or(|id| shared.contains(&id))
+        };
+        rows.retain(|r| visible(&r.occurrence.task));
+        templates.retain(&visible);
+    }
     let stats = templates
         .iter()
         .map(|task| habits::summarize(task, &rows, now))
@@ -309,8 +325,8 @@ async fn build_report(
             }
         }
     }
-    let events:Vec<(NaiveDate,String,i64)>=sqlx::query_as("SELECT (occurred_at AT TIME ZONE $2)::date,event_type,count(*) FROM app.activity_events WHERE user_id=$1 AND (occurred_at AT TIME ZONE $2)::date BETWEEN $3 AND $4 AND entity_type IN ('note','folder','task','habit','exercise','workout','workout_session','countdown','pomodoro') GROUP BY 1,2")
-        .bind(user).bind(&settings.timezone).bind(q.from).bind(q.to).fetch_all(&s.database).await?;
+    let events:Vec<(NaiveDate,String,i64)>=sqlx::query_as("SELECT (occurred_at AT TIME ZONE $2)::date,event_type,count(*) FROM app.activity_events ev WHERE user_id=$1 AND (NOT $5 OR CASE entity_type WHEN 'note' THEN EXISTS(SELECT 1 FROM app.notes n WHERE n.user_id=ev.user_id AND n.id=ev.entity_id AND n.ai_shared) WHEN 'workout' THEN EXISTS(SELECT 1 FROM app.workouts w WHERE w.user_id=ev.user_id AND w.id=ev.entity_id AND w.ai_shared) WHEN 'workout_session' THEN EXISTS(SELECT 1 FROM app.workout_sessions ws JOIN app.workouts w ON w.id=ws.workout_id AND w.user_id=ws.user_id WHERE ws.user_id=ev.user_id AND ws.id=ev.entity_id AND w.ai_shared) WHEN 'exercise' THEN EXISTS(SELECT 1 FROM app.exercises x WHERE x.user_id=ev.user_id AND x.id=ev.entity_id AND x.ai_shared) WHEN 'folder' THEN false ELSE true END) AND (occurred_at AT TIME ZONE $2)::date BETWEEN $3 AND $4 AND entity_type IN ('note','folder','task','habit','exercise','workout','workout_session','countdown','pomodoro') GROUP BY 1,2")
+        .bind(user).bind(&settings.timezone).bind(q.from).bind(q.to).bind(ai_mode).fetch_all(&s.database).await?;
     let mut event_types = BTreeMap::new();
     for (date, kind, count) in events {
         if let Some(day) = days.get_mut(&date) {
@@ -329,8 +345,8 @@ async fn build_report(
             day.focus_seconds = seconds;
         }
     }
-    let sessions:Vec<(NaiveDate,String,i64,i64,i64)>=sqlx::query_as("SELECT (s.ended_at AT TIME ZONE $2)::date,s.status,coalesce((SELECT sum((r->>'elapsed_seconds')::bigint) FROM jsonb_array_elements(s.results) r),0)::bigint+s.elapsed_seconds,(SELECT count(*) FROM jsonb_array_elements(s.results) r WHERE r->>'status'='completed' AND s.snapshot->'steps'->((r->>'step_index')::integer)->'exercise'<>'null'::jsonb),coalesce((SELECT sum((r->>'actual_repetitions')::bigint) FROM jsonb_array_elements(s.results) r WHERE r->>'status'='completed'),0)::bigint FROM app.workout_sessions s WHERE s.user_id=$1 AND s.status IN ('completed','partial','cancelled') AND (s.ended_at AT TIME ZONE $2)::date BETWEEN $3 AND $4")
-        .bind(user).bind(&settings.timezone).bind(q.from).bind(q.to).fetch_all(&s.database).await?;
+    let sessions:Vec<(NaiveDate,String,i64,i64,i64)>=sqlx::query_as("SELECT (s.ended_at AT TIME ZONE $2)::date,s.status,coalesce((SELECT sum((r->>'elapsed_seconds')::bigint) FROM jsonb_array_elements(s.results) r),0)::bigint+s.elapsed_seconds,(SELECT count(*) FROM jsonb_array_elements(s.results) r WHERE r->>'status'='completed' AND s.snapshot->'steps'->((r->>'step_index')::integer)->'exercise'<>'null'::jsonb),coalesce((SELECT sum((r->>'actual_repetitions')::bigint) FROM jsonb_array_elements(s.results) r WHERE r->>'status'='completed'),0)::bigint FROM app.workout_sessions s WHERE s.user_id=$1 AND (NOT $5 OR EXISTS(SELECT 1 FROM app.workouts w WHERE w.id=s.workout_id AND w.user_id=s.user_id AND w.ai_shared)) AND s.status IN ('completed','partial','cancelled') AND (s.ended_at AT TIME ZONE $2)::date BETWEEN $3 AND $4")
+        .bind(user).bind(&settings.timezone).bind(q.from).bind(q.to).bind(ai_mode).fetch_all(&s.database).await?;
     let mut workouts = WorkoutMetrics::default();
     for (date, status, seconds, steps, repetitions) in sessions {
         match status.as_str() {

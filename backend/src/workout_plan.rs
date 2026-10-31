@@ -69,6 +69,8 @@ pub struct Entry {
     pub duration_seconds: u32,
     pub rest_seconds: u32,
     pub progression: Option<Progression>,
+    #[serde(default)]
+    pub intensity: String,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -130,6 +132,7 @@ impl Workout {
                 duration += u64::from(round.rest_seconds) * u64::from(round.repeat);
             }
             for entry in &round.exercises {
+                domain::text(&entry.intensity, 0, 200)?;
                 let exercise = exercises
                     .get(&entry.exercise_id)
                     .ok_or_else(|| ApiError::validation("Select an active owned exercise"))?;
@@ -207,6 +210,7 @@ impl Workout {
                     };
                     steps.push(Step {
                         title: exercise.title.clone(),
+                        intensity: entry.intensity.clone(),
                         round_title: round.title.clone(),
                         cycle,
                         entry_id: Some(entry.id),
@@ -237,6 +241,8 @@ impl Workout {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Step {
     pub title: String,
+    #[serde(default)]
+    pub intensity: String,
     pub round_title: String,
     pub cycle: u32,
     pub entry_id: Option<Uuid>,
@@ -249,6 +255,7 @@ impl Step {
     fn rest(round: &str, cycle: u32, duration_seconds: u32) -> Self {
         Self {
             title: "Отдых".into(),
+            intensity: String::new(),
             round_title: round.into(),
             cycle,
             entry_id: None,
@@ -311,6 +318,7 @@ mod tests {
                     repetitions: 2,
                     duration_seconds: 10,
                     rest_seconds: 5,
+                    intensity: String::new(),
                     progression: Some(Progression {
                         start_date: "2026-10-01".parse().unwrap(),
                         days: 10,
@@ -359,6 +367,7 @@ mod tests {
                 duration_seconds: 0,
                 rest_seconds: 0,
                 progression: None,
+                intensity: String::new(),
             })
             .collect();
         let mut plan = Workout {

@@ -79,6 +79,13 @@ struct Revision {
     revision: i64,
 }
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DisconnectInput {
+    revision: i64,
+    #[serde(default)]
+    forget: bool,
+}
+#[derive(Deserialize)]
 struct Claims {
     iat: u64,
     sub: String,
@@ -539,7 +546,7 @@ async fn disconnect(
     State(s): State<AppState>,
     u: CurrentUser,
     Path(id): Path<Uuid>,
-    ApiJson(v): ApiJson<Revision>,
+    ApiJson(v): ApiJson<DisconnectInput>,
 ) -> Result<Json<Value>, ApiError> {
     let mut tx = s.database.begin().await?;
     let c = ai::config(&mut tx, u.id).await?;
@@ -548,16 +555,26 @@ async fn disconnect(
     }
     let mut a = account(&s, &mut tx, u.id, id).await?;
     let credentials = a.credentials.take();
-    store_account(&s, &mut tx, u.id, id, &a).await?;
     sqlx::query("UPDATE app.ai_settings SET enabled=CASE WHEN active_account_id=$2 AND auth_mode='login' THEN false ELSE enabled END,active_account_id=CASE WHEN active_account_id=$2 THEN NULL ELSE active_account_id END,revision=revision+1,updated_at=now() WHERE user_id=$1").bind(u.id).bind(id).execute(&mut *tx).await?;
     ai::invalidate(&mut tx, u.id).await?;
+    if v.forget {
+        sqlx::query("DELETE FROM app.ai_accounts WHERE user_id=$1 AND id=$2")
+            .bind(u.id)
+            .bind(id)
+            .execute(&mut *tx)
+            .await?;
+    } else {
+        store_account(&s, &mut tx, u.id, id, &a).await?;
+    }
     tx.commit().await?;
     let confirmed = if let Some(token) = credentials {
         revoke(&a.client_id, &token.refresh_token).await.is_ok()
     } else {
         true
     };
-    Ok(Json(json!({"remote_revoked":confirmed})))
+    Ok(Json(
+        json!({"remote_revoked":confirmed,"forgotten":v.forget}),
+    ))
 }
 pub async fn access(
     s: &AppState,

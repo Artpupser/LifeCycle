@@ -1,4 +1,6 @@
 mod ai;
+mod ai_access;
+mod ai_actions;
 mod ai_context;
 mod ai_login;
 mod ai_provider;
@@ -23,6 +25,7 @@ pub mod settings;
 pub mod state;
 pub mod tasks;
 mod workout_plan;
+mod workout_preferences;
 mod workout_sessions;
 pub mod workouts;
 
@@ -52,10 +55,13 @@ pub fn router(state: AppState) -> Router {
         .merge(countdowns::routes())
         .merge(pomodoro::routes())
         .merge(workouts::routes())
+        .merge(workout_preferences::routes())
         .merge(workout_sessions::routes())
         .merge(intimacy::routes())
         .merge(analytics::routes())
         .merge(ai::routes())
+        .merge(ai_actions::routes())
+        .merge(ai_access::routes())
         .merge(ai_login::routes())
         .fallback(error::not_found)
         .layer(axum::middleware::from_fn_with_state(

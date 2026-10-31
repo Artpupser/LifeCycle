@@ -11,12 +11,12 @@ import { localDateTimeInput } from "@/lib/dates";
 import { ScheduleEditor } from "./schedule-editor";
 import { defaultSchedule, taskInput, isRecurring, priorityLabels, statusLabels, type Task, type TaskInput, type TaskStatus } from "./types";
 
-export function TaskEditor({ task, tasks, parentId, close, saved }: { task: Task | null; tasks: Task[]; parentId?: string; close: () => void; saved: () => void }) {
+export function TaskEditor({ task, tasks, parentId, close, saved, submitDraft }: { task: Task | null; tasks: Task[]; parentId?: string; close: () => void; saved: () => void; submitDraft?: (value: TaskInput) => Promise<void> }) {
   const { settings } = usePreferences();
   const [draft, setDraft] = useState<TaskInput>(() => task ? taskInput(task) : { title: "", description: "", status: "todo", tags: [], color: "#a3e635", priority: "normal", parent_id: parentId ?? null, due_at: null, schedule: null });
   const [tags, setTags] = useState(draft.tags.join(", ")); const [uploading, setUploading] = useState(false); const action = useAction();
   function update<K extends keyof TaskInput>(key: K, value: TaskInput[K]) { setDraft((current) => ({ ...current, [key]: value })); }
-  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); void action.run(() => api(task ? `/tasks/${task.id}` : "/tasks", { method: task ? "PUT" : "POST", body: { ...draft, tags: [...new Set(tags.split(",").map((tag) => tag.trim()).filter(Boolean))] } }), saved); }
+  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); void action.run(() => submitDraft ? submitDraft({ ...draft, tags: [...new Set(tags.split(",").map((tag) => tag.trim()).filter(Boolean))] }) : api(task ? `/tasks/${task.id}` : "/tasks", { method: task ? "PUT" : "POST", body: { ...draft, tags: [...new Set(tags.split(",").map((tag) => tag.trim()).filter(Boolean))] } }), saved); }
   const recurring = isRecurring(draft);
   return <Dialog title={task ? "Редактировать задачу" : parentId ? "Новая подзадача" : "Новая задача"} onClose={close}><form onSubmit={submit} className="space-y-5"><fieldset disabled={action.busy} className="space-y-5">
     <FormField id="task-title" label="Название задачи"><Input id="task-title" required autoFocus maxLength={200} value={draft.title} onChange={(event) => update("title", event.target.value)} /></FormField>

@@ -3,6 +3,7 @@ use crate::{
     domain::{self, Search},
     error::{ApiError, ApiJson},
     state::AppState,
+    tasks,
 };
 use axum::{
     Json, Router,
@@ -12,7 +13,7 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::types::Json as DbJson;
+use sqlx::{PgConnection, types::Json as DbJson};
 use uuid::Uuid;
 
 #[derive(Deserialize, Default)]
@@ -30,9 +31,9 @@ struct Folder {
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
-#[derive(Deserialize, Default)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
-struct NoteInput {
+pub(crate) struct NoteInput {
     title: String,
     content: String,
     tags: Vec<String>,
@@ -41,13 +42,15 @@ struct NoteInput {
     folder_id: Option<Uuid>,
 }
 #[derive(Serialize, sqlx::FromRow)]
-struct Note {
+pub(crate) struct Note {
     id: Uuid,
     title: String,
     content: String,
     tags: DbJson<Vec<String>>,
     color: String,
     folder_id: Option<Uuid>,
+    ai_shared: bool,
+    ai_access_revision: i64,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
@@ -103,6 +106,7 @@ async fn save_folder(
     domain::text(&v.name, 1, 100)?;
     domain::color(&v.color)?;
     let mut tx = s.database.begin().await?;
+    tasks::lock_tasks(&mut tx, user).await?;
     let query = if create {
         "INSERT INTO app.note_folders (id,user_id,name,color) VALUES($1,$2,$3,$4) RETURNING id,name,color,created_at,updated_at"
     } else {
@@ -138,6 +142,7 @@ async fn delete_folder(
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     let mut tx = s.database.begin().await?;
+    tasks::lock_tasks(&mut tx, u.id).await?;
     let rows = sqlx::query("DELETE FROM app.note_folders WHERE id=$1 AND user_id=$2")
         .bind(id)
         .bind(u.id)
@@ -172,14 +177,14 @@ async fn notes(
     Query(q): Query<Search>,
 ) -> Result<Json<Vec<Note>>, ApiError> {
     q.validate()?;
-    Ok(Json(sqlx::query_as("SELECT id,title,content,tags,color,folder_id,created_at,updated_at FROM app.notes WHERE user_id=$1 AND ($2::text IS NULL OR strpos(lower(title||' '||content),lower($2))>0) AND ($3::uuid IS NULL OR folder_id=$3) AND ($4::text IS NULL OR tags ? $4) ORDER BY updated_at DESC,id").bind(u.id).bind(q.q).bind(q.folder_id).bind(q.tag).fetch_all(&s.database).await?))
+    Ok(Json(sqlx::query_as("SELECT id,title,content,tags,color,folder_id,ai_shared,ai_access_revision,created_at,updated_at FROM app.notes WHERE user_id=$1 AND ($2::text IS NULL OR strpos(lower(title||' '||content),lower($2))>0) AND ($3::uuid IS NULL OR folder_id=$3) AND ($4::text IS NULL OR tags ? $4) ORDER BY updated_at DESC,id").bind(u.id).bind(q.q).bind(q.folder_id).bind(q.tag).fetch_all(&s.database).await?))
 }
 async fn note(
     State(s): State<AppState>,
     u: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Note>, ApiError> {
-    Ok(Json(sqlx::query_as("SELECT id,title,content,tags,color,folder_id,created_at,updated_at FROM app.notes WHERE user_id=$1 AND id=$2").bind(u.id).bind(id).fetch_optional(&s.database).await?.ok_or_else(domain::not_found)?))
+    Ok(Json(sqlx::query_as("SELECT id,title,content,tags,color,folder_id,ai_shared,ai_access_revision,created_at,updated_at FROM app.notes WHERE user_id=$1 AND id=$2").bind(u.id).bind(id).fetch_optional(&s.database).await?.ok_or_else(domain::not_found)?))
 }
 async fn create_note(
     State(s): State<AppState>,
@@ -206,11 +211,23 @@ async fn save_note(
     v: NoteInput,
     create: bool,
 ) -> Result<Note, ApiError> {
+    let mut tx = s.database.begin().await?;
+    let note = save_note_in(&mut tx, user, id, v, create).await?;
+    tx.commit().await?;
+    Ok(note)
+}
+pub(crate) async fn save_note_in(
+    tx: &mut PgConnection,
+    user: Uuid,
+    id: Uuid,
+    v: NoteInput,
+    create: bool,
+) -> Result<Note, ApiError> {
     domain::text(&v.title, 1, 200)?;
     domain::text(&v.content, 0, 200000)?;
     domain::color(&v.color)?;
     domain::tags(&v.tags)?;
-    let mut tx = s.database.begin().await?;
+    tasks::lock_tasks(tx, user).await?;
     if let Some(folder) = v.folder_id
         && sqlx::query_scalar::<_, Uuid>(
             "SELECT id FROM app.note_folders WHERE id=$1 AND user_id=$2 FOR UPDATE",
@@ -226,9 +243,9 @@ async fn save_note(
         ));
     }
     let query = if create {
-        "INSERT INTO app.notes (id,user_id,title,content,tags,color,folder_id) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,title,content,tags,color,folder_id,created_at,updated_at"
+        "INSERT INTO app.notes (id,user_id,title,content,tags,color,folder_id) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,title,content,tags,color,folder_id,ai_shared,ai_access_revision,created_at,updated_at"
     } else {
-        "UPDATE app.notes SET title=$3,content=$4,tags=$5,color=$6,folder_id=$7,updated_at=now() WHERE id=$1 AND user_id=$2 RETURNING id,title,content,tags,color,folder_id,created_at,updated_at"
+        "UPDATE app.notes SET title=$3,content=$4,tags=$5,color=$6,folder_id=$7,updated_at=now() WHERE id=$1 AND user_id=$2 RETURNING id,title,content,tags,color,folder_id,ai_shared,ai_access_revision,created_at,updated_at"
     };
     let result = sqlx::query_as(query)
         .bind(id)
@@ -242,7 +259,7 @@ async fn save_note(
         .await?
         .ok_or_else(domain::not_found)?;
     domain::event(
-        &mut tx,
+        tx,
         user,
         if create {
             "note_created"
@@ -254,7 +271,6 @@ async fn save_note(
         serde_json::json!({}),
     )
     .await?;
-    tx.commit().await?;
     Ok(result)
 }
 async fn delete_note(
@@ -263,24 +279,25 @@ async fn delete_note(
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     let mut tx = s.database.begin().await?;
+    delete_note_in(&mut tx, u.id, id).await?;
+    tx.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+pub(crate) async fn delete_note_in(
+    tx: &mut PgConnection,
+    user: Uuid,
+    id: Uuid,
+) -> Result<(), ApiError> {
+    tasks::lock_tasks(tx, user).await?;
     let rows = sqlx::query("DELETE FROM app.notes WHERE id=$1 AND user_id=$2")
         .bind(id)
-        .bind(u.id)
+        .bind(user)
         .execute(&mut *tx)
         .await?
         .rows_affected();
     if rows == 0 {
         return Err(domain::not_found());
     }
-    domain::event(
-        &mut tx,
-        u.id,
-        "note_deleted",
-        "note",
-        id,
-        serde_json::json!({}),
-    )
-    .await?;
-    tx.commit().await?;
-    Ok(StatusCode::NO_CONTENT)
+    domain::event(tx, user, "note_deleted", "note", id, serde_json::json!({})).await?;
+    Ok(())
 }

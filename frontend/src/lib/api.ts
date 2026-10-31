@@ -13,6 +13,13 @@ export class ApiError extends Error {
 }
 
 export function apiErrorMessage(status: number, code: string) {
+  if (code === "workout_preferences_stale") return "Цели и условия изменились в другом окне. Ваш текст остался в форме; загрузите сохранённые данные перед повторным сохранением.";
+  if (code === "ai_access_stale") return "Доступ уже изменён в другом окне. Обновите страницу и повторите выбор.";
+  if (code === "ai_response_too_large") return "Ответ слишком большой. Попросите создать один план или меньше упражнений за раз.";
+  if (code === "ai_action_denied") return "Включите доступ к этому разделу и разрешение на предложения изменений AI. Подготовьте новое предложение.";
+  if (code === "ai_action_conflict") return "Исходные данные изменились или появились новые связи. Подготовьте новое предложение; чужие изменения не перезаписываются.";
+  if (code === "ai_duplicate") return "Такая запись уже существует. Используйте её в предложении вместо создания копии.";
+  if (code === "ai_safety_review_required") return "Известные ограничения здоровья требуют ручной проверки нагрузки. Используйте обычный редактор тренировок после проверки со специалистом.";
   if (code === "ai_login_local_only") return "Вход через ChatGPT требует локального HTTP-развёртывания LifeCycle на localhost или 127.0.0.1.";
   if (code === "ai_login_required") return "Подключение ChatGPT истекло или отозвано. Нажмите «Войти снова».";
   if (code === "ai_login_expired" || code === "ai_login_invalid") return "Не удалось подтвердить вход. Начните новый вход через ChatGPT.";

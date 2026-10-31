@@ -22,6 +22,12 @@ use uuid::Uuid;
 pub struct Record<T> {
     pub id: Uuid,
     pub data: DbJson<T>,
+    #[serde(default)]
+    #[sqlx(default)]
+    pub ai_shared: bool,
+    #[serde(default)]
+    #[sqlx(default)]
+    pub ai_access_revision: i64,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -109,9 +115,20 @@ async fn save_exercise(
     v: Exercise,
     create: bool,
 ) -> Result<Record<Exercise>, ApiError> {
-    v.validate()?;
     let mut tx = s.database.begin().await?;
-    tasks::lock_tasks(&mut tx, user).await?;
+    let row = save_exercise_in(&mut tx, user, id, v, create).await?;
+    tx.commit().await?;
+    Ok(row)
+}
+pub(crate) async fn save_exercise_in(
+    tx: &mut PgConnection,
+    user: Uuid,
+    id: Uuid,
+    v: Exercise,
+    create: bool,
+) -> Result<Record<Exercise>, ApiError> {
+    v.validate()?;
+    tasks::lock_tasks(tx, user).await?;
     for image in &v.images {
         let exists: bool =
             sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.media WHERE user_id=$1 AND id=$2)")
@@ -131,7 +148,7 @@ async fn save_exercise(
                 .fetch_optional(&mut *tx)
                 .await?
                 .ok_or_else(domain::not_found)?;
-        if old.kind != v.kind && exercise_referenced(&mut tx, user, id).await? {
+        if old.kind != v.kind && exercise_referenced(tx, user, id).await? {
             return Err(domain::conflict(
                 "Remove exercise from active plans before changing its kind",
             ));
@@ -150,7 +167,7 @@ async fn save_exercise(
         .await?
         .ok_or_else(domain::not_found)?;
     domain::event(
-        &mut tx,
+        tx,
         user,
         if create {
             "exercise_created"
@@ -162,7 +179,6 @@ async fn save_exercise(
         serde_json::json!({}),
     )
     .await?;
-    tx.commit().await?;
     Ok(row)
 }
 async fn exercise_referenced(
@@ -178,14 +194,23 @@ async fn delete_exercise(
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     let mut tx = s.database.begin().await?;
-    tasks::lock_tasks(&mut tx, u.id).await?;
-    if exercise_referenced(&mut tx, u.id, id).await? {
+    delete_exercise_in(&mut tx, u.id, id).await?;
+    tx.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+pub(crate) async fn delete_exercise_in(
+    tx: &mut PgConnection,
+    user: Uuid,
+    id: Uuid,
+) -> Result<(), ApiError> {
+    tasks::lock_tasks(tx, user).await?;
+    if exercise_referenced(tx, user, id).await? {
         return Err(domain::conflict(
             "Remove exercise from active plans before deleting",
         ));
     }
     if sqlx::query("DELETE FROM app.exercises WHERE user_id=$1 AND id=$2")
-        .bind(u.id)
+        .bind(user)
         .bind(id)
         .execute(&mut *tx)
         .await?
@@ -195,16 +220,15 @@ async fn delete_exercise(
         return Err(domain::not_found());
     }
     domain::event(
-        &mut tx,
-        u.id,
+        tx,
+        user,
         "exercise_deleted",
         "exercise",
         id,
         serde_json::json!({}),
     )
     .await?;
-    tx.commit().await?;
-    Ok(StatusCode::NO_CONTENT)
+    Ok(())
 }
 async fn create_workout(
     State(s): State<AppState>,
@@ -258,8 +282,19 @@ async fn save_workout(
     create: bool,
 ) -> Result<Record<Workout>, ApiError> {
     let mut tx = s.database.begin().await?;
-    tasks::lock_tasks(&mut tx, user).await?;
-    v.validate(&active_exercises(&mut tx, user).await?)?;
+    let row = save_workout_in(&mut tx, user, id, v, create).await?;
+    tx.commit().await?;
+    Ok(row)
+}
+pub(crate) async fn save_workout_in(
+    tx: &mut PgConnection,
+    user: Uuid,
+    id: Uuid,
+    v: Workout,
+    create: bool,
+) -> Result<Record<Workout>, ApiError> {
+    tasks::lock_tasks(tx, user).await?;
+    v.validate(&active_exercises(tx, user).await?)?;
     let query = if create {
         "INSERT INTO app.workouts(id,user_id,data) VALUES($1,$2,$3) RETURNING *"
     } else {
@@ -273,7 +308,7 @@ async fn save_workout(
         .await?
         .ok_or_else(domain::not_found)?;
     domain::event(
-        &mut tx,
+        tx,
         user,
         if create {
             "workout_created"
@@ -285,7 +320,6 @@ async fn save_workout(
         serde_json::json!({}),
     )
     .await?;
-    tx.commit().await?;
     Ok(row)
 }
 async fn delete_workout(
@@ -294,15 +328,24 @@ async fn delete_workout(
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     let mut tx = s.database.begin().await?;
-    tasks::lock_tasks(&mut tx, u.id).await?;
-    let linked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.tasks WHERE user_id=$1 AND source_kind='habit' AND habit->>'workout_id'=$2)").bind(u.id).bind(id.to_string()).fetch_one(&mut *tx).await?;
+    delete_workout_in(&mut tx, u.id, id).await?;
+    tx.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+pub(crate) async fn delete_workout_in(
+    tx: &mut PgConnection,
+    user: Uuid,
+    id: Uuid,
+) -> Result<(), ApiError> {
+    tasks::lock_tasks(tx, user).await?;
+    let linked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.tasks WHERE user_id=$1 AND source_kind='habit' AND habit->>'workout_id'=$2)").bind(user).bind(id.to_string()).fetch_one(&mut *tx).await?;
     if linked {
         return Err(domain::conflict(
             "Unlink or delete connected habits before deleting a workout",
         ));
     }
     if sqlx::query("DELETE FROM app.workouts WHERE user_id=$1 AND id=$2")
-        .bind(u.id)
+        .bind(user)
         .bind(id)
         .execute(&mut *tx)
         .await?
@@ -312,14 +355,13 @@ async fn delete_workout(
         return Err(domain::not_found());
     }
     domain::event(
-        &mut tx,
-        u.id,
+        tx,
+        user,
         "workout_deleted",
         "workout",
         id,
         serde_json::json!({}),
     )
     .await?;
-    tx.commit().await?;
-    Ok(StatusCode::NO_CONTENT)
+    Ok(())
 }

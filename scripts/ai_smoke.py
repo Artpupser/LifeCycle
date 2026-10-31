@@ -43,6 +43,8 @@ def run(args):
 
     owner.request('PUT', '/api/profile', {'name': marker, 'conditions': [marker], 'height_cm': 180})
     note, _ = owner.request('POST', '/api/notes', {'title': marker, 'content': '**' + marker + '**'}, expected=201)
+    owner.request('PUT', f"/api/notes/{note['id']}/ai-access", {'revision': 0, 'ai_shared': True})
+    config, _ = owner.request('GET', '/api/ai/settings')
     rule = {'start_date': str(yesterday), 'time': '12:30', 'timezone': 'UTC', 'duration_minutes': 20, 'recurrence': 'daily', 'interval_days': 1, 'weekdays': [], 'end_date': None}
     task, _ = owner.request('POST', '/api/tasks', task_body(marker, schedule=rule), expected=201)
     owner.request('POST', f"/api/tasks/{task['id']}/occurrences/{yesterday}", {'status': 'completed'})
@@ -68,7 +70,7 @@ def run(args):
     for scope in defaults:
         save(permissions={**defaults, scope: True})
         data = context(preview())
-        require(set(data) == {'from', 'to', 'timezone', 'generated_at', scope}, f'{scope} grant leaked another category')
+        require(set(data) == ({'from', 'to', 'timezone', 'generated_at'} if scope == 'changes' else {'from', 'to', 'timezone', 'generated_at', scope}), f'{scope} grant leaked another category')
         if scope == 'analytics':
             require(data[scope]['tasks']['completed'] == 1 and marker not in json.dumps(data), 'AI aggregate differs from real results or includes text')
         if scope == 'tasks':

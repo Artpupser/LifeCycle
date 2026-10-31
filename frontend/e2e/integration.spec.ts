@@ -93,7 +93,7 @@ test("focus refresh preserves AI drafts and invalidates a preview after grants c
   await page.getByRole("button", { name: "Новый чат", exact: true }).click();
   const question = page.getByLabel("Ваше сообщение", { exact: true });
   await question.fill("Сохрани мой черновик после смены прав");
-  await page.getByRole("button", { name: "Подготовить предпросмотр", exact: true }).click();
+  await page.getByRole("button", { name: "Данные для отправки", exact: true }).click();
   await expect(page.getByRole("region", { name: "Предпросмотр отправки", exact: true })).toBeVisible();
   const other = await context.newPage();
   await other.goto("/settings");
@@ -103,7 +103,7 @@ test("focus refresh preserves AI drafts and invalidates a preview after grants c
   await page.evaluate("window.dispatchEvent(new Event('focus'))");
   await expect(page.getByRole("region", { name: "Предпросмотр отправки", exact: true })).toHaveCount(0);
   await expect(question).toHaveValue("Сохрани мой черновик после смены прав");
-  await page.getByRole("button", { name: "Подготовить предпросмотр", exact: true }).click();
+  await page.getByRole("button", { name: "Данные для отправки", exact: true }).click();
   await expect(page.getByRole("region", { name: "Предпросмотр отправки", exact: true })).toBeVisible();
   await other.close();
 });

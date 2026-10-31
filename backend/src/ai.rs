@@ -28,13 +28,24 @@ pub(crate) struct Permissions {
     pub(crate) notes: bool,
     pub(crate) profile: bool,
     pub(crate) intimacy: bool,
+    #[serde(skip_serializing)]
+    pub(crate) workout_editor: bool,
+    #[serde(skip_serializing)]
+    pub(crate) personalization: bool,
+    pub(crate) changes: bool,
+}
+
+impl Permissions {
+    pub(crate) fn training(&self) -> bool {
+        self.workouts || self.workout_editor
+    }
 }
 
 #[derive(sqlx::FromRow)]
 pub(crate) struct Config {
     pub(crate) model: String,
     pub(crate) enabled: bool,
-    permissions: DbJson<Permissions>,
+    pub(crate) permissions: DbJson<Permissions>,
     encrypted_key: Option<Vec<u8>>,
     encrypted_openrouter_key: Option<Vec<u8>>,
     pub(crate) provider: String,
@@ -52,11 +63,15 @@ struct ConfigView {
     enabled: bool,
     permissions: Permissions,
     key_present: bool,
+    openai_key_present: bool,
+    openrouter_key_present: bool,
     revision: i64,
 }
 impl Config {
     fn view(self, s: &AppState) -> ConfigView {
         let key_present = self.selected_key().is_some();
+        let openai_key_present = self.encrypted_key.is_some();
+        let openrouter_key_present = self.encrypted_openrouter_key.is_some();
         ConfigView {
             provider: self.provider,
             auth_mode: self.auth_mode,
@@ -66,6 +81,8 @@ impl Config {
             enabled: self.enabled,
             permissions: self.permissions.0,
             key_present,
+            openai_key_present,
+            openrouter_key_present,
             revision: self.revision,
         }
     }
@@ -116,6 +133,7 @@ struct PreviewInput {
     from: NaiveDate,
     to: NaiveDate,
     message: String,
+    search: Option<String>,
 }
 #[derive(Serialize)]
 struct Preview {
@@ -167,6 +185,10 @@ const TURN_COLUMNS: &str =
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/ai/settings", get(read_config).put(update_config))
+        .route(
+            "/api/ai/connections/{provider}",
+            axum::routing::delete(remove_connection),
+        )
         .route("/api/ai/chats", get(chats).post(create_chat))
         .route("/api/ai/chats/{id}", get(read_chat).delete(delete_chat))
         .route("/api/ai/chats/{id}/preview", axum::routing::post(preview))
@@ -175,6 +197,36 @@ pub fn routes() -> Router<AppState> {
             "/api/ai/chats/{chat}/messages/{id}",
             get(read_turn).delete(cancel_turn),
         )
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ConnectionRevision {
+    revision: i64,
+}
+async fn remove_connection(
+    State(s): State<AppState>,
+    u: CurrentUser,
+    Path(provider): Path<String>,
+    ApiJson(v): ApiJson<ConnectionRevision>,
+) -> Result<StatusCode, ApiError> {
+    if !["openai", "openrouter"].contains(&provider.as_str()) {
+        return Err(domain::not_found());
+    }
+    let mut tx = s.database.begin().await?;
+    let c = config(&mut tx, u.id).await?;
+    if c.revision != v.revision {
+        return Err(stale());
+    }
+    let column = if provider == "openai" {
+        "encrypted_key"
+    } else {
+        "encrypted_openrouter_key"
+    };
+    sqlx::query(&format!("UPDATE app.ai_settings SET {column}=NULL,enabled=CASE WHEN provider=$2 AND auth_mode='api_key' THEN false ELSE enabled END,revision=revision+1,updated_at=now() WHERE user_id=$1"))
+        .bind(u.id).bind(provider).execute(&mut *tx).await?;
+    invalidate(&mut tx, u.id).await?;
+    tx.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 pub(crate) fn stale() -> ApiError {
     ApiError::new(
@@ -251,8 +303,11 @@ fn valid_model(model: &str, provider: &str) -> bool {
 async fn update_config(
     State(s): State<AppState>,
     u: CurrentUser,
-    ApiJson(v): ApiJson<ConfigInput>,
+    ApiJson(mut v): ApiJson<ConfigInput>,
 ) -> Result<Json<ConfigView>, ApiError> {
+    v.permissions.workouts |= v.permissions.workout_editor;
+    v.permissions.workout_editor = false;
+    v.permissions.personalization = false;
     if v.remove_key && v.api_key.is_some() {
         return Err(ApiError::validation(
             "Use a valid Responses API model ID and one key action",
@@ -454,6 +509,9 @@ async fn preview(
 ) -> Result<Json<Preview>, ApiError> {
     domain::text(&v.message, 1, 8000)?;
     ai_context::validate_range(v.from, v.to)?;
+    if let Some(search) = &v.search {
+        domain::text(search, 0, 200)?;
+    }
     let mut tx = s.database.begin().await?;
     let c = config(&mut tx, u.id).await?;
     if c.revision != v.revision {
@@ -470,7 +528,30 @@ async fn preview(
     if messages.iter().any(|m| m.status == "pending") {
         return Err(domain::conflict("Wait for or cancel the pending request"));
     }
-    let context = ai_context::build(&s, u.id, &c.permissions.0, v.from, v.to).await?;
+    let mut context = ai_context::build(
+        &s,
+        u.id,
+        &c.permissions.0,
+        v.from,
+        v.to,
+        v.search.as_deref(),
+    )
+    .await?;
+    if c.permissions.changes {
+        let mut entities = Vec::new();
+        if c.permissions.training() {
+            entities.extend(["exercise", "workout"]);
+        }
+        if c.permissions.tasks {
+            entities.push("task");
+        }
+        if c.permissions.notes {
+            entities.push("note");
+        }
+        if !entities.is_empty() {
+            context["action_protocol"] = json!({"version":1,"entities":entities,"max_actions":20,"confirmation_required":true,"read":"Only records included in this exact preview. IDs and updated_at identify source facts; missing/truncated data must not be guessed.","writes":"Deferred proposals via /api/ai/actions; create or patch only. No deletes, permission changes, provider access or contacts."});
+        }
+    }
     let history = allowed_history(&messages, c.revision);
     let history_turns = history.len() / 2;
     let request = ai_provider::payload(

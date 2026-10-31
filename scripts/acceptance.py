@@ -11,6 +11,7 @@ def main():
     parser = argparse.ArgumentParser(description="Stage 9 acceptance against running LifeCycle services")
     parser.add_argument("--url", default=os.environ.get("APP_URL", "http://localhost:8081"), type=origin_url)
     parser.add_argument("--mailpit-url", default=os.environ.get("MAILPIT_URL", "http://localhost:8025"), type=origin_url)
+    parser.add_argument("--check-upgrade", action="store_true", help="Also verify upgrade 1.1–1.3 with local encrypted synthetic fixtures (python3-cryptography and Podman)")
     parser.add_argument("--check-migrations", action="store_true", help="Also check the local Podman database and migrate an isolated temporary database")
     args = parser.parse_args()
     root = Path(__file__).resolve().parent.parent
@@ -34,6 +35,9 @@ def main():
             if name != "smoke.py":
                 options += ["--mailpit-url", args.mailpit_url]
             subprocess.run([sys.executable, str(root / "scripts" / name), *options, *flags], cwd=root, check=True)
+        if args.check_upgrade:
+            for suite in ["ai_upgrade_smoke.py", "ai_visibility_smoke.py"]:
+                subprocess.run([sys.executable, str(root / "scripts" / suite), "--url", args.url, "--mailpit-url", args.mailpit_url], cwd=root, check=True)
         print("Running Chromium end-to-end acceptance", flush=True)
         subprocess.run(["pnpm", "--dir", "frontend", "test:e2e"], cwd=root, env={**os.environ, "APP_URL": args.url, "MAILPIT_URL": args.mailpit_url}, check=True)
     except (subprocess.CalledProcessError, OSError):
