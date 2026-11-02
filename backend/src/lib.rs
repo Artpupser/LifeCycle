@@ -6,6 +6,7 @@ mod ai_login;
 mod ai_provider;
 mod analytics;
 pub mod auth;
+mod boards;
 pub mod config;
 mod countdowns;
 pub mod crypto;
@@ -23,6 +24,7 @@ pub mod profile;
 pub mod schedule;
 pub mod settings;
 pub mod state;
+mod task_tags;
 pub mod tasks;
 mod workout_plan;
 mod workout_preferences;
@@ -50,6 +52,8 @@ pub fn router(state: AppState) -> Router {
         .merge(settings::routes())
         .merge(notes::routes())
         .merge(tasks::routes())
+        .merge(boards::routes())
+        .merge(task_tags::routes())
         .merge(habits::routes())
         .merge(media::routes())
         .merge(countdowns::routes())

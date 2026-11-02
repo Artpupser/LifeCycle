@@ -56,7 +56,9 @@ test("open tabs refresh saved notes and clear private data on logout and account
 test("profile timezone and 12/24-hour preferences agree across Today, calendar, Gantt and reload", async ({ page }) => {
   await login(page);
   const rule = { start_date: "2026-10-29", time: "00:30", timezone: "Asia/Tokyo", duration_minutes: 30, recurrence: "once" };
-  await write(page, "POST", "/tasks", { title: "Граница дня", description: "**Минутное расписание**", schedule: rule });
+  const task = await write(page, "POST", "/tasks", { title: "Граница дня", description: "**Минутное расписание**", schedule: rule });
+  const board = await write(page, "POST", "/boards", { name: "Часовые границы" });
+  await write(page, "PUT", `/boards/${board.board.id}/items/${task.id}`, { revision: board.board.revision, column_id: board.columns[0].id });
   await page.goto("/settings");
   await expect(page.getByLabel("Формат времени", { exact: true })).toHaveValue("24h");
   await page.getByLabel("Часовой пояс", { exact: true }).fill("America/Los_Angeles");
@@ -70,11 +72,14 @@ test("profile timezone and 12/24-hour preferences agree across Today, calendar, 
   await page.getByLabel("Дата календаря", { exact: true }).fill("2026-10-28");
   await expect(page.getByRole("region", { name: "План выбранного дня" })).toContainText("08:30 AM");
   await page.getByRole("link", { name: "Задачи", exact: true }).click();
-  await page.getByLabel("Задачи с даты", { exact: true }).fill("2026-10-28");
+  await page.goto(`/tasks?board=${board.board.id}`);
   await page.getByRole("button", { name: "Gantt", exact: true }).click();
-  const bar = page.getByRole("img", { name: /Диаграмма Ганта/ }).locator("rect[rx]");
+  await page.getByLabel("Масштаб Gantt", { exact: true }).selectOption("fortnight");
+  await page.getByLabel("Начало шкалы доски", { exact: true }).fill("2026-10-28");
+  const svg = page.getByRole("img", { name: /Диаграмма Ганта/ });
+  const bar = svg.locator("rect[rx]");
   await expect(bar).toHaveCount(1);
-  expect(Number(await bar.getAttribute("x"))).toBeCloseTo(220 + (8.5 / 24) * (900 / 14), 4);
+  expect(Number(await bar.getAttribute("x"))).toBeCloseTo(220 + (8.5 / 337) * (Number(await svg.getAttribute("width")) - 220), 4);
   await page.getByRole("link", { name: "Настройки", exact: true }).click();
   await page.reload();
   await expect(page.getByLabel("Формат времени", { exact: true })).toHaveValue("12h");

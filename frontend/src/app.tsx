@@ -5,9 +5,9 @@ import { HabitsPage } from "@/features/habits/habits-page";
 import { WorkoutsPage } from "@/features/workouts/workouts-page";
 import { WorkoutSessionPage } from "@/features/workouts/workout-session-page";
 import { HabitReminders } from "@/features/habits/reminders";
-import { Heart, Activity, CalendarDays, CalendarClock, ClipboardList, LogOut, NotebookPen, Settings2, Timer, UserRound } from "lucide-react";
-import { useState, type ReactNode } from "react";
-import { BrowserRouter, Link, Navigate, NavLink, Route, Routes } from "react-router";
+import { Heart, Activity, CalendarDays, CalendarClock, ClipboardList, LogOut, NotebookPen, Settings2, Timer, UserRound, Menu, X } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router";
 import logo from "@/assets/logo.svg";
 import { ErrorState, LoadingState } from "@/components/resource-state";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,8 @@ import { LoginPage } from "@/features/auth/login-page";
 import { CountdownsPage } from "@/features/countdowns/countdowns-page";
 import { NotesPage } from "@/features/notes/notes-page";
 import { PomodoroPage } from "@/features/pomodoro/pomodoro-page";
-import { TasksPage } from "@/features/planning/tasks-page";
+import { BoardsPage } from "@/features/planning/boards-page";
+import { TaskTagsPage } from "@/features/planning/task-tags-page";
 import { TodayPage } from "@/features/planning/today-page";
 import { CalendarPage } from "@/features/planning/calendar-page";
 import { HealthPage } from "@/features/health/health-page";
@@ -30,8 +31,16 @@ import { errorMessage } from "@/lib/api";
 
 function Shell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
+  const [expanded, setExpanded] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const outside = (event: PointerEvent) => document.querySelectorAll<HTMLDetailsElement>("details[data-menu][open]").forEach((menu) => { if (event.target instanceof Node && !menu.contains(event.target)) menu.open = false; });
+    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") document.querySelectorAll<HTMLDetailsElement>("details[data-menu][open]").forEach((menu) => { menu.open = false; }); };
+    document.addEventListener("pointerdown", outside); document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("pointerdown", outside); document.removeEventListener("keydown", escape); };
+  }, []);
 
   async function logout() {
     setPending(true); setError(null);
@@ -41,19 +50,23 @@ function Shell({ children }: { children: ReactNode }) {
 
   const navigation = user ? [{ to: "/today", label: "Сегодня", icon: CalendarDays }, { to: "/habits", label: "Привычки", icon: Activity }, { to: "/workouts", label: "Тренировки", icon: Activity }, { to: "/sex", label: "Интимный журнал", icon: Heart }, { to: "/tasks", label: "Задачи", icon: ClipboardList }, { to: "/calendar", label: "Календарь", icon: CalendarDays }, { to: "/notes", label: "Заметки", icon: NotebookPen }, { to: "/countdowns", label: "Отсчёты", icon: CalendarClock }, { to: "/pomodoro", label: "Pomodoro", icon: Timer }, { to: "/analytics", label: "Аналитика", icon: Activity }, { to: "/ai", label: "AI-помощник", icon: Activity }, { to: "/profile", label: "Профиль", icon: UserRound }, { to: "/settings", label: "Настройки", icon: Settings2 }, { to: "/status", label: "Подключение", icon: Activity }] : [{ to: "/login", label: "Войти", icon: UserRound }, { to: "/status", label: "Подключение", icon: Activity }];
 
-  return <div className="flex min-h-svh flex-col bg-background text-foreground">
-    <a href="#main" className="sr-only z-50 rounded-lg bg-primary px-4 py-3 text-primary-foreground focus:not-sr-only focus:absolute focus:left-4 focus:top-4">Перейти к содержимому</a>
-    <header className="border-b border-border">
-      <div className="mx-auto flex min-h-22 max-w-6xl flex-wrap items-center justify-between gap-x-5 gap-y-3 px-5 py-5 sm:px-10">
-        <Link to={user ? "/today" : "/login"} className="flex items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-ring" aria-label="LifeCycle — главная"><img src={logo} alt="" width="38" height="38" /><span className="text-xl font-semibold tracking-tight">LifeCycle<span className="text-primary">.</span></span></Link>
-        <div className="flex items-center gap-3"><span className="hidden max-w-56 truncate text-xs text-muted-foreground lg:block" title={user?.email}>{user?.email ?? "Меньше рутины. Больше жизни."}</span>{user && <Button variant="outline" size="sm" onClick={() => void logout()} disabled={pending}><LogOut aria-hidden="true" />{pending ? "Выходим…" : "Выйти"}</Button>}</div>
-        <nav aria-label="Главная навигация" className="-mb-1 flex w-full flex-wrap gap-1 pt-1 sm:order-none sm:w-auto sm:pt-0">{navigation.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} className={({ isActive }) => `inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-ring ${isActive ? "bg-primary/12 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}><Icon className="size-4" aria-hidden="true" />{label}</NavLink>)}</nav>
-      </div>
-      {error && <p className="mx-auto max-w-6xl px-5 pb-4 text-sm text-destructive sm:px-10" role="alert">{error}</p>}
-    </header>
-    <div className="flex-1">{children}</div>
-    <footer className="mx-auto w-full max-w-6xl px-5 pb-8 pt-12 text-xs text-muted-foreground sm:px-10">Ваш день, в вашем ритме.</footer>
+  return <div className="app-shell h-svh overflow-hidden bg-background text-foreground">
+    <a href="#main" className="sr-only z-50 rounded-lg bg-primary px-4 py-3 text-primary-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Перейти к содержимому</a>
+    {expanded && <button className="fixed inset-0 z-30 bg-black/40 md:hidden" aria-label="Закрыть меню" onClick={() => setExpanded(false)} />}
+    <aside className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-border bg-card transition-[width] ${expanded ? "w-60" : "w-16 md:w-60"}`}>
+      <div className="flex h-20 shrink-0 items-center justify-center gap-2 px-3 md:justify-start md:px-5"><Link to={user ? "/today" : "/login"} className="flex min-w-0 items-center gap-3 rounded-lg" aria-label="LifeCycle — главная" onClick={() => setExpanded(false)}><img src={logo} alt="" width="36" height="36" className="shrink-0" /><span className={`${expanded ? "block" : "hidden md:block"} text-xl font-semibold`}>LifeCycle<span className="text-primary">.</span></span></Link></div>
+      <Button variant="ghost" size="icon" className="mx-auto mb-3 md:hidden" aria-label={expanded ? "Свернуть навигацию" : "Развернуть навигацию"} onClick={() => setExpanded(!expanded)}>{expanded ? <X /> : <Menu />}</Button>
+      <nav aria-label="Главная навигация" className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-4 md:px-3">{navigation.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} onClick={() => setExpanded(false)} title={label} className={({ isActive }) => `flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-ring ${isActive ? "bg-primary/12 font-medium text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}><Icon className="size-5 shrink-0" aria-hidden="true" /><span className={expanded ? "" : "sr-only md:not-sr-only"}>{label}</span></NavLink>)}</nav>
+      <div className="shrink-0 space-y-3 border-t border-border p-2 md:p-4">{user && <><p className={`${expanded ? "block" : "hidden md:block"} truncate px-2 text-xs text-muted-foreground`} title={user.email}>{user.email}</p><Button variant="ghost" className="w-full justify-start px-3" aria-label="Выйти" onClick={() => void logout()} disabled={pending}><LogOut className="size-5 shrink-0" aria-hidden="true" /><span className={expanded ? "" : "sr-only md:not-sr-only"}>{pending ? "Выходим…" : "Выйти"}</span></Button></>}{error && <p role="alert" className="break-words text-xs text-destructive">{error}</p>}</div>
+    </aside>
+    <div className="ml-16 flex h-svh min-w-0 flex-col md:ml-60"><div className="app-content min-h-0 min-w-0 flex-1 overflow-y-auto">{children}</div></div>
   </div>;
+
+}
+
+function LegacyBoards() {
+  const location = useLocation();
+  return <Navigate to={{ pathname: "/tasks", search: location.search }} replace />;
 }
 
 function NotFound() {
@@ -67,7 +80,9 @@ function AuthenticatedApp() {
     <Route path="/" element={<Navigate to="/today" replace />} />
     <Route path="/login" element={<Navigate to="/today" replace />} />
     <Route path="/today" element={<TodayPage />} />
-    <Route path="/tasks" element={<TasksPage />} />
+    <Route path="/tasks" element={<BoardsPage />} />
+    <Route path="/boards" element={<LegacyBoards />} />
+    <Route path="/task-tags" element={<TaskTagsPage />} />
     <Route path="/habits" element={<HabitsPage />} />
     <Route path="/sex" element={<IntimacyPage />} />
     <Route path="/workouts" element={<WorkoutsPage />} />
@@ -89,7 +104,7 @@ function AppContent() {
   const { user, loading, error, reload } = useAuth();
   if (loading || error) return <Shell><Routes><Route path="/status" element={<HealthPage />} /><Route path="*" element={<main id="main" className="mx-auto max-w-4xl px-5 py-10 sm:px-10">{loading ? <LoadingState /> : <ErrorState message={error!} retry={reload} />}</main>} /></Routes></Shell>;
   if (user) return <AuthenticatedApp key={user.id} />;
-  return <Shell><Routes><Route path="/status" element={<HealthPage />} /><Route path="/login" element={<LoginPage />} /><Route path="/" element={<Navigate to="/login" replace />} /><Route path="/ai" element={<Navigate to="/login" replace />} /><Route path="/analytics" element={<Navigate to="/login" replace />} /><Route path="/profile" element={<Navigate to="/login" replace />} /><Route path="/settings" element={<Navigate to="/login" replace />} /><Route path="/today" element={<Navigate to="/login" replace />} /><Route path="/tasks" element={<Navigate to="/login" replace />} /><Route path="/habits" element={<Navigate to="/login" replace />} /><Route path="/sex" element={<Navigate to="/login" replace />} /><Route path="/workouts/*" element={<Navigate to="/login" replace />} /><Route path="/calendar" element={<Navigate to="/login" replace />} /><Route path="/notes" element={<Navigate to="/login" replace />} /><Route path="/countdowns" element={<Navigate to="/login" replace />} /><Route path="/pomodoro" element={<Navigate to="/login" replace />} /><Route path="*" element={<NotFound />} /></Routes></Shell>;
+  return <Shell><Routes><Route path="/status" element={<HealthPage />} /><Route path="/login" element={<LoginPage />} /><Route path="/" element={<Navigate to="/login" replace />} /><Route path="/ai" element={<Navigate to="/login" replace />} /><Route path="/analytics" element={<Navigate to="/login" replace />} /><Route path="/profile" element={<Navigate to="/login" replace />} /><Route path="/settings" element={<Navigate to="/login" replace />} /><Route path="/today" element={<Navigate to="/login" replace />} /><Route path="/tasks" element={<Navigate to="/login" replace />} /><Route path="/boards" element={<Navigate to="/login" replace />} /><Route path="/task-tags" element={<Navigate to="/login" replace />} /><Route path="/habits" element={<Navigate to="/login" replace />} /><Route path="/sex" element={<Navigate to="/login" replace />} /><Route path="/workouts/*" element={<Navigate to="/login" replace />} /><Route path="/calendar" element={<Navigate to="/login" replace />} /><Route path="/notes" element={<Navigate to="/login" replace />} /><Route path="/countdowns" element={<Navigate to="/login" replace />} /><Route path="/pomodoro" element={<Navigate to="/login" replace />} /><Route path="*" element={<NotFound />} /></Routes></Shell>;
 }
 
 export function App() {

@@ -132,7 +132,10 @@ pub fn routes() -> Router<AppState> {
         .route("/api/habits/statistics", get(statistics))
         .route("/api/habits/{id}", get(read).put(update).delete(delete))
         .route("/api/habits/{id}/marks/{date}", post(mark))
-        .route("/api/habits/{id}/history", get(history))
+        .route(
+            "/api/habits/{id}/history",
+            get(history).delete(delete_history),
+        )
         .route("/api/habits/{id}/statistics", get(single_statistics))
         .route("/api/reminders", get(reminders))
         .route("/api/reminders/{id}/{date}/dismiss", post(dismiss))
@@ -289,6 +292,9 @@ async fn delete(
     if count == 0 {
         return Err(domain::not_found());
     }
+    // A discarded draft with no recorded results must not create a permanent statistics card.
+    sqlx::query("DELETE FROM app.habit_versions WHERE user_id=$1 AND task_id=$2 AND NOT EXISTS(SELECT 1 FROM app.task_occurrences WHERE user_id=$1 AND task_id=$2) AND NOT EXISTS(SELECT 1 FROM app.workout_sessions WHERE user_id=$1 AND strpos(snapshot::text,$3)>0)")
+        .bind(u.id).bind(id).bind(id.to_string()).execute(&mut *tx).await?;
     domain::event(
         &mut tx,
         u.id,
@@ -297,6 +303,66 @@ async fn delete(
         id,
         serde_json::json!({}),
     )
+    .await?;
+    tx.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DeleteHistory {
+    confirmed: bool,
+}
+async fn delete_history(
+    State(s): State<AppState>,
+    u: CurrentUser,
+    Path(id): Path<Uuid>,
+    ApiJson(v): ApiJson<DeleteHistory>,
+) -> Result<StatusCode, ApiError> {
+    if !v.confirmed {
+        return Err(ApiError::validation("Confirm history deletion"));
+    }
+    let mut tx = s.database.begin().await?;
+    tasks::lock_tasks(&mut tx, u.id).await?;
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM app.habit_versions WHERE user_id=$1 AND task_id=$2)",
+    )
+    .bind(u.id)
+    .bind(id)
+    .fetch_one(&mut *tx)
+    .await?;
+    if !exists {
+        return Err(domain::not_found());
+    }
+    let active: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.tasks WHERE user_id=$1 AND id=$2)")
+            .bind(u.id)
+            .bind(id)
+            .fetch_one(&mut *tx)
+            .await?;
+    if active {
+        return Err(domain::conflict("Delete the habit before its history"));
+    }
+    sqlx::query("DELETE FROM app.task_occurrences WHERE user_id=$1 AND task_id=$2")
+        .bind(u.id)
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DELETE FROM app.habit_reminder_receipts WHERE user_id=$1 AND task_id=$2")
+        .bind(u.id)
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DELETE FROM app.habit_versions WHERE user_id=$1 AND task_id=$2")
+        .bind(u.id)
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "DELETE FROM app.activity_events WHERE user_id=$1 AND entity_id=$2 AND entity_type='habit'",
+    )
+    .bind(u.id)
+    .bind(id)
+    .execute(&mut *tx)
     .await?;
     tx.commit().await?;
     Ok(StatusCode::NO_CONTENT)
@@ -631,6 +697,7 @@ async fn history(
 
 #[derive(Serialize, Default, Debug)]
 pub struct HabitStatistics {
+    pub(crate) active: bool,
     pub(crate) id: Uuid,
     pub(crate) title: String,
     pub(crate) expected: u32,
@@ -738,10 +805,21 @@ async fn statistics(
     let settings = domain::settings(&s, u.id).await?;
     let rows = occurrences(&s, u.id, q.from, q.to, &settings.timezone).await?;
     let tasks = historical_tasks(&s, u.id).await?;
+    let active: BTreeSet<Uuid> =
+        sqlx::query_scalar("SELECT id FROM app.tasks WHERE user_id=$1 AND source_kind='habit'")
+            .bind(u.id)
+            .fetch_all(&s.database)
+            .await?
+            .into_iter()
+            .collect();
     let now = Utc::now();
     let mut stats: Vec<_> = tasks
         .iter()
-        .map(|task| summarize(task, &rows, now))
+        .map(|task| {
+            let mut stat = summarize(task, &rows, now);
+            stat.active = active.contains(&task.id);
+            stat
+        })
         .collect();
     stats.sort_by(|a, b| {
         b.completion_rate
@@ -760,7 +838,15 @@ async fn single_statistics(
     let task = historical_task(&s, u.id, id).await?;
     let settings = domain::settings(&s, u.id).await?;
     let rows = occurrences(&s, u.id, q.from, q.to, &settings.timezone).await?;
-    Ok(Json(summarize(&task, &rows, Utc::now())))
+    let mut stat = summarize(&task, &rows, Utc::now());
+    stat.active = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM app.tasks WHERE user_id=$1 AND id=$2 AND source_kind='habit')",
+    )
+    .bind(u.id)
+    .bind(id)
+    .fetch_one(&s.database)
+    .await?;
+    Ok(Json(stat))
 }
 #[derive(Serialize)]
 struct Reminder {

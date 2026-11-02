@@ -5,6 +5,8 @@ import { MarkdownEditor } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { ApiError, api, errorMessage } from "@/lib/api";
+import { usePreferences } from "@/features/settings/preferences-context";
+import { zonedDateTimeInput, localDateTimeCandidates } from "@/lib/dates";
 import { type Entry, type EntryData, type Partner, type Solo, type Kind } from "./types";
 
 export function AnswerInput({ id, label, value, change }: { id: string; label: string; value: boolean | null; change: (value: boolean | null) => void }) {
@@ -15,7 +17,15 @@ function Lines({ id, label, value, change }: { id: string; label: string; value:
   return <FormField id={id} label={label} hint="Один пункт на строку, до 30 пунктов по 500 символов."><Textarea id={id} maxLength={15030} value={text} onChange={(event) => { setText(event.target.value); const seen = new Set<string>(); change(event.target.value.split("\n").map((v) => v.trim()).filter((v) => { if (!v || seen.has(v.toLowerCase())) return false; seen.add(v.toLowerCase()); return true; })); }} /></FormField>;
 }
 export function EntryEditor({ initial, record, close, saved, conflict }: { initial: EntryData; record?: Entry; close: () => void; saved: () => void; conflict: () => void }) {
-  const [value, setValue] = useState(initial);
+  const { settings } = usePreferences();
+  const [value, setValue] = useState(() => {
+    if (!record) return { ...initial, timezone: settings.timezone };
+    const local = zonedDateTimeInput(record.started_at, settings.timezone);
+    const candidates = localDateTimeCandidates(local, settings.timezone);
+    const instant = Date.parse(record.started_at);
+    const occurrence = candidates.findIndex((candidate) => instant >= candidate && instant < candidate + 60_000);
+    return { ...initial, local_start: `${local}:${String(new Date(instant).getUTCSeconds()).padStart(2, "0")}`, timezone: settings.timezone, time_occurrence: occurrence > 0 ? "later" as const : "earlier" as const };
+  });
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,9 +48,9 @@ export function EntryEditor({ initial, record, close, saved, conflict }: { initi
     setValue({ ...value, kind, partner: null, solo: null });
   }
   const closeEditor = () => { if (!busy && !uploading) close(); };
-  return <Dialog title={record ? "Редактировать событие" : "Новое интимное событие"} onClose={closeEditor}><form onSubmit={(event) => void submit(event)} className="space-y-5" autoComplete="off"><p className="text-sm text-muted-foreground">Обязательны тип, время и часовой пояс. Пустое поле означает «не указано»; ноль и «нет» сохраняются отдельно.</p><fieldset disabled={busy || stale} className="min-w-0 space-y-5">
+  return <Dialog title={record ? "Редактировать событие" : "Новое интимное событие"} onClose={closeEditor}><form onSubmit={(event) => void submit(event)} className="space-y-5" autoComplete="off"><p className="text-sm text-muted-foreground">Обязательны тип и время. Пустое поле означает «не указано»; ноль и «нет» сохраняются отдельно.</p><fieldset disabled={busy || stale} className="min-w-0 space-y-5">
     <FormField id="intimacy-kind" label="Тип события"><Select id="intimacy-kind" value={value.kind} onChange={(event) => changeKind(event.target.value as Kind)}><option value="masturbation">Мастурбация</option><option value="sex">Секс</option></Select></FormField>
-    <div className="grid gap-4 sm:grid-cols-2"><FormField id="intimacy-start" label="Местное время начала"><Input id="intimacy-start" type="datetime-local" required min="1900-01-01T00:00" step={60} value={value.local_start.slice(0,16)} onChange={(event) => change("local_start", event.target.value)} /></FormField><FormField id="intimacy-zone" label="Часовой пояс события" hint="IANA, например Europe/Moscow. Изначально — зона профиля."><Input id="intimacy-zone" required maxLength={100} value={value.timezone} onChange={(event) => change("timezone", event.target.value)} /></FormField></div>
+    <div className="grid gap-4 sm:grid-cols-2"><FormField id="intimacy-start" label="Местное время начала"><Input id="intimacy-start" type="datetime-local" required min="1900-01-01T00:00" step={60} value={value.local_start.slice(0,16)} onChange={(event) => change("local_start", event.target.value)} /></FormField></div>
     <FormField id="intimacy-occurrence" label="При повторе часа (DST)" hint="Несуществующее местное время сервер отклонит. Будущие события не записываются."><Select id="intimacy-occurrence" value={value.time_occurrence} onChange={(event) => change("time_occurrence", event.target.value as EntryData["time_occurrence"])}><option value="earlier">Первое вхождение</option><option value="later">Второе вхождение</option></Select></FormField>
     <div className="grid gap-4 sm:grid-cols-2"><FormField id="intimacy-duration" label="Длительность, минут"><Input id="intimacy-duration" type="number" min={1} max={1440} step={1} value={value.duration_minutes ?? ""} onChange={(event) => change("duration_minutes", event.target.value === "" ? null : Number(event.target.value))} /></FormField><FormField id="intimacy-ejaculations" label="Количество эякуляций"><Input id="intimacy-ejaculations" type="number" min={0} max={100} step={1} value={value.ejaculation_count ?? ""} onChange={(event) => change("ejaculation_count", event.target.value === "" ? null : Number(event.target.value))} /></FormField></div>
     <Lines id="intimacy-toys" label="Игрушки" value={value.toys} change={(field) => change("toys", field)} />

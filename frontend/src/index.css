@@ -88,3 +88,11 @@ button:not(:disabled) { cursor: pointer; }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Every section uses the space beside the navigation rail. */
+.app-content > main, .app-content > aside { width: 100%; max-width: none; margin-inline: 0; }
+.app-content > main { padding: 1.5rem clamp(1rem, 2vw, 2rem); }
+.workspace-scroll { scrollbar-width: thin; scrollbar-color: var(--border) transparent; overscroll-behavior: contain; }
+.workspace-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+.workspace-scroll::-webkit-scrollbar-thumb { background: var(--border); border: 2px solid var(--background); border-radius: 10px; }
+.workspace-scroll::-webkit-scrollbar-track { background: var(--background); }

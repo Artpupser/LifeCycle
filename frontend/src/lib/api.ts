@@ -13,6 +13,7 @@ export class ApiError extends Error {
 }
 
 export function apiErrorMessage(status: number, code: string) {
+  if (["board_stale", "tag_stale", "task_stale"].includes(code)) return "Данные изменились в другом окне. Обновите список и повторите действие.";
   if (code === "workout_preferences_stale") return "Цели и условия изменились в другом окне. Ваш текст остался в форме; загрузите сохранённые данные перед повторным сохранением.";
   if (code === "ai_access_stale") return "Доступ уже изменён в другом окне. Обновите страницу и повторите выбор.";
   if (code === "ai_response_too_large") return "Ответ слишком большой. Попросите создать один план или меньше упражнений за раз.";

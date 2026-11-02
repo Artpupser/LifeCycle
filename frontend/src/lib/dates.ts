@@ -34,3 +34,24 @@ export function localDateTimeInput(instant: string) {
   const two = (value: number) => String(value).padStart(2, "0");
   return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}T${two(date.getHours())}:${two(date.getMinutes())}`;
 }
+
+/** A datetime-local value in the account's selected timezone, never the browser's zone. */
+export function zonedDateTimeInput(instant: string | number, timezone: string) {
+  const date = new Date(instant);
+  const minute = minuteOfDay(date.toISOString(), timezone);
+  return `${localDate(timezone, date)}T${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
+}
+export function localDateTimeCandidates(value: string, timezone: string): number[] {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return [];
+  const naive = Date.parse(`${value}:00Z`);
+  if (!Number.isFinite(naive) || new Date(naive).toISOString().slice(0, 16) !== value) return [];
+  const offsets = new Set<number>();
+  for (let hours = -36; hours <= 36; hours += 6) {
+    const instant = naive + hours * 3_600_000;
+    offsets.add(Date.parse(`${zonedDateTimeInput(instant, timezone)}:00Z`) - instant);
+  }
+  return [...offsets].map((offset) => naive - offset).filter((instant) => zonedDateTimeInput(instant, timezone) === value).sort((a, b) => a - b);
+}
+export function localDateTimeToInstant(value: string, timezone: string): number | null {
+  return localDateTimeCandidates(value, timezone)[0] ?? null;
+}

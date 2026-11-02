@@ -55,6 +55,13 @@ pub(crate) struct Note {
     updated_at: DateTime<Utc>,
 }
 
+#[derive(Deserialize, Default)]
+struct NoteSearch {
+    #[serde(flatten)]
+    search: Search,
+    ai_access: Option<String>,
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/notes/folders", get(folders).post(create_folder))
@@ -174,10 +181,17 @@ async fn delete_folder(
 async fn notes(
     State(s): State<AppState>,
     u: CurrentUser,
-    Query(q): Query<Search>,
+    Query(query): Query<NoteSearch>,
 ) -> Result<Json<Vec<Note>>, ApiError> {
+    let q = query.search;
     q.validate()?;
-    Ok(Json(sqlx::query_as("SELECT id,title,content,tags,color,folder_id,ai_shared,ai_access_revision,created_at,updated_at FROM app.notes WHERE user_id=$1 AND ($2::text IS NULL OR strpos(lower(title||' '||content),lower($2))>0) AND ($3::uuid IS NULL OR folder_id=$3) AND ($4::text IS NULL OR tags ? $4) ORDER BY updated_at DESC,id").bind(u.id).bind(q.q).bind(q.folder_id).bind(q.tag).fetch_all(&s.database).await?))
+    let shared = match query.ai_access.as_deref() {
+        None => None,
+        Some("private") => Some(false),
+        Some("ai_shared") => Some(true),
+        _ => return Err(ApiError::validation("Unsupported AI access filter")),
+    };
+    Ok(Json(sqlx::query_as("SELECT id,title,content,tags,color,folder_id,ai_shared,ai_access_revision,created_at,updated_at FROM app.notes WHERE user_id=$1 AND ($2::text IS NULL OR strpos(lower(title||' '||content),lower($2))>0) AND ($3::uuid IS NULL OR folder_id=$3) AND ($4::text IS NULL OR tags ? $4) AND ($5::boolean IS NULL OR ai_shared=$5) ORDER BY updated_at DESC,id").bind(u.id).bind(q.q).bind(q.folder_id).bind(q.tag).bind(shared).fetch_all(&s.database).await?))
 }
 async fn note(
     State(s): State<AppState>,

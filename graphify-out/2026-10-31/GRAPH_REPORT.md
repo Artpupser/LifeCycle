@@ -1,17 +1,17 @@
 # Graph Report - LifeCycle  (2026-10-31)
 
 ## Corpus Check
-- 169 files · ~103,130 words
+- 195 files · ~121,113 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 12 file(s) not represented in the graph (top: (none) 8, .example 1, .conf 1)
 
 ## Summary
-- 1831 nodes · 5908 edges · 81 communities (70 shown, 11 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 30 edges (avg confidence: 0.88)
+- 2025 nodes · 6748 edges · 80 communities (72 shown, 8 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 36 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `35909b3e`
+- Built from commit: `5fb402ca`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -19,7 +19,7 @@
 - project_projective.md
 - Graphify Project Navigation
 - AppState
-- react
+- Button
 - services
 - auth_smoke.py
 - AppState
@@ -32,7 +32,7 @@
 - compilerOptions
 - frontend
 - ai_login.rs
-- FormField
+- react
 - scripts
 - api
 - engines
@@ -61,70 +61,68 @@
 - Основные данные и планирование (этап 3)
 - Реализация по модулям
 - LifeCycle API
-- action-journal.tsx
+- useResource
 - Q: Каково фактическое состояние этапа 3 LifeCycle после прерывания и восстановления?
 - foundation.rs
-- app.tsx
-- Select
+- usePreferences
+- CurrentUser
 - ai_actions.rs
 - Q: Stage 8 AI recovery and provider authentication
 - backend
-- domain.rs
+- task-gantt.tsx
 - countdowns.rs
-- FormField
-- pomodoro.rs
+- boards-page.tsx
+- vitest
 - Q: Восстановить LifeCycle после этапа 3 и выполнить этап 4
-- serialize
+- intimacy-page.tsx
 - analytics.rs
-- super
 - Q: Stage 5 workout integration with habits Today calendar and schedule
-- CurrentUser
+- workouts.rs
 - Q: Stage 8 external ChatGPT acceptance after catalog and composer fixes
 - LifeCycle — прогресс (сжатый журнал)
 - media.rs
 - ai_access.rs
-- mail.rs
+- profile.rs
 - Q: Stage 9 final integration of LifeCycle after stage 8
 - get
-- health.rs
+- Q: Какие работы LifeCycle Upgrade v1 1.4–1.5 завершены и где контракты?
 - LifeCycle frontend
 - Q: Stage 6 intimacy journal architecture, privacy and integration after Stage 5
 - Q: Stage 7 analytics and deletion integration with tasks notes calendar schedule Markdown
 - profile/types.ts
-- eslint.config.js
-- analytics-page.tsx
+- main.rs
+- Упражнения и тренировки (этап 5)
 - config.rs
-- Schedule
-- .from_request
+- analytics-page.tsx
 
 ## God Nodes (most connected - your core abstractions)
-1. `AppState` - 197 edges
-2. `CurrentUser` - 116 edges
-3. `Button()` - 85 edges
-4. `api()` - 85 edges
-5. `errorMessage()` - 75 edges
-6. `ApiJson` - 56 edges
-7. `useResource()` - 52 edges
-8. `FormField()` - 51 edges
-9. `Input()` - 51 edges
-10. `ErrorState()` - 50 edges
+1. `AppState` - 226 edges
+2. `CurrentUser` - 140 edges
+3. `Button()` - 102 edges
+4. `api()` - 95 edges
+5. `errorMessage()` - 79 edges
+6. `ApiJson` - 75 edges
+7. `useResource()` - 63 edges
+8. `Input()` - 61 edges
+9. `FormField()` - 60 edges
+10. `ErrorState()` - 59 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Выполнение и таймеры` --references--> `cancel()`  [INFERRED]
-  backend/README.md → frontend/src/features/ai/chat-panel.tsx
-- `Связь с привычками, Today и календарём` --references--> `HabitConfig`  [INFERRED]
-  backend/README.md → frontend/src/features/habits/types.ts
 - `Привычки и напоминания (этап 4)` --references--> `Schedule`  [INFERRED]
   backend/README.md → frontend/src/features/planning/types.ts
+- `Выполнение и таймеры` --references--> `cancel()`  [INFERRED]
+  backend/README.md → frontend/src/features/ai/chat-panel.tsx
 - `Аналитика и удаление (этап 7)` --references--> `pomodoro()`  [INFERRED]
   backend/README.md → scripts/core_smoke.py
+- `Связь с привычками, Today и календарём` --references--> `HabitConfig`  [INFERRED]
+  backend/README.md → frontend/src/features/habits/types.ts
 - `Библиотека и конструктор` --references--> `Exercise`  [INFERRED]
   backend/README.md → frontend/src/features/workouts/types.ts
 
 ## Import Cycles
-- None detected.
+- 3-file cycle: `backend/src/ai.rs -> backend/src/ai_context.rs -> backend/src/workout_preferences.rs -> backend/src/ai.rs`
 
-## Communities (81 total, 11 thin omitted)
+## Communities (80 total, 8 thin omitted)
 
 ### Community 0 - "project_projective.md"
 Cohesion: 0.08
@@ -135,24 +133,24 @@ Cohesion: 0.50
 Nodes (3): AST graph update, Graphify knowledge graph, Wiki navigation
 
 ### Community 2 - "AppState"
-Cohesion: 0.10
-Nodes (42): allowed_history(), cancel_turn(), Chat, chats(), Config, config(), ConfigInput, ConfigView (+34 more)
+Cohesion: 0.06
+Nodes (53): allowed_history(), cancel_turn(), Chat, chats(), Config, config(), ConfigInput, ConfigView (+45 more)
 
-### Community 3 - "react"
+### Community 3 - "Button"
 Cohesion: 0.13
-Nodes (33): Markdown(), MarkdownEditor(), upload(), safeMarkdownUrl(), render(), HabitControls(), save(), MarkEditor() (+25 more)
+Nodes (48): Dialog(), FormField(), MarkdownEditor(), Button(), Input(), Select(), ConfigForm(), CountdownEditor() (+40 more)
 
 ### Community 4 - "services"
 Cohesion: 0.18
 Nodes (10): name, networks, services, services, volumes, garage_data, garage_meta, mailpit_data (+2 more)
 
 ### Community 5 - "auth_smoke.py"
-Cohesion: 0.06
-Nodes (61): main(), NoRedirect, raw(), run(), run(), send(), run(), save() (+53 more)
+Cohesion: 0.05
+Nodes (66): main(), NoRedirect, raw(), run(), run(), send(), run(), save() (+58 more)
 
 ### Community 6 - "AppState"
-Cohesion: 0.13
-Nodes (38): calendar(), calendar_date(), CalendarQuery, CalendarResponse, create(), date(), date_filters_respect_boundaries_of_once_and_weekly_rules(), delete() (+30 more)
+Cohesion: 0.12
+Nodes (43): calendar(), calendar_date(), CalendarQuery, CalendarResponse, create(), date(), date_filters_respect_boundaries_of_once_and_weekly_rules(), delete() (+35 more)
 
 ### Community 7 - "environment"
 Cohesion: 0.10
@@ -176,7 +174,7 @@ Nodes (16): aliases, components, hooks, lib, ui, utils, iconLibrary, rsc (+8 mor
 
 ### Community 12 - "package.json"
 Cohesion: 0.09
-Nodes (21): devDependencies, eslint@^10.13.0, tailwindcss@^4.1.0, @tailwindcss/vite@^4.1.0, @types/node@^24.0.0, @types/react@^19.2.0, @types/react-dom@^19.2.0, typescript@^5.9.0 (+13 more)
+Nodes (24): devDependencies, eslint@^10.13.0, @eslint/js@^10.0.1, eslint-plugin-react-hooks@^7.0.0, eslint-plugin-react-refresh@^0.5.7, globals@^17.13.0, tailwindcss@^4.1.0, @types/node@^24.0.0 (+16 more)
 
 ### Community 13 - "compilerOptions"
 Cohesion: 0.15
@@ -187,24 +185,24 @@ Cohesion: 0.29
 Nodes (7): condition, backend, depends_on, networks, ports, restart, frontend
 
 ### Community 15 - "ai_login.rs"
-Cohesion: 0.08
+Cohesion: 0.09
 Nodes (41): access(), Account, account(), account_context(), accounts(), AttemptQuery, authorization_url(), authorize() (+33 more)
 
-### Community 16 - "FormField"
-Cohesion: 0.15
-Nodes (23): Библиотека и конструктор, ExerciseEditor(), submit(), Entry, Exercise, kindLabels, moveItem(), newEntry() (+15 more)
+### Community 16 - "react"
+Cohesion: 0.07
+Nodes (56): Библиотека и конструктор, upload(), safeMarkdownUrl(), buttonVariants, Textarea(), Attempt, ActionItem, AiAccount (+48 more)
 
 ### Community 17 - "scripts"
 Cohesion: 0.25
 Nodes (8): scripts, build, dev, lint, preview, test, test:e2e, typecheck
 
 ### Community 18 - "api"
-Cohesion: 0.10
-Nodes (40): logout(), AiAccess, AiVisibility(), change(), remove(), ChatPanel(), cancel(), prepare() (+32 more)
+Cohesion: 0.08
+Nodes (42): logout(), AiAccess, AiVisibility(), change(), remove(), ChatPanel(), cancel(), prepare() (+34 more)
 
 ### Community 19 - "engines"
-Cohesion: 0.67
-Nodes (3): engines, node, pnpm
+Cohesion: 0.30
+Nodes (5): typescript@^5.9.0, engines, node, pnpm, typescript
 
 ### Community 22 - "ideas.md"
 Cohesion: 0.22
@@ -215,20 +213,20 @@ Cohesion: 0.17
 Nodes (11): 1. Восстановление контекста, 1. Восстановление контекста, 1. Восстановление контекста, 2. Продолжение разработки, 2. Продолжение разработки, 2. Продолжение разработки, 3. Сохранение прогресса, 3. Сохранение прогресса (+3 more)
 
 ### Community 26 - "ai_provider.rs"
-Cohesion: 0.18
-Nodes (17): Answer, bounded_json(), bounded_json_limit(), client(), endpoint(), error_code(), EventStream, generate() (+9 more)
+Cohesion: 0.07
+Nodes (30): Answer, bounded_json(), bounded_json_limit(), client(), endpoint(), error_code(), EventStream, generate() (+22 more)
 
 ### Community 27 - "health/api.ts"
 Cohesion: 0.43
 Nodes (6): fetchReadiness(), HealthRequestError, isRecord(), parseReadiness(), Readiness, ServiceStatus
 
 ### Community 28 - "verify_code"
-Cohesion: 0.11
+Cohesion: 0.10
 Nodes (20): authenticate(), client_address(), code_hash(), EmailRequest, identifier(), keyed_hash(), logout(), me() (+12 more)
 
 ### Community 29 - "schedule.rs"
-Cohesion: 0.14
-Nodes (11): date(), deserialize(), intervals_count_calendar_days_across_dst_without_drifting(), invalid_rules_and_unbounded_queries_are_rejected(), missing_calendar_day_is_resolved_without_panicking(), nonexistent_time_moves_to_next_valid_minute(), repeated_time_chooses_earliest_instant(), schedule() (+3 more)
+Cohesion: 0.05
+Nodes (24): ApiError, ApiJson<T>, ErrorDetail, ErrorEnvelope, not_found(), bounded(), check_status(), Checks (+16 more)
 
 ### Community 30 - "workout_sessions.rs"
 Cohesion: 0.19
@@ -250,13 +248,17 @@ Nodes (9): POSTGRES_DB, POSTGRES_PASSWORD, POSTGRES_USER, environment, image, ne
 Cohesion: 0.25
 Nodes (8): REDIS_PASSWORD, command, environment, image, networks, restart, volumes, redis
 
+### Community 35 - "@playwright/test"
+Cohesion: 0.10
+Nodes (3): login(), @playwright/test@^1.64.1, @playwright/test
+
 ### Community 36 - "project_upgrade_projective_v1.md"
 Cohesion: 0.05
 Nodes (41): 1. Обратный отсчёт (Countdown), 2.1. Добавить, 2.2. Убрать или заменить, 2. Аналитика (Analytics), 3. Pomodoro, 4. Профиль пользователя (Profile), 5. Задачи (Tasks), 6. Интеграция между системами (+33 more)
 
 ### Community 37 - "app.tsx"
-Cohesion: 0.17
-Nodes (24): buttonVariants, Card(), CardContent(), CardDescription(), CardHeader(), CardTitle(), AuthContext, AuthContextValue (+16 more)
+Cohesion: 0.30
+Nodes (14): Card(), CardContent(), CardDescription(), CardHeader(), CardTitle(), useAuth(), LoginPage(), HealthPage() (+6 more)
 
 ### Community 38 - "intimacy.rs"
 Cohesion: 0.11
@@ -267,8 +269,8 @@ Cohesion: 0.11
 Nodes (46): complete_workout(), create(), current_untimed_pending_does_not_break_a_completed_streak(), delete(), dismiss(), editable_occurrence(), fixture(), foreign_or_duplicate_children_are_rejected() (+38 more)
 
 ### Community 40 - "README.md"
-Cohesion: 0.20
-Nodes (6): LifeCycle, Upgrade v1: этапы 1.1–1.3, Локальный запуск, Подключение AI, Проверки, Структура
+Cohesion: 0.17
+Nodes (8): LifeCycle, Upgrade v1: этапы 1.1–1.3, Upgrade v1: этапы 1.4–1.5, Единый рабочий экран задач, Локальный запуск, Подключение AI, Проверки, Структура
 
 ### Community 41 - "depends_on"
 Cohesion: 0.22
@@ -283,28 +285,28 @@ Cohesion: 0.20
 Nodes (10): Исправление входа после этапа 9 — 30.10.2026, Реализация по модулям, Этап 3: основные данные, Этап 4: привычки, Этап 5: тренировки, Этап 6: интимный журнал, Этап 7: аналитика и физическое удаление, Этап 8: AI (окончательно принят 29.10.2026) (+2 more)
 
 ### Community 44 - "LifeCycle API"
-Cohesion: 0.11
-Nodes (18): AI и подключения, EntryData и время, HTTP контракт, LifeCycle API, Upgrade v1: AI actions и последующие правки AI, Аналитика и удаление (этап 7), Выполнение и таймеры, Идентификация, профиль и настройки (этап 2) (+10 more)
+Cohesion: 0.12
+Nodes (17): AI и подключения, EntryData и время, HTTP контракт, LifeCycle API, Upgrade v1: AI actions и последующие правки AI, Upgrade v1, этапы 1.4–1.5, Аналитика и удаление (этап 7), Идентификация, профиль и настройки (этап 2) (+9 more)
 
-### Community 45 - "action-journal.tsx"
+### Community 45 - "useResource"
 Cohesion: 0.11
-Nodes (32): Dialog(), ActionReview(), command(), edit(), ChangeView(), entityLabels, labels, parseActions() (+24 more)
+Nodes (36): App(), AppContent(), AuthenticatedApp(), LegacyBoards(), NotFound(), Shell(), ErrorState(), LoadingState() (+28 more)
 
 ### Community 46 - "Q: Каково фактическое состояние этапа 3 LifeCycle после прерывания и восстановления?"
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: Каково фактическое состояние этапа 3 LifeCycle после прерывания и восстановления?, Source Nodes
 
 ### Community 47 - "foundation.rs"
-Cohesion: 0.14
-Nodes (12): router(), main(), run(), shutdown(), configuration_errors_do_not_expose_secrets(), configuration_rejects_unsafe_storage_endpoint(), configuration_requires_real_storage_credentials(), csrf_origin_includes_the_public_port_and_accepts_exact_origin() (+4 more)
+Cohesion: 0.23
+Nodes (9): router(), configuration_errors_do_not_expose_secrets(), configuration_rejects_unsafe_storage_endpoint(), configuration_requires_real_storage_credentials(), csrf_origin_includes_the_public_port_and_accepts_exact_origin(), liveness_is_independent_of_infrastructure_and_has_safe_headers(), mutation_without_origin_is_rejected_before_services_are_accessed(), readiness_reports_actual_connection_failures_without_credentials() (+1 more)
 
-### Community 48 - "app.tsx"
-Cohesion: 0.11
-Nodes (42): App(), AppContent(), AuthenticatedApp(), NotFound(), Shell(), ErrorState(), LoadingState(), Button() (+34 more)
+### Community 48 - "usePreferences"
+Cohesion: 0.15
+Nodes (21): Markdown(), render(), ActionJournal(), ActionReview(), command(), edit(), ChangeView(), entityLabels (+13 more)
 
-### Community 49 - "Select"
-Cohesion: 0.19
-Nodes (24): HabitConfig, TaskGantt(), HistoryDialog(), TasksPage(), changeStatus(), refreshed(), remove(), renderTask() (+16 more)
+### Community 49 - "CurrentUser"
+Cohesion: 0.06
+Nodes (73): CurrentUser, add_column(), Board, BoardInput, BoardState, bump(), check(), Column (+65 more)
 
 ### Community 50 - "ai_actions.rs"
 Cohesion: 0.14
@@ -318,29 +320,29 @@ Nodes (4): Answer, Outcome, Q: Stage 8 AI recovery and provider authentication, 
 Cohesion: 0.33
 Nodes (7): build, networks, restart, context, dockerfile, build, backend
 
-### Community 53 - "domain.rs"
+### Community 53 - "task-gantt.tsx"
 Cohesion: 0.08
-Nodes (26): color(), conflict(), event(), local_today(), not_found(), settings(), tags(), text() (+18 more)
+Nodes (57): HabitDetail(), HabitsPage(), create(), habitTime(), refresh(), remove(), statisticsLabels, Board (+49 more)
 
 ### Community 54 - "countdowns.rs"
 Cohesion: 0.29
 Nodes (12): computed(), Countdown, CountdownInput, create(), delete(), list(), next_date(), read() (+4 more)
 
-### Community 55 - "FormField"
-Cohesion: 0.11
-Nodes (35): FormField(), Input(), Select(), Textarea(), CountdownEditor(), submit(), AnswerInput(), EntryEditor() (+27 more)
+### Community 55 - "boards-page.tsx"
+Cohesion: 0.20
+Nodes (9): BoardsPage(), refresh(), remove(), toggle(), BoardWorkspace(), drop(), move(), mutate() (+1 more)
 
-### Community 56 - "pomodoro.rs"
-Cohesion: 0.27
-Nodes (6): active(), change(), routes(), Session, Start, start()
+### Community 56 - "vitest"
+Cohesion: 0.33
+Nodes (4): @tailwindcss/vite@^4.1.0, @vitejs/plugin-react@^6.1.2, @tailwindcss/vite, @vitejs/plugin-react
 
 ### Community 57 - "Q: Восстановить LifeCycle после этапа 3 и выполнить этап 4"
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: Восстановить LifeCycle после этапа 3 и выполнить этап 4, Source Nodes
 
-### Community 58 - "serialize"
-Cohesion: 0.17
-Nodes (4): ApiError, ErrorDetail, ErrorEnvelope, not_found()
+### Community 58 - "intimacy-page.tsx"
+Cohesion: 0.21
+Nodes (17): EntryDetail(), IntimacyPage(), VisibleJournal(), AnswersRow(), JournalStatistics(), answerLabel(), Answers, Entry (+9 more)
 
 ### Community 59 - "analytics.rs"
 Cohesion: 0.09
@@ -350,41 +352,41 @@ Nodes (26): build(), clip(), validate_range(), ai_report(), build_report(), Day,
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: Stage 5 workout integration with habits Today calendar and schedule, Source Nodes
 
-### Community 62 - "CurrentUser"
-Cohesion: 0.09
-Nodes (48): CurrentUser, Search, ApiJson, create_folder(), create_note(), delete_folder(), delete_note(), delete_note_in() (+40 more)
+### Community 62 - "workouts.rs"
+Cohesion: 0.13
+Nodes (30): color(), conflict(), event(), local_today(), not_found(), Search, settings(), tags() (+22 more)
 
 ### Community 63 - "Q: Stage 8 external ChatGPT acceptance after catalog and composer fixes"
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: Stage 8 external ChatGPT acceptance after catalog and composer fixes, Source Nodes
 
 ### Community 64 - "LifeCycle — прогресс (сжатый журнал)"
-Cohesion: 0.15
-Nodes (13): LifeCycle — прогресс (сжатый журнал), Upgrade 1.1 — завершён, Upgrade 1.2 — завершён, Upgrade 1.3 — завершён, Upgrade v1 — восстановление и этапы 1.1–1.3 (31.10.2026), Архитектура и общие правила, Доступ к источникам, Интерфейс и персонализация (+5 more)
+Cohesion: 0.11
+Nodes (18): LifeCycle — прогресс (сжатый журнал), Upgrade 1.1 — завершён, Upgrade 1.2 — завершён, Upgrade 1.3 — завершён, Upgrade v1 — восстановление и этапы 1.1–1.3 (31.10.2026), Upgrade v1 — этап 1.4 завершён (31.10.2026), Upgrade v1 — этап 1.5 завершён (31.10.2026), Архитектура и общие правила (+10 more)
 
 ### Community 65 - "media.rs"
-Cohesion: 0.19
+Cohesion: 0.21
 Nodes (6): download(), MAX_BYTES, Media, routes(), upload(), verify_image()
 
 ### Community 66 - "ai_access.rs"
-Cohesion: 0.35
-Nodes (8): Access, change(), exercise_visible(), Input, note(), routes(), visible(), workout()
+Cohesion: 0.30
+Nodes (13): Access, BulkAccess, BulkInput, BulkItem, change(), exercise(), exercise_visible(), Input (+5 more)
 
-### Community 67 - "mail.rs"
-Cohesion: 0.27
-Nodes (3): send_code(), transport(), unavailable()
+### Community 67 - "profile.rs"
+Cohesion: 0.28
+Nodes (7): load(), Profile, profile_accepts_optional_fields_without_gender_inference(), profile_rejects_future_birthdates_and_impossible_measurements(), read(), routes(), update()
 
 ### Community 68 - "Q: Stage 9 final integration of LifeCycle after stage 8"
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: Stage 9 final integration of LifeCycle after stage 8, Source Nodes
 
-### Community 70 - "health.rs"
-Cohesion: 0.27
-Nodes (7): bounded(), check_status(), Checks, live(), LiveResponse, ready(), ReadyResponse
+### Community 70 - "Q: Какие работы LifeCycle Upgrade v1 1.4–1.5 завершены и где контракты?"
+Cohesion: 0.40
+Nodes (4): Answer, Outcome, Q: Какие работы LifeCycle Upgrade v1 1.4–1.5 завершены и где контракты?, Source Nodes
 
 ### Community 71 - "LifeCycle frontend"
-Cohesion: 0.20
-Nodes (10): AI-помощник `/ai`, LifeCycle frontend, Аналитика и удаление (этап 7), Интимный журнал (этап 6), Какие записи видит AI, Основные данные (этап 3), Привычки (этап 4), Просмотр и применение предложений (+2 more)
+Cohesion: 0.17
+Nodes (12): AI-помощник `/ai`, LifeCycle frontend, Upgrade v1, этапы 1.4–1.5, UX-правки задач, досок и навигации (31.10.2026), Аналитика и удаление (этап 7), Интимный журнал (этап 6), Какие записи видит AI, Основные данные (этап 3) (+4 more)
 
 ### Community 72 - "Q: Stage 6 intimacy journal architecture, privacy and integration after Stage 5"
 Cohesion: 0.40
@@ -398,42 +400,47 @@ Nodes (4): Answer, Outcome, Q: Stage 7 analytics and deletion integration with t
 Cohesion: 0.25
 Nodes (9): submit(), draftToProfile(), MedicalKey, medicalKeys, NumericProfileKey, Profile, ProfileDraft, profileToDraft() (+1 more)
 
-### Community 76 - "eslint.config.js"
-Cohesion: 0.18
-Nodes (10): @eslint/js@^10.0.1, eslint-plugin-react-hooks@^7.0.0, eslint-plugin-react-refresh@^0.5.7, globals@^17.13.0, typescript-eslint@^8.48.0, @eslint/js, eslint-plugin-react-hooks, eslint-plugin-react-refresh (+2 more)
+### Community 76 - "main.rs"
+Cohesion: 0.32
+Nodes (3): main(), run(), shutdown()
 
-### Community 77 - "analytics-page.tsx"
-Cohesion: 0.35
-Nodes (10): DayChart(), Metrics(), minutes(), number(), percent(), ReportView(), Day, Privacy (+2 more)
+### Community 77 - "Упражнения и тренировки (этап 5)"
+Cohesion: 0.50
+Nodes (4): Выполнение и таймеры, Связь с привычками, Today и календарём, Упражнения и тренировки (этап 5), HabitConfig
+
+### Community 79 - "analytics-page.tsx"
+Cohesion: 0.18
+Nodes (17): DayChart(), Metrics(), minutes(), number(), percent(), ReportView(), Day, Privacy (+9 more)
 
 ## Knowledge Gaps
 - **17 isolated node(s):** `lifecycle-api`, `Exercise`, `Workout`, `Task`, `Note` (+12 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 481 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 521 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Work-memory lessons
 
 **Preferred sources** — corroborated by past sessions; start here.
-- `ai_login.rs` (2× useful, score=1.995760475) _(code changed — re-verify)_
-- `ai_provider.rs` (2× useful, score=1.995760475) _(code changed — re-verify)_
-- `project_progress.md` (2× useful, score=1.946738381) _(code changed — re-verify)_
-- `habits.rs` (2× useful, score=1.946307932)
-- `schedule.rs` (2× useful, score=1.946307932)
+- `project_progress.md` (3× useful, score=2.831940507) _(code changed — re-verify)_
+- `ai_login.rs` (2× useful, score=1.917817047)
+- `ai_provider.rs` (2× useful, score=1.917817047)
+- `tasks.rs` (2× useful, score=1.896140482) _(code changed — re-verify)_
+- `habits.rs` (2× useful, score=1.870295848)
+- `schedule.rs` (2× useful, score=1.870295848)
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `LifeCycle API` connect `LifeCycle API` to `README.md`, `Основные данные и планирование (этап 3)`?**
-  _High betweenness centrality (0.356) - this node is a cross-community bridge._
+- **Why does `LifeCycle API` connect `LifeCycle API` to `README.md`, `Основные данные и планирование (этап 3)`, `Упражнения и тренировки (этап 5)`?**
+  _High betweenness centrality (0.376) - this node is a cross-community bridge._
 - **What connects `lifecycle-api`, `Exercise`, `Workout` to the rest of the system?**
   _17 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `project_projective.md` be split into smaller, more focused modules?**
   _Cohesion score 0.08333333333333333 - nodes in this community are weakly interconnected._
 - **Why does `Аналитика и удаление (этап 7)` connect `LifeCycle API` to `auth_smoke.py`?**
-  _High betweenness centrality (0.342) - this node is a cross-community bridge._
+  _High betweenness centrality (0.357) - this node is a cross-community bridge._
 - **Should `AppState` be split into smaller, more focused modules?**
-  _Cohesion score 0.09621621621621622 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06301161241195508 - nodes in this community are weakly interconnected._
 - **Why does `pomodoro()` connect `auth_smoke.py` to `LifeCycle API`?**
-  _High betweenness centrality (0.339) - this node is a cross-community bridge._
-- **Should `react` be split into smaller, more focused modules?**
-  _Cohesion score 0.1321353065539112 - nodes in this community are weakly interconnected._
+  _High betweenness centrality (0.357) - this node is a cross-community bridge._
+- **Should `Button` be split into smaller, more focused modules?**
+  _Cohesion score 0.13333333333333333 - nodes in this community are weakly interconnected._

@@ -44,8 +44,8 @@ def schedule_cases(client, body, today):
     path = f"/api/habits/{ended['id']}/statistics?from={overdue.date()}&to={overdue.date()}"
     before, _ = client.request('GET', path)
     client.request('DELETE', f"/api/habits/{ended['id']}", expected=204)
-    after, _ = client.request('GET', path)
-    require(before['missed'] == after['missed'] == 1, 'Deletion silently removed a missed occurrence earlier on the same day')
+    require(before['missed'] == 1, 'Unmarked elapsed occurrence was not counted')
+    client.request('GET', path, expected=404)  # A discarded habit without recorded results leaves no analytics.
 
 
 def run(args):

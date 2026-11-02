@@ -29,14 +29,24 @@ fn default_interval() -> u32 {
 
 impl Schedule {
     pub fn validate(&self) -> Result<(), ApiError> {
+        self.validate_duration(1440)
+    }
+    pub fn validate_task(&self) -> Result<(), ApiError> {
+        self.validate_duration(if self.recurrence == "once" {
+            366 * 1440
+        } else {
+            1440
+        })
+    }
+    fn validate_duration(&self, maximum: u32) -> Result<(), ApiError> {
         if self.timezone.parse::<Tz>().is_err() {
             return Err(ApiError::validation(
                 "Schedule timezone must be an IANA timezone",
             ));
         }
-        if !(1..=1440).contains(&self.duration_minutes) {
+        if !(1..=maximum).contains(&self.duration_minutes) {
             return Err(ApiError::validation(
-                "Duration must be between 1 and 1440 minutes",
+                "Duration is outside the supported planning range",
             ));
         }
         if self
@@ -92,7 +102,7 @@ impl Schedule {
     }
 
     pub fn occurrence_start(&self, date: NaiveDate) -> Result<Option<DateTime<Utc>>, ApiError> {
-        self.validate()?;
+        self.validate_task()?;
         if !self.occurs_on(date) {
             return Ok(None);
         }

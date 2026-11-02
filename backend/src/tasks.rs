@@ -118,6 +118,7 @@ pub fn routes() -> Router<AppState> {
             axum::routing::post(mark),
         )
         .route("/api/tasks/{id}/history", get(history))
+        .route("/api/tasks/{id}/plan", axum::routing::put(update_plan))
         .route("/api/today", get(today))
         .route("/api/calendar", get(calendar))
 }
@@ -217,6 +218,15 @@ fn schedule_matches_profile_dates(
     to: Option<NaiveDate>,
     zone: &chrono_tz::Tz,
 ) -> bool {
+    if schedule.recurrence == "once" {
+        return schedule_in_profile_range(
+            schedule,
+            from.unwrap_or(NaiveDate::MIN),
+            to.unwrap_or(NaiveDate::MAX),
+            zone,
+        )
+        .is_ok_and(|rows| !rows.is_empty());
+    }
     if schedule.time.is_none() {
         return schedule_intersects(schedule, from, to);
     }
@@ -257,7 +267,28 @@ pub(crate) fn schedule_in_profile_range(
     to: NaiveDate,
     zone: &chrono_tz::Tz,
 ) -> Result<Vec<PlannedStart>, ApiError> {
-    schedule.validate()?;
+    schedule.validate_task()?;
+    if schedule.recurrence == "once" {
+        let date = schedule.start_date;
+        let starts_at = schedule.occurrence_start(date)?;
+        let start_day = starts_at.map_or(date, |start| start.with_timezone(zone).date_naive());
+        let end_day = starts_at.map_or(
+            date + chrono::Duration::days(i64::from(
+                schedule.duration_minutes.div_ceil(1440).saturating_sub(1),
+            )),
+            |start| {
+                (start + chrono::Duration::minutes(i64::from(schedule.duration_minutes))
+                    - chrono::Duration::seconds(1))
+                .with_timezone(zone)
+                .date_naive()
+            },
+        );
+        return Ok(if start_day <= to && end_day >= from {
+            vec![(date, starts_at)]
+        } else {
+            vec![]
+        });
+    }
     let first = from
         .checked_sub_signed(chrono::Duration::days(3))
         .unwrap_or(NaiveDate::MIN);
@@ -334,7 +365,7 @@ pub(crate) async fn save_in(
         return Err(ApiError::validation("Unsupported task priority"));
     }
     if let Some(schedule) = &v.schedule {
-        schedule.validate()?;
+        schedule.validate_task()?;
         if schedule.recurrence != "once" && v.status != "todo" {
             return Err(ApiError::validation(
                 "Recurring tasks use per-date occurrence status",
@@ -393,6 +424,7 @@ pub(crate) async fn save_in(
             return Err(ApiError::validation("Task hierarchy cannot contain cycles"));
         }
     }
+    crate::task_tags::register(tx, user, &v.tags).await?;
     let query = if create {
         "INSERT INTO app.tasks (id,user_id,title,description,status,tags,color,priority,parent_id,due_at,schedule)
          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *"
@@ -496,6 +528,8 @@ pub(crate) async fn delete_in(tx: &mut PgConnection, user: Uuid, id: Uuid) -> Re
             "Use the source module to delete this task",
         ));
     }
+    sqlx::query("UPDATE app.task_boards SET revision=revision+1 WHERE user_id=$1 AND id IN (SELECT board_id FROM app.board_items WHERE user_id=$1 AND task_id=$2)")
+        .bind(user).bind(id).execute(&mut *tx).await?;
     let rows = sqlx::query("DELETE FROM app.tasks WHERE id=$1 AND user_id=$2")
         .bind(id)
         .bind(user)
@@ -714,14 +748,23 @@ pub async fn occurrences(
     let expanded_to = to
         .checked_add_signed(chrono::Duration::days(3))
         .unwrap_or(NaiveDate::MAX);
-    let saved=sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT snapshot FROM app.task_occurrences WHERE user_id=$1 AND snapshot->'task'->>'source_kind'='manual' AND occurrence_date BETWEEN $2 AND $3").bind(user).bind(expanded_from).bind(expanded_to).fetch_all(&s.database).await?;
+    let saved=sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT snapshot FROM app.task_occurrences WHERE user_id=$1 AND snapshot->'task'->>'source_kind'='manual' AND (occurrence_date BETWEEN $2 AND $3 OR snapshot->'task'->'schedule'->>'recurrence'='once')").bind(user).bind(expanded_from).bind(expanded_to).fetch_all(&s.database).await?;
     for value in saved {
         let occurrence = value.0;
         let key = (occurrence.date, occurrence.task.id);
         if matches!(occurrence.status.as_str(), "completed" | "rejected") {
             output.remove(&key);
             let date = calendar_date(&occurrence, &zone);
-            if date >= from && date <= to {
+            let overlaps = occurrence
+                .task
+                .schedule
+                .as_ref()
+                .filter(|rule| rule.recurrence == "once")
+                .map_or(date >= from && date <= to, |rule| {
+                    schedule_in_profile_range(rule, from, to, &zone)
+                        .is_ok_and(|rows| !rows.is_empty())
+                });
+            if overlaps {
                 output.insert(key, occurrence);
             }
         } else if let Some(current) = output.get_mut(&key) {
@@ -846,6 +889,54 @@ mod tests {
     }
 
     #[test]
+    fn multiday_tasks_overlap_calendar_and_search_without_changing_the_occurrence_key() {
+        let rule = Schedule {
+            start_date: date("2026-10-30"),
+            recurrence: "once".into(),
+            duration_minutes: 3 * 1440,
+            time: None,
+            ..schedule()
+        };
+        assert!(rule.validate_task().is_ok());
+        assert!(rule.validate().is_err());
+        let day = date("2026-11-01");
+        assert_eq!(
+            schedule_in_profile_range(&rule, day, day, &chrono_tz::UTC).unwrap(),
+            vec![(rule.start_date, None)]
+        );
+        assert!(schedule_matches_profile_dates(
+            &rule,
+            Some(day),
+            Some(day),
+            &chrono_tz::UTC
+        ));
+        assert!(
+            schedule_in_profile_range(
+                &rule,
+                date("2026-11-02"),
+                date("2026-11-02"),
+                &chrono_tz::UTC
+            )
+            .unwrap()
+            .is_empty()
+        );
+        let repeating = Schedule {
+            recurrence: "daily".into(),
+            ..rule.clone()
+        };
+        assert!(repeating.validate_task().is_err());
+        let timed = Schedule {
+            time: Some(chrono::NaiveTime::from_hms_opt(23, 30, 0).unwrap()),
+            duration_minutes: 1500,
+            ..rule
+        };
+        assert_eq!(
+            schedule_in_profile_range(&timed, day, day, &chrono_tz::UTC).unwrap()[0].0,
+            date("2026-10-30")
+        );
+    }
+
+    #[test]
     fn timed_calendar_and_date_search_use_the_profile_day() {
         let tokyo = Schedule {
             start_date: date("2026-10-28"),
@@ -885,6 +976,200 @@ mod tests {
             schedule_in_profile_range(&untimed, date("2026-10-28"), date("2026-10-28"), &utc)
                 .unwrap()[0],
             (date("2026-10-28"), None)
+        );
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PlanInput {
+    expected_updated_at: DateTime<Utc>,
+    starts_at: DateTime<Utc>,
+    duration_minutes: u32,
+    occurrence_date: Option<NaiveDate>,
+}
+fn replanned(
+    mut schedule: Schedule,
+    starts_at: DateTime<Utc>,
+    duration: u32,
+    occurrence_date: Option<NaiveDate>,
+) -> Result<Schedule, ApiError> {
+    use chrono::Timelike;
+    if starts_at.second() != 0 || starts_at.nanosecond() != 0 {
+        return Err(ApiError::validation("Use minute precision"));
+    }
+    let zone = schedule
+        .timezone
+        .parse::<chrono_tz::Tz>()
+        .map_err(|_| ApiError::validation("Invalid timezone"))?;
+    let local = starts_at.with_timezone(&zone);
+    let original_date = occurrence_date.unwrap_or(schedule.start_date);
+    if !schedule.occurs_on(original_date) {
+        return Err(ApiError::validation(
+            "Occurrence no longer belongs to this schedule",
+        ));
+    }
+    let shift = local.date_naive().signed_duration_since(original_date);
+    schedule.start_date = schedule
+        .start_date
+        .checked_add_signed(shift)
+        .ok_or_else(|| ApiError::validation("Date outside supported range"))?;
+    schedule.end_date = schedule
+        .end_date
+        .map(|date| {
+            date.checked_add_signed(shift)
+                .ok_or_else(|| ApiError::validation("Date outside supported range"))
+        })
+        .transpose()?;
+    if schedule.recurrence == "weekly" {
+        for day in &mut schedule.weekdays {
+            *day = ((i64::from(*day) - 1 + shift.num_days()).rem_euclid(7) + 1) as u32;
+        }
+        schedule.weekdays.sort_unstable();
+    }
+    schedule.time = Some(local.time());
+    schedule.duration_minutes = duration;
+    schedule.validate_task()?;
+    if schedule.occurrence_start(local.date_naive())? != Some(starts_at)
+        || !schedule.occurs_on(local.date_naive())
+    {
+        return Err(ApiError::validation(
+            "Start must match recurrence and the earliest instant during a repeated local minute",
+        ));
+    }
+    Ok(schedule)
+}
+async fn update_plan(
+    State(s): State<AppState>,
+    u: CurrentUser,
+    Path(id): Path<Uuid>,
+    ApiJson(v): ApiJson<PlanInput>,
+) -> Result<Json<Task>, ApiError> {
+    let mut tx = s.database.begin().await?;
+    lock_tasks(&mut tx, u.id).await?;
+    let task: Task = sqlx::query_as("SELECT * FROM app.tasks WHERE user_id=$1 AND id=$2")
+        .bind(u.id)
+        .bind(id)
+        .fetch_optional(&mut *tx)
+        .await?
+        .ok_or_else(domain::not_found)?;
+    if task.updated_at != v.expected_updated_at {
+        return Err(ApiError::new(
+            StatusCode::CONFLICT,
+            "task_stale",
+            "Task changed; reload before rescheduling",
+        ));
+    }
+    if task.source_kind != "manual" || matches!(task.status.as_str(), "completed" | "rejected") {
+        return Err(domain::conflict(
+            "Only pending manual tasks can be rescheduled on the timeline",
+        ));
+    }
+    let schedule = task
+        .schedule
+        .ok_or_else(|| ApiError::validation("Add a schedule before using the timeline"))?
+        .0;
+    let finalized: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.task_occurrences WHERE user_id=$1 AND task_id=$2 AND occurrence_date=$3 AND status IN ('completed','rejected'))")
+        .bind(u.id).bind(id).bind(v.occurrence_date.unwrap_or(schedule.start_date)).fetch_one(&mut *tx).await?;
+    if finalized {
+        return Err(domain::conflict(
+            "Historical results cannot be moved on the timeline",
+        ));
+    }
+    let schedule = replanned(schedule, v.starts_at, v.duration_minutes, v.occurrence_date)?;
+    let input = TaskInput {
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        tags: task.tags.0,
+        color: task.color,
+        priority: task.priority,
+        parent_id: task.parent_id,
+        due_at: task.due_at,
+        schedule: Some(schedule),
+    };
+    let result = save_in(&s, &mut tx, u.id, id, input, false).await?;
+    tx.commit().await?;
+    Ok(Json(result))
+}
+
+#[cfg(test)]
+mod plan_tests {
+    use super::*;
+    fn schedule() -> Schedule {
+        serde_json::from_value(serde_json::json!({"start_date":"2026-10-18","time":"02:30","timezone":"Europe/Berlin","duration_minutes":30,"recurrence":"weekly","weekdays":[7],"end_date":"2026-11-01"})).unwrap()
+    }
+    #[test]
+    fn gantt_rejects_the_second_dst_instant_and_keeps_the_series_anchor() {
+        let day = "2026-10-25".parse().unwrap();
+        assert!(
+            replanned(
+                schedule(),
+                "2026-10-25T01:30:00Z".parse().unwrap(),
+                30,
+                Some(day)
+            )
+            .is_err()
+        );
+        let result = replanned(
+            schedule(),
+            "2026-10-25T00:45:00Z".parse().unwrap(),
+            90,
+            Some(day),
+        )
+        .unwrap();
+        assert_eq!(result.start_date.to_string(), "2026-10-18");
+        assert_eq!(result.end_date.unwrap().to_string(), "2026-11-01");
+        assert_eq!(result.time.unwrap().to_string(), "02:45:00");
+        assert_eq!(result.duration_minutes, 90);
+        assert_eq!(
+            result
+                .occurrence_start("2026-11-01".parse().unwrap())
+                .unwrap()
+                .unwrap()
+                .to_rfc3339(),
+            "2026-11-01T01:45:00+00:00"
+        );
+    }
+    #[test]
+    fn gantt_moves_the_entire_weekly_rule_and_validates_occurrences_and_precision() {
+        let day = "2026-10-25".parse().unwrap();
+        let result = replanned(
+            schedule(),
+            "2026-10-26T22:30:00Z".parse().unwrap(),
+            120,
+            Some(day),
+        )
+        .unwrap();
+        assert_eq!(result.start_date.to_string(), "2026-10-19");
+        assert_eq!(result.end_date.unwrap().to_string(), "2026-11-02");
+        assert_eq!(result.weekdays, vec![1]);
+        assert!(
+            replanned(
+                schedule(),
+                "2026-10-25T00:30:01Z".parse().unwrap(),
+                30,
+                Some(day)
+            )
+            .is_err()
+        );
+        assert!(
+            replanned(
+                schedule(),
+                "2026-10-25T00:30:00Z".parse().unwrap(),
+                1441,
+                Some(day)
+            )
+            .is_err()
+        );
+        assert!(
+            replanned(
+                schedule(),
+                "2026-10-25T00:30:00Z".parse().unwrap(),
+                30,
+                Some("2026-10-24".parse().unwrap())
+            )
+            .is_err()
         );
     }
 }

@@ -238,7 +238,7 @@ async fn remove(db: &mut PgConnection, user: Uuid, a: &Action) -> Result<(), Api
         Entity::Exercise => workouts::delete_exercise_in(db, user, a.id).await,
         Entity::Workout => workouts::delete_workout_in(db, user, a.id).await,
         Entity::Task => {
-            let linked:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.tasks WHERE user_id=$1 AND parent_id=$2) OR EXISTS(SELECT 1 FROM app.task_occurrences WHERE user_id=$1 AND task_id=$2)").bind(user).bind(a.id).fetch_one(&mut *db).await?;
+            let linked:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.tasks WHERE user_id=$1 AND parent_id=$2) OR EXISTS(SELECT 1 FROM app.task_occurrences WHERE user_id=$1 AND task_id=$2) OR EXISTS(SELECT 1 FROM app.board_items WHERE user_id=$1 AND task_id=$2)").bind(user).bind(a.id).fetch_one(&mut *db).await?;
             if linked {
                 return Err(conflict());
             }

@@ -31,7 +31,6 @@ test("mobile private journal persists the full form, multiple daily events, Mark
   page.once("dialog",(dialog) => void dialog.accept());
   await page.getByLabel("Тип события",{exact:true}).selectOption("sex");
   await page.getByLabel("Местное время начала",{exact:true}).fill("2026-10-20T12:30");
-  await page.getByLabel("Часовой пояс события",{exact:true}).fill("UTC");
   await page.getByLabel("Длительность, минут",{exact:true}).fill("25");
   await page.getByLabel("Количество эякуляций",{exact:true}).fill("0");
   await page.getByLabel("Игрушки",{exact:true}).fill("Личная игрушка");
@@ -56,7 +55,6 @@ test("mobile private journal persists the full form, multiple daily events, Mark
   await expect(page.getByRole("heading",{name:"События (1)",exact:true})).toBeVisible();
   await page.getByRole("button",{name:"Новое событие",exact:true}).click();
   await page.getByLabel("Местное время начала",{exact:true}).fill("2026-10-20T12:30");
-  await page.getByLabel("Часовой пояс события",{exact:true}).fill("UTC");
   await page.getByLabel("Источники порно",{exact:true}).fill("Личная запись источника");
   await page.getByLabel("Ощущения после (Markdown)",{exact:true}).fill("**Сохраняемые ощущения**");
   await page.getByRole("button",{name:"Сохранить событие",exact:true}).click();
@@ -108,9 +106,13 @@ test("mobile private journal persists the full form, multiple daily events, Mark
 
 test("journal reports DST errors and preserves concurrent changes",async ({page,request}) => {
   await login(page,request);
+  await page.getByRole("link",{name:"Настройки",exact:true}).click();
+  await page.getByLabel("Часовой пояс",{exact:true}).fill("Europe/Berlin");
+  await page.getByRole("button",{name:"Сохранить настройки",exact:true}).click();
+  await expect(page.getByText("Настройки сохранены",{exact:true})).toBeVisible();
+  await page.getByRole("link",{name:"Интимный журнал",exact:true}).click();
   await page.getByRole("button",{name:"Новое событие",exact:true}).click();
   await page.getByLabel("Местное время начала",{exact:true}).fill("2026-03-29T02:30");
-  await page.getByLabel("Часовой пояс события",{exact:true}).fill("Europe/Berlin");
   await page.getByRole("button",{name:"Сохранить событие",exact:true}).click();
   await expect(page.getByRole("alert")).toContainText("Такого местного времени нет");
   await page.getByLabel("Местное время начала",{exact:true}).fill("2026-10-25T02:30");
