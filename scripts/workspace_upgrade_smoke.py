@@ -39,7 +39,7 @@ def run(args):
     for note in notes:
         owner.request('GET', '/api/notes/' + note['id'], expected=404)
     nav = owner.request('GET', '/api/navigation')[0]
-    require(len(nav['ordering']) == 14 and nav['pinned'] == nav['ordering'] and nav['revision'] == 0, 'Navigation defaults differ')
+    require(len(nav['ordering']) == 15 and '/contacts' in nav['ordering'] and nav['pinned'] == nav['ordering'] and nav['revision'] == 0, 'Navigation defaults differ')
     nav['ordering'] = list(reversed(nav['ordering']))
     nav['pinned'] = ['/notes', '/tasks']
     stale = dict(nav)

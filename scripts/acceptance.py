@@ -38,6 +38,11 @@ def main():
         if args.check_upgrade:
             for suite in ["ai_upgrade_smoke.py", "ai_visibility_smoke.py", "notes_upgrade_smoke.py", "tasks_upgrade_smoke.py", "ui_upgrade_smoke.py", "interaction_upgrade_smoke.py", "workspace_upgrade_smoke.py", "countdowns_upgrade_smoke.py", "pomodoro_upgrade_smoke.py", "profile_upgrade_smoke.py"]:
                 subprocess.run([sys.executable, str(root / "scripts" / suite), "--url", args.url, "--mailpit-url", args.mailpit_url], cwd=root, check=True)
+            for suite in ["contacts_upgrade_smoke.py", "contact_countdowns_smoke.py"]:
+                options = ["--url", args.url, "--mailpit-url", args.mailpit_url]
+                if suite == "contact_countdowns_smoke.py" and args.check_migrations:
+                    options.append("--check-storage")
+                subprocess.run([sys.executable, str(root / "scripts" / suite), *options], cwd=root, check=True)
         print("Running Chromium end-to-end acceptance", flush=True)
         subprocess.run(["pnpm", "--dir", "frontend", "test:e2e"], cwd=root, env={**os.environ, "APP_URL": args.url, "MAILPIT_URL": args.mailpit_url}, check=True)
     except (subprocess.CalledProcessError, OSError):

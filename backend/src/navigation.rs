@@ -8,7 +8,7 @@ use axum::{Json, Router, extract::State, routing::get};
 use serde::{Deserialize, Serialize};
 use sqlx::types::Json as DbJson;
 use std::collections::BTreeSet;
-const PAGES: [&str; 14] = [
+const PAGES: [&str; 15] = [
     "/today",
     "/habits",
     "/workouts",
@@ -17,6 +17,7 @@ const PAGES: [&str; 14] = [
     "/calendar",
     "/notes",
     "/countdowns",
+    "/contacts",
     "/pomodoro",
     "/analytics",
     "/ai",

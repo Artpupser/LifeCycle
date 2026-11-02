@@ -1,0 +1,7 @@
+project/archive/
+project/archive/*.md
+project/
+project/*.md
+.codex/
+.aws/
+.agents/

@@ -11,7 +11,7 @@ import { api, errorMessage } from "@/lib/api";
 import { localDate } from "@/lib/dates";
 
 const styles = { formal: "Формальный", friendly: "Дружеский", family: "Семейный", romantic: "Романтический" };
-export function GreetingDialog({ close }: { close: () => void }) {
+export function GreetingDialog({ close, localRecipient = "" }: { close: () => void; localRecipient?: string }) {
   const { settings } = usePreferences();
   const config = useResource<AiConfig>("/ai/settings");
   const [name, setName] = useState(""); const [occasion, setOccasion] = useState("день рождения");
@@ -67,7 +67,8 @@ export function GreetingDialog({ close }: { close: () => void }) {
       <FormField id="greeting-style" label="Стиль поздравления"><Select id="greeting-style" value={style} onChange={e => setStyle(e.target.value as keyof typeof styles)}>{Object.entries(styles).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</Select></FormField>
       <FormField id="greeting-context" label="Разрешённые сведения и пожелания"><Textarea id="greeting-context" maxLength={4000} value={context} onChange={e => setContext(e.target.value)} /></FormField>
     </fieldset>
-    <div className="flex flex-wrap gap-2"><Button disabled={busy || Boolean(pending)} onClick={() => { const greetings = { formal: "Примите искренние поздравления", friendly: "Поздравляю от всей души", family: "С любовью поздравляем", romantic: "С нежностью поздравляю" }; setText(`${name ? `${name}, ` : ""}${greetings[style]}! Повод — ${occasion || "особенный день"}. Желаю радости, тепла и исполнения желаний.${context ? ` ${context}` : ""}`); setCopied(false); }}>Создать по шаблону</Button><Button variant="outline" disabled={busy || Boolean(pending) || config.resource.status !== "ready" || !config.resource.data.enabled} onClick={() => void prepare()}>Предпросмотр AI-запроса</Button></div>
+    {localRecipient && <p className="text-xs text-muted-foreground">Локальный шаблон подставит имя получателя из события. В AI-форму сведения не подставляются.</p>}
+    <div className="flex flex-wrap gap-2"><Button disabled={busy || Boolean(pending)} onClick={() => { const greetings = { formal: "Примите искренние поздравления", friendly: "Поздравляю от всей души", family: "С любовью поздравляем", romantic: "С нежностью поздравляю" }; setText(`${(name || localRecipient) ? `${name || localRecipient}, ` : ""}${greetings[style]}! Повод — ${occasion || "особенный день"}. Желаю радости, тепла и исполнения желаний.${context ? ` ${context}` : ""}`); setCopied(false); }}>Создать по шаблону</Button><Button variant="outline" disabled={busy || Boolean(pending) || config.resource.status !== "ready" || !config.resource.data.enabled} onClick={() => void prepare()}>Предпросмотр AI-запроса</Button></div>
     <p className="text-xs text-muted-foreground">AI использует подключение из <Link to="/ai" className="underline">AI-помощника</Link>. Передача выполняется только после отдельного подтверждения. Запрос и ответ останутся в истории AI; ранее переданные данные могут храниться у провайдера.</p>
     {preview && <div className="space-y-3 rounded-xl border border-border p-4"><p className="text-sm">Проверьте точные данные для отправки провайдеру.</p><pre className="max-h-60 overflow-auto whitespace-pre-wrap break-all text-xs">{JSON.stringify(preview.data.request, null, 2)}</pre><Button disabled={busy} onClick={() => void send()}>Отправить AI и сгенерировать</Button></div>}
     {pending && <div role="status" className="space-y-2 text-sm"><p>AI готовит поздравление. Ответ также доступен в истории AI.</p><Button variant="outline" disabled={busy} onClick={() => void cancel()}>Отменить генерацию</Button></div>}

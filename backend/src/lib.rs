@@ -8,6 +8,7 @@ mod analytics;
 pub mod auth;
 mod boards;
 pub mod config;
+mod contacts;
 mod countdowns;
 pub mod crypto;
 mod csrf;
@@ -60,6 +61,7 @@ pub fn router(state: AppState) -> Router {
         .merge(habits::routes())
         .merge(media::routes())
         .merge(countdowns::routes())
+        .merge(contacts::routes())
         .merge(pomodoro::routes())
         .merge(pomodoro_programs::routes())
         .merge(workouts::routes())

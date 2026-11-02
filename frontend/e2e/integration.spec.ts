@@ -79,7 +79,12 @@ test("profile timezone and 12/24-hour preferences agree across Today, calendar, 
   const svg = page.getByRole("img", { name: /Диаграмма Ганта/ });
   const bar = svg.locator("rect[rx]");
   await expect(bar).toHaveCount(1);
-  expect(Number(await bar.getAttribute("x"))).toBeCloseTo(220 + (8.5 / 337) * (Number(await svg.getAttribute("width")) - 220), 4);
+  // ResizeObserver settles the responsive label column after the calendar data arrives.
+  await expect.poll(() => svg.evaluate(element => {
+    const actual = Number(element.querySelector("rect[rx]")?.getAttribute("x"));
+    const expected = 220 + (8.5 / 337) * (Number(element.getAttribute("width")) - 220);
+    return actual - expected;
+  })).toBeCloseTo(0, 4);
   await page.getByRole("link", { name: "Настройки", exact: true }).click();
   await page.reload();
   await expect(page.getByLabel("Формат времени", { exact: true })).toHaveValue("12h");
