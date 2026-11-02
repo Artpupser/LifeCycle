@@ -1,3 +1,4 @@
+import { zonedDateTimeInput } from "@/lib/dates";
 export type Kind = "sex" | "masturbation";
 export type Partner = { protection_used: boolean | null; gender: string; name: string; positions: string[]; sex_types: string[] };
 export type Solo = { porn_sources: string[]; feelings_after: string };
@@ -19,11 +20,7 @@ export type Statistics = {
 export type Journal = { from: string; to: string; timezone: string; offset: number; limit: number; total: number; entries: Entry[]; statistics: Statistics };
 export const kindLabel = (kind: Kind) => kind === "sex" ? "Секс" : "Мастурбация";
 export const answerLabel = (value: boolean | null) => value === null ? "Не указано" : value ? "Да" : "Нет";
-export function localInput(timezone: string, date = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(date);
-  const part = (name: string) => parts.find((item) => item.type === name)?.value ?? "";
-  return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`;
-}
+export function localInput(timezone: string, date: string | number = Date.now()) { return zonedDateTimeInput(date, timezone); }
 export function newEntry(timezone: string): EntryData {
   return { kind: "masturbation", local_start: localInput(timezone), timezone, time_occurrence: "earlier", duration_minutes: null, ejaculation_count: null, toys: [], lubricant_used: null, setting: "", was_clothed: null, emotions: [], repeat_desired: null, note: "", partner: null, solo: { porn_sources: [], feelings_after: "" } };
 }

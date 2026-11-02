@@ -71,10 +71,9 @@ test("mobile analytics uses real outcomes, explicit private summaries, revocatio
   await page.reload(); await expect(profile).not.toBeChecked(); await expect(intimacy).not.toBeChecked();
   const revoked = await (await page.request.get(`/api/analytics?from=${yesterday}&to=${today}`)).json();
   expect(revoked.profile).toBeUndefined(); expect(revoked.intimacy).toBeUndefined();
-  await page.getByLabel("Период с", { exact: true }).fill("2020-01-01");
-  await page.getByRole("button", { name: "Применить период", exact: true }).click();
+  await page.getByLabel("Поиск и период аналитики", { exact: true }).fill("с:2020-01-01");
   await expect(page.getByRole("alert")).toBeVisible();
-  await page.getByRole("button", { name: "7 дн.", exact: true }).click();
+  await page.getByLabel("Поиск и период аналитики", { exact: true }).fill(`с:${yesterday} по:${today}`);
   await expect(page.getByRole("region", { name: "Задачи", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "1. Ритм аналитики", exact: true }).click();
   await expect(page.getByRole("dialog").getByRole("heading", { name: "🌱 Ритм аналитики", exact: true })).toBeVisible();

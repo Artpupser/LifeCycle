@@ -14,7 +14,7 @@ import type { DayPlan } from "./types";
 export function TodayPage() {
   const { settings } = usePreferences(); const [selected, setSelected] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now);
-  const date = selected || localDate(settings.timezone, new Date(now));
+  const date = selected || localDate(settings.timezone, now);
   const { resource, retry } = useResource<DayPlan>(`/today?date=${date}`);
   useEffect(() => {
     const tick = window.setInterval(() => setNow(Date.now()), 30_000);

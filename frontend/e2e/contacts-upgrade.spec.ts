@@ -52,7 +52,7 @@ test("2.2 birthday links synchronize, suspend, unlink and preserve private local
   await expect(page.getByRole("heading", { name: "Связанный человек", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "События контакта", exact: true }).click();
   await expect(page.getByRole("heading", { name: "День рождения: Связанный человек", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Сегодня", exact: true }).click();
+  await page.getByLabel("Поиск событий", { exact: true }).fill("период:сегодня");
   await expect(page.locator("article")).toHaveCount(1);
   await expect(page.getByText("Сегодня · весь день", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Поздравление", exact: true }).click();
@@ -73,7 +73,7 @@ test("2.2 birthday links synchronize, suspend, unlink and preserve private local
   await expect(page.getByRole("heading", { name: "Новое имя", exact: true })).toBeVisible();
   await page.goto("/countdowns"); await expect(page.locator("article")).toContainText("Отсчёт приостановлен");
   await expect(page.getByRole("heading", { name: "День рождения: Новое имя", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Сегодня", exact: true }).click();
+  await page.getByLabel("Поиск событий", { exact: true }).fill("период:сегодня");
   await expect(page.getByText("Сегодня событий нет.", { exact: true })).toBeVisible();
   await page.goto("/contacts"); await page.getByRole("button", { name: "Изменить контакт", exact: true }).click();
   await page.getByLabel("Дата рождения контакта", { exact: true }).fill(`2000-${today.slice(5)}`);
@@ -88,8 +88,7 @@ test("2.2 birthday links synchronize, suspend, unlink and preserve private local
   const concurrent = await page.request.put(`/api/contacts/${current.id}`, { headers: { Origin: new URL(page.url()).origin }, data: { data: current.data, revision: current.revision } });
   expect(concurrent.status()).toBe(200);
   await page.getByRole("button", { name: "Подтвердить удаление контакта", exact: true }).click();
-  await expect(page.getByRole("dialog").getByRole("alert")).toContainText("Контакт изменился в другом окне");
-  await page.getByRole("dialog").getByRole("button", { name: "Закрыть окно", exact: true }).click();
+  await expect(page.locator("main").getByRole("alert")).toContainText("Контакт изменился в другом окне");
   await page.reload(); await page.getByRole("button", { name: "Удалить контакт", exact: true }).click();
   await page.getByLabel("Что сделать со связанными событиями", { exact: true }).selectOption("keep");
   await page.getByRole("button", { name: "Подтвердить удаление контакта", exact: true }).click();
@@ -104,19 +103,12 @@ test("2.2 birthday links synchronize, suspend, unlink and preserve private local
 
 test("1.6 legacy birthday becomes a contact-linked event without repeated entry or duplicates", async ({ page, request }) => {
   await login(page, request); await page.goto("/countdowns");
-  await page.getByRole("button", { name: "Новое событие", exact: true }).click();
-  await page.getByLabel("Название события", { exact: true }).fill("Прежний день рождения");
-  await page.getByLabel("Дата события", { exact: true }).fill("2000-02-29");
-  await page.getByLabel("Значок события", { exact: true }).selectOption("cake");
-  await page.getByLabel("Повторение события", { exact: true }).selectOption("yearly");
-  await page.getByRole("dialog").getByText("Сведения о человеке", { exact: true }).click();
-  await page.getByLabel("ФИО", { exact: true }).fill("Имя из прежнего события");
-  await page.getByLabel("Телефон", { exact: true }).fill("+12025550199");
-  await page.getByRole("button", { name: "Сохранить событие", exact: true }).click();
+  const legacy = await page.request.post("/api/countdowns", { headers: { Origin: new URL(page.url()).origin }, data: { title: "Прежний день рождения", category: "День рождения", icon: "cake", target_date: "2000-02-29", recurrence: "yearly", details: { full_name: "Имя из прежнего события", phone: "+12025550199" } } });
+  expect(legacy.status()).toBe(201);
+  await page.reload();
   await expect(page.getByRole("heading", { name: "Прежний день рождения", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Изменить", exact: true }).click();
-  await page.getByRole("dialog").getByText("Сведения о человеке", { exact: true }).click();
-  await page.getByRole("button", { name: "Создать контакт из сведений события", exact: true }).click();
+  await page.getByRole("button", { name: "Перенести в контакты", exact: true }).click();
   await expect(page.getByLabel("Имя контакта", { exact: true })).toHaveValue("Имя из прежнего события");
   await expect(page.getByLabel("Телефон 1", { exact: true })).toHaveValue("+12025550199");
   await expect(page.getByLabel("Дата рождения контакта", { exact: true })).toHaveValue("2000-02-29");

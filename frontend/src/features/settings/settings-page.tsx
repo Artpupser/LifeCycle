@@ -1,3 +1,4 @@
+import { supportedTimezones } from "@/lib/dates";
 import { LoaderCircle, Save, SlidersHorizontal } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { FormField } from "@/components/form-field";
@@ -9,7 +10,7 @@ import { api, errorMessage } from "@/lib/api";
 import { usePreferences } from "./preferences-context";
 import type { Settings } from "./types";
 
-const timezones = Intl.supportedValuesOf("timeZone");
+const timezones = supportedTimezones();
 
 export function SettingsPage() {
   const { settings, updateSettings } = usePreferences();

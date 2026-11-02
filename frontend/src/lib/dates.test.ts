@@ -42,3 +42,33 @@ describe("profile time preferences", () => {
     expect(minuteOfDay("2026-10-25T01:30:00Z", "Europe/Berlin")).toBe(150);
   });
 });
+
+import { clockFields, dateTimeLabel, durationClock, isCalendarDate, localDateTimeCandidates, shiftMonth, zonedDateTimeInput } from "./dates";
+
+it("keeps seconds when editing historical instants in the account timezone", () => {
+  const instant = "2026-10-25T01:30:47Z";
+  expect(zonedDateTimeInput(instant, "Europe/Berlin", true)).toBe("2026-10-25T02:30:47");
+  expect(clockFields(instant, "Europe/Berlin")).toEqual({target_date:"2026-10-25",target_time:"02:30:47"});
+  expect(localDateTimeCandidates("2026-10-25T02:30", "Europe/Berlin")).toHaveLength(2);
+  expect(localDateTimeCandidates("2026-03-29T02:30", "Europe/Berlin")).toEqual([]);
+  expect(dateTimeLabel(instant, "America/Los_Angeles", "12h")).toContain("06:30 PM");
+});
+it("validates real calendar dates and navigates month and year boundaries", () => {
+  expect(isCalendarDate("2024-02-29")).toBe(true);
+  expect(isCalendarDate("2026-02-29")).toBe(false);
+  expect(isCalendarDate("2026-04-31")).toBe(false);
+  expect(isCalendarDate("not-a-date")).toBe(false);
+  expect(shiftMonth("2026-12-01", 1)).toBe("2027-01-01");
+  expect(shiftMonth("2026-01-01", -1)).toBe("2025-12-01");
+  expect(durationClock(65)).toBe("01:05");
+  expect(durationClock(-90061, true)).toBe("1 д. 01:01:01");
+});
+
+import { addClockMinutes, dateTimePresets } from "./dates";
+it("centralizes midnight carry and preference-aware picker presets", () => {
+  expect(addClockMinutes("23:30", 60)).toEqual({time:"00:30",days:1});
+  const now = Date.parse("2026-11-02T15:30:47Z");
+  expect(dateTimePresets("date",now,"Asia/Tokyo","12h")[0]).toEqual(["Сегодня","2026-11-03"]);
+  expect(dateTimePresets("time",now,"Asia/Tokyo","12h",true)[0]).toEqual(["Сейчас","00:30:47"]);
+  expect(dateTimePresets("time",now,"Asia/Tokyo","12h")).toContainEqual(["Вечер · 06:00 PM","18:00"]);
+});

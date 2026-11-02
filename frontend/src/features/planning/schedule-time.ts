@@ -1,4 +1,4 @@
-import { dayDifference, localDateTimeToInstant, shiftDate, zonedDateTimeInput } from "@/lib/dates";
+import { shiftLocalMinutes, dayDifference, localDateTimeToInstant, shiftDate, zonedDateTimeInput } from "@/lib/dates";
 import type { Schedule } from "./types";
 // Preserve stored instants/rules when an older schedule is edited from another display zone.
 export function scheduleInZone(value: Schedule, timezone: string): Schedule {
@@ -7,7 +7,7 @@ export function scheduleInZone(value: Schedule, timezone: string): Schedule {
   let instant = localDateTimeToInstant(input, value.timezone);
   // Schedule's established rule moves a missing local minute to the next real minute.
   for (let i = 0; instant === null && i < 1440; i++) {
-    input = new Date(Date.parse(`${input}:00Z`) + 60_000).toISOString().slice(0, 16);
+    input = shiftLocalMinutes(input, 1);
     instant = localDateTimeToInstant(input, value.timezone);
   }
   if (instant === null) return value;

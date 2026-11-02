@@ -11,8 +11,6 @@ test("1.6 recurring events preserve Markdown, reach Today/calendar, and create e
   await page.getByLabel("Категория события", { exact: true }).fill("Моя категория");
   await page.getByLabel("Повторение события", { exact: true }).selectOption("daily");
   await page.getByLabel("Описание события", { exact: true }).fill("**Событие Markdown**\n\n<script>alert(1)</script>");
-  await page.getByText("Сведения о человеке", { exact: true }).click();
-  await page.getByLabel("ФИО", { exact: true }).fill("Закрытые сведения события");
   await page.getByRole("button", { name: "Сохранить событие", exact: true }).click();
   const card = page.locator("article").filter({ has: page.getByRole("heading", { name: "Памятная дата 1.6", exact: true }) });
   await expect(card.locator("strong")).toHaveText("Событие Markdown");
@@ -78,7 +76,7 @@ test("1.7 Pomodoro constructor, snapshots, pause/reload/reset, copying and autom
   expect(errors).toEqual([]);
 });
 
-test("1.8 profile keeps life history apart from current data and supports explicit clearing and birthday reuse", async ({ page, request }, info) => {
+test("1.8 profile keeps life history apart from current data and supports explicit clearing and independent countdown creation", async ({ page, request }, info) => {
   const errors: string[] = []; page.on("pageerror", e => errors.push(e.message));
   await login(page, request); await page.goto("/profile");
   await page.getByLabel("Имя", { exact: true }).fill("Текущее имя");
@@ -131,9 +129,10 @@ test("1.8 profile keeps life history apart from current data and supports explic
   expect(await page.locator(".app-content").evaluate(e => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: info.outputPath("profile-mobile.png"), fullPage: true });
   await page.goto("/countdowns"); await page.getByRole("button", { name: "Новое событие", exact: true }).click();
-  await page.getByRole("button", { name: "Взять дату рождения из профиля", exact: true }).click();
-  await expect(page.getByLabel("Дата события", { exact: true })).toHaveValue("1990-02-28");
-  await expect(page.getByLabel("Повторение события", { exact: true })).toHaveValue("yearly");
+  await expect(page.getByRole("button", { name: "Взять дату рождения из профиля", exact: true })).toHaveCount(0);
+  await page.getByLabel("Название события", { exact: true }).fill("Мой день рождения");
+  await page.getByLabel("Дата события", { exact: true }).fill("1990-02-28");
+  await page.getByLabel("Повторение события", { exact: true }).selectOption("yearly");
   await page.getByRole("button", { name: "Сохранить событие", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Мой день рождения", exact: true })).toBeVisible();
   expect(errors).toEqual([]);

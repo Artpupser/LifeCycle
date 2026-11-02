@@ -1,16 +1,16 @@
+import { FilterSearch } from "@/components/filter-search";
+import { parseFilterQuery, filterValue, filterRange, rangeFilters, type FilterSpec } from "@/lib/filter-query";
 import { confirmAction } from "@/lib/feedback";
 import { EyeOff, Heart, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Dialog } from "@/components/dialog";
-import { FormField } from "@/components/form-field";
 import { Markdown } from "@/components/markdown";
 import { ErrorState, LoadingState } from "@/components/resource-state";
 import { Button } from "@/components/ui/button";
-import { Input, Select } from "@/components/ui/input";
 import { usePreferences } from "@/features/settings/preferences-context";
 import { useResource } from "@/hooks/use-resource";
 import { ApiError, api, errorMessage } from "@/lib/api";
-import { dateLabel, dateTimeLabel, instantLabel, localDate, shiftDate } from "@/lib/dates";
+import { dateTimeLabel, localDate, shiftDate } from "@/lib/dates";
 import { EntryEditor } from "./entry-editor";
 import { JournalStatistics } from "./journal-statistics";
 import { answerLabel, kindLabel, newEntry, type Entry, type EntryData, type Journal } from "./types";
@@ -32,26 +32,31 @@ function EntryDetail({ record, close }: { record: Entry; close: () => void }) {
 function VisibleJournal({ hide }: { hide: () => void }) {
   const { settings } = usePreferences();
   const today = localDate(settings.timezone);
-  const [filter, setFilter] = useState({ from: shiftDate(today,-29), to: today, kind: "", offset: 0 });
+  const [query, setQuery] = useState("");
+  const [offset, setOffset] = useState(0);
+  const specs: FilterSpec[] = [...rangeFilters,{key:"kind", aliases:["тип"],label:"Тип события",example:"тип:секс",values:["sex","masturbation","секс","мастурбация"],control:true}];
+  const filters = parseFilterQuery(query, specs);
+  const range = filterRange(filters, {from:shiftDate(today,-29),to:today});
+  const kind = filterValue(filters,"kind").toLocaleLowerCase("ru-RU");
+  const filter = {...range, offset, kind: ({секс:"sex",мастурбация:"masturbation"} as Record<string,string>)[kind] ?? kind};
   const [editor, setEditor] = useState<{ data: EntryData; record?: Entry } | null>(null);
   const [selected, setSelected] = useState<Entry | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const params = new URLSearchParams({ from:filter.from, to:filter.to, offset:String(filter.offset), ...(filter.kind ? { kind:filter.kind } : {}) });
-  const journal = useResource<Journal>(`/sex?${params}`);
-  const changeFilter = (fields: Partial<typeof filter>) => { setFilter({ ...filter, ...fields, offset:0 }); setSelected(null); };
+  const journal = useResource<Journal>(range.error ? null : `/sex?${params}`);
   async function remove(entry: Entry) {
     if (!await confirmAction("Безвозвратно удалить это интимное событие? Оно исчезнет из журнала и статистики.")) return;
     setPending(true); setError(null);
-    try { await api(`/sex/${entry.id}?revision=${entry.revision}`, { method:"DELETE" }); setSelected(null); setFilter((current) => ({ ...current, offset:0 })); journal.retry(); }
+    try { await api(`/sex/${entry.id}?revision=${entry.revision}`, { method:"DELETE" }); setSelected(null); setOffset(0); journal.retry(); }
     catch (failure) { setError(errorMessage(failure)); if (failure instanceof ApiError && failure.code === "stale_intimacy") { setSelected(null); journal.retry(); } }
     finally { setPending(false); }
   }
   const contents = journal.resource;
   return <><header className="flex flex-wrap items-start justify-between gap-4"><div><p className="mb-2 text-sm text-primary">Личные наблюдения</p><h1 className="text-3xl font-semibold">Интимный журнал</h1><p className="mt-3 text-sm text-muted-foreground">События, ощущения и статистика, доступные вашей учётной записи.</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={hide} disabled={pending}><EyeOff aria-hidden="true" />Скрыть журнал</Button><Button onClick={() => setEditor({data:newEntry(settings.timezone)})}><Plus aria-hidden="true" />Новое событие</Button></div></header>
-    <div className="grid gap-4 sm:grid-cols-3"><FormField id="intimacy-from" label="Период с"><Input id="intimacy-from" type="date" required value={filter.from} onChange={(event) => { if (event.target.value) changeFilter({from:event.target.value}); }} /></FormField><FormField id="intimacy-to" label="Период по"><Input id="intimacy-to" type="date" required value={filter.to} onChange={(event) => { if (event.target.value) changeFilter({to:event.target.value}); }} /></FormField><FormField id="intimacy-filter-kind" label="Тип в журнале"><Select id="intimacy-filter-kind" value={filter.kind} onChange={(event) => changeFilter({kind:event.target.value})}><option value="">Все события</option><option value="sex">Секс</option><option value="masturbation">Мастурбация</option></Select></FormField></div><p className="text-xs text-muted-foreground">До 366 дат включительно. Можно добавить несколько событий за день.</p>
-    {error && <p role="alert" className="text-sm text-destructive">{error}</p>}{contents.status === "loading" ? <LoadingState /> : contents.status === "error" ? <ErrorState message={contents.message} retry={journal.retry} /> : <><JournalStatistics value={contents.data.statistics} /><section aria-label="События журнала" className="space-y-4"><h2 className="text-xl font-semibold">События ({contents.data.total})</h2>{contents.data.total === 0 ? <div className="rounded-2xl border border-dashed border-border p-8 text-center"><Heart className="mx-auto mb-3 size-7 text-primary" aria-hidden="true" /><p>В выбранном периоде нет записей.</p></div> : contents.data.entries.map((entry) => <article key={entry.id} className="min-w-0 rounded-2xl border border-border bg-card p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold">{kindLabel(entry.data.kind)}</h3><p className="mt-1 text-sm text-muted-foreground">{dateLabel(localDate(contents.data.timezone,new Date(entry.started_at)),{ day:"numeric",month:"long",year:"numeric" })} · {instantLabel(entry.started_at,contents.data.timezone,settings.time_format)}</p><p className="mt-2 text-sm">{entry.data.duration_minutes === null ? "Длительность не указана" : `${entry.data.duration_minutes} мин`}</p></div><div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => setSelected(entry)}>Подробности</Button><Button size="sm" variant="outline" disabled={pending} onClick={() => setEditor({data:entry.data,record:entry})}><Pencil aria-hidden="true" />Редактировать</Button><Button size="sm" variant="outline" disabled={pending} onClick={() => void remove(entry)}><Trash2 aria-hidden="true" />Удалить</Button></div></div></article>)}<div className="flex flex-wrap items-center gap-3"><Button variant="outline" disabled={filter.offset === 0} onClick={() => setFilter({...filter,offset:Math.max(0,filter.offset-50)})}>Назад</Button><span className="text-xs text-muted-foreground">{contents.data.total ? `${filter.offset + 1}–${Math.min(filter.offset+50,contents.data.total)} из ${contents.data.total}` : "0 записей"}</span><Button variant="outline" disabled={filter.offset+50 >= contents.data.total} onClick={() => setFilter({...filter,offset:filter.offset+50})}>Далее</Button><Button variant="outline" onClick={journal.retry}>Обновить журнал</Button></div></section></>}
-    {selected && <EntryDetail record={selected} close={() => setSelected(null)} />}{editor && <EntryEditor initial={editor.data} record={editor.record} close={() => setEditor(null)} conflict={journal.retry} saved={() => { setEditor(null); setSelected(null); setFilter((current) => ({ ...current, offset:0 })); journal.retry(); }} />}
+    <FilterSearch label="Поиск в интимном журнале" value={query} change={value=>{setQuery(value);setOffset(0);setSelected(null);}} specs={specs} placeholder="с:2026-11-01 по:2026-11-30 тип:секс" /><p className="text-xs text-muted-foreground">По умолчанию — последние 30 дней. До 366 дат включительно.</p>
+    {error && <p role="alert" className="text-sm text-destructive">{error}</p>}{range.error ? <p role="alert" className="text-sm text-destructive">{range.error}</p> : contents.status === "loading" ? <LoadingState /> : contents.status === "error" ? <ErrorState message={contents.message} retry={journal.retry} /> : <><JournalStatistics value={contents.data.statistics} /><section aria-label="События журнала" className="space-y-4"><h2 className="text-xl font-semibold">События ({contents.data.total})</h2>{contents.data.total === 0 ? <div className="rounded-2xl border border-dashed border-border p-8 text-center"><Heart className="mx-auto mb-3 size-7 text-primary" aria-hidden="true" /><p>В выбранном периоде нет записей.</p></div> : contents.data.entries.map((entry) => <article key={entry.id} className="min-w-0 rounded-2xl border border-border bg-card p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold">{kindLabel(entry.data.kind)}</h3><p className="mt-1 text-sm text-muted-foreground">{dateTimeLabel(entry.started_at,settings.timezone,settings.time_format)}</p><p className="mt-2 text-sm">{entry.data.duration_minutes === null ? "Длительность не указана" : `${entry.data.duration_minutes} мин`}</p></div><div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => setSelected(entry)}>Подробности</Button><Button size="sm" variant="outline" disabled={pending} onClick={() => setEditor({data:entry.data,record:entry})}><Pencil aria-hidden="true" />Редактировать</Button><Button size="sm" variant="outline" disabled={pending} onClick={() => void remove(entry)}><Trash2 aria-hidden="true" />Удалить</Button></div></div></article>)}<div className="flex flex-wrap items-center gap-3"><Button variant="outline" disabled={filter.offset === 0} onClick={() => setOffset(Math.max(0,offset-50))}>Назад</Button><span className="text-xs text-muted-foreground">{contents.data.total ? `${filter.offset + 1}–${Math.min(filter.offset+50,contents.data.total)} из ${contents.data.total}` : "0 записей"}</span><Button variant="outline" disabled={filter.offset+50 >= contents.data.total} onClick={() => setOffset(offset+50)}>Далее</Button><Button variant="outline" onClick={journal.retry}>Обновить журнал</Button></div></section></>}
+    {selected && <EntryDetail record={selected} close={() => setSelected(null)} />}{editor && <EntryEditor initial={editor.data} record={editor.record} close={() => setEditor(null)} conflict={journal.retry} saved={() => { setEditor(null); setSelected(null); setOffset(0); journal.retry(); }} />}
   </>;
 }
 export function IntimacyPage() {

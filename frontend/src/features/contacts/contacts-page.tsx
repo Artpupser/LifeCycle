@@ -1,15 +1,17 @@
+import { LabelManager, TagChip } from "@/features/planning/tag-chip";
+import { FilterSearch } from "@/components/filter-search";
+import { parseFilterQuery, matchesFilter, filterValue, tagFilter, categoryFilter, type FilterSpec } from "@/lib/filter-query";
 import { useRef, useState } from "react";
 import { Link } from "react-router";
 import { BookUser, Download, Plus, RefreshCw, ShieldCheck, Upload } from "lucide-react";
 import { Dialog } from "@/components/dialog";
-import { FormField } from "@/components/form-field";
 import { Markdown } from "@/components/markdown";
 import { ErrorState, LoadingState } from "@/components/resource-state";
 import { Button } from "@/components/ui/button";
-import { Input, Select } from "@/components/ui/input";
+import { Select } from "@/components/ui/input";
 import { useResource } from "@/hooks/use-resource";
 import { api, errorMessage } from "@/lib/api";
-import { confirmAction } from "@/lib/feedback";
+import { confirmAction, confirmChoice, notify } from "@/lib/feedback";
 import { dateLabel } from "@/lib/dates";
 import { ContactEditor } from "./contact-editor";
 import { ContactImport } from "./contact-import";
@@ -17,38 +19,42 @@ import { devicePicker, parseContactFile, selectDeviceContacts } from "./import";
 import { contactName, phoneKey, type Contact, type ContactData } from "./types";
 
 function Labels({ contacts, close, saved }: { contacts: Contact[]; close: () => void; saved: () => void }) {
-  const [kind, setKind] = useState<"categories" | "tags">("categories"); const [name, setName] = useState(""); const [replacement, setReplacement] = useState("");
+  const [kind, setKind] = useState<"categories" | "tags">("categories");
   const [error, setError] = useState<string | null>(null); const [busy, setBusy] = useState(false);
   const labels = [...new Set(contacts.flatMap(c => c.data[kind]))].sort();
-  async function change(remove: boolean) {
-    if (remove && !await confirmAction(`Удалить ${kind === "tags" ? "тег" : "категорию"} «${name}» у всех контактов? Контакты сохранятся.`)) return;
+  async function change(name: string, replacement: string | null) {
+    if (replacement === null && !await confirmAction(`Удалить ${kind === "tags" ? "тег" : "категорию"} «${name}» у всех контактов? Контакты сохранятся.`)) return;
     setBusy(true); setError(null);
-    try { await api("/contacts/labels", { method: "POST", body: { kind, name, replacement: remove ? null : replacement } }); saved(); }
+    try { await api("/contacts/labels", { method: "POST", body: { kind, name, replacement } }); saved(); }
     catch (failure) { setError(errorMessage(failure)); } finally { setBusy(false); }
   }
-  return <Dialog title="Категории и теги контактов" onClose={() => { if (!busy) close(); }}><div className="space-y-4"><p className="text-sm text-muted-foreground">Новые категории и теги создаются в редакторе контакта. Здесь можно переименовать или удалить их сразу у всех контактов.</p><Select aria-label="Вид метки контактов" value={kind} onChange={e => { setKind(e.target.value as typeof kind); setName(""); }}><option value="categories">Категории</option><option value="tags">Теги</option></Select><Select aria-label="Метка контактов" value={name} onChange={e => setName(e.target.value)}><option value="">Выберите метку</option>{labels.map(label => <option key={label}>{label}</option>)}</Select><FormField id="contact-label-replacement" label="Новое название метки"><Input id="contact-label-replacement" maxLength={64} value={replacement} onChange={e => setReplacement(e.target.value)} /></FormField><div className="flex flex-wrap gap-2"><Button disabled={busy || !name || !replacement.trim()} onClick={() => void change(false)}>Переименовать метку</Button><Button variant="outline" disabled={busy || !name} onClick={() => void change(true)}>Удалить метку</Button></div>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}</div></Dialog>;
+  return <Dialog title="Категории и теги контактов" onClose={() => { if (!busy) close(); }}><div className="space-y-4"><p className="text-sm text-muted-foreground">Новые категории и теги создаются в редакторе контакта. Здесь можно переименовать или удалить их сразу у всех контактов.</p><Select aria-label="Вид метки контактов" value={kind} onChange={e => { setKind(e.target.value as typeof kind); }}><option value="categories">Категории</option><option value="tags">Теги</option></Select><LabelManager label="Метка контактов" key={kind} labels={labels} busy={busy} rename={(name,replacement)=>void change(name,replacement)} remove={name=>void change(name,null)}/>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}</div></Dialog>;
 }
 export function ContactsPage() {
   const source = useResource<Contact[]>("/contacts"); const contacts = source.resource.status === "ready" ? source.resource.data : [];
-  const [deleting, setDeleting] = useState<Contact | null>(null); const [deleteEvents, setDeleteEvents] = useState("keep");
   const [editor, setEditor] = useState<Contact | "new" | null>(null); const [taxonomy, setTaxonomy] = useState(false);
-  const [query, setQuery] = useState(""); const [category, setCategory] = useState(""); const [tag, setTag] = useState(""); const [sort, setSort] = useState("name");
-  const [error, setError] = useState<string | null>(null); const [message, setMessage] = useState<string | null>(null); const [busy, setBusy] = useState(false);
+  const [query, setQuery] = useState("");
+  const specs: FilterSpec[] = [categoryFilter, tagFilter, {key:"sort", aliases:["порядок"], label:"Сортировка", example:"порядок:имя", values:["имя","рождение","новые","name","birthday","recent"], control:true}];
+  const filters = parseFilterQuery(query, specs);
+  const sort = filterValue(filters,"sort").toLocaleLowerCase("ru-RU");
+  const [error, setError] = useState<string | null>(null); const [busy, setBusy] = useState(false);
   const [incoming, setIncoming] = useState<{ contacts: ContactData[]; warnings: string[] } | null>(null);
   const file = useRef<HTMLInputElement>(null);
-  const categories = [...new Set(contacts.flatMap(c => c.data.categories))].sort(); const tags = [...new Set(contacts.flatMap(c => c.data.tags))].sort();
   const filtered = contacts.filter(c => {
-    const q = query.trim().toLocaleLowerCase(); const digits = phoneKey(q);
-    const matches = [contactName(c.data), ...c.data.phones, c.data.relationship, c.data.profession, c.data.activity, c.data.description, ...c.data.tags, ...c.data.categories].join(" ").toLocaleLowerCase().includes(q) || digits.length >= 3 && c.data.phones.some(p => phoneKey(p).includes(digits));
-    return (!category || c.data.categories.includes(category)) && (!tag || c.data.tags.includes(tag)) && matches;
-  }).sort((a, b) => sort === "recent" ? b.updated_at.localeCompare(a.updated_at) : sort === "birthday" ? (a.data.birth_date?.slice(5) ?? "99").localeCompare(b.data.birth_date?.slice(5) ?? "99") : contactName(a.data).localeCompare(contactName(b.data), "ru"));
+    const text = [contactName(c.data), ...c.data.phones, c.data.relationship, c.data.profession, c.data.activity, c.data.description, ...c.data.tags, ...c.data.categories].join(" ");
+    const digits = phoneKey(filters.text);
+    const phoneMatch = digits.length >= 3 && /^[+\d\s()−-]+$/.test(filters.text) && c.data.phones.some(p => phoneKey(p).includes(digits));
+    return matchesFilter({...filters, text: phoneMatch ? "" : filters.text, terms: filters.terms.filter(term=>term.key!=="sort")}, text, {category:c.data.categories, tag:c.data.tags});
+  }).sort((a, b) => ["recent","новые"].includes(sort) ? b.updated_at.localeCompare(a.updated_at) : ["birthday","рождение"].includes(sort) ? (a.data.birth_date?.slice(5) ?? "99").localeCompare(b.data.birth_date?.slice(5) ?? "99") : contactName(a.data).localeCompare(contactName(b.data), "ru"));
   async function remove(c: Contact) {
+    const events = await confirmChoice({title:"Удалить контакт",message:`Удалить «${contactName(c.data)}» безвозвратно? При сохранении связанные события получат снимок сведений контакта.`,confirmLabel:"Подтвердить удаление контакта",destructive:true,choiceLabel:"Что сделать со связанными событиями",choices:[{value:"keep",label:"Сохранить как самостоятельные события"},{value:"delete",label:"Удалить связанные события"}]});
+    if (events === null) return;
     setBusy(true); setError(null);
-    try { await api(`/contacts/${c.id}`, { method: "DELETE", body: { revision: c.revision, events: deleteEvents } }); setDeleting(null); source.retry(); setMessage("Контакт удалён."); }
+    try { await api(`/contacts/${c.id}`, { method: "DELETE", body: { revision: c.revision, events } }); source.retry(); notify("Контакт удалён."); }
     catch (failure) { setError(errorMessage(failure)); } finally { setBusy(false); }
   }
   async function readFile(value: File) {
-    setError(null); setMessage(null);
+    setError(null);
     try {
       if (value.size > 2_000_000) throw new Error("Файл слишком большой: максимум 2 МБ.");
       setIncoming(parseContactFile(await value.text()));
@@ -70,12 +76,12 @@ export function ContactsPage() {
     <p className="flex items-start gap-2 rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm"><ShieldCheck className="size-5 shrink-0 text-primary" />Только для вас · хранение зашифровано. Контакты и связанные события закрыты для AI.</p>
     <details className="rounded-xl border border-border p-3"><summary className="cursor-pointer text-sm font-medium">Импорт, экспорт и метки</summary><div className="mt-3 flex flex-wrap gap-2"><Button variant="outline" disabled={!ready || busy} onClick={() => file.current?.click()}><Upload />Импорт vCard / JSON</Button><Button variant="outline" disabled={!ready || busy || !devicePicker()} onClick={() => void pick()}>Из адресной книги</Button><Button variant="outline" disabled={!ready || !contacts.length} onClick={() => void exportContacts()}><Download />Экспорт</Button><Button variant="outline" disabled={!ready} onClick={() => setTaxonomy(true)}>Категории и теги</Button><Button size="icon" variant="outline" aria-label="Обновить контакты" onClick={source.retry}><RefreshCw /></Button><input ref={file} type="file" accept=".vcf,.vcard,.json,text/vcard,application/json" className="sr-only" aria-label="Файл контактов" onChange={e => { const value = e.target.files?.[0]; if (value) void readFile(value); e.target.value = ""; }} /></div>
     <p className="text-xs text-muted-foreground">Импорт запускается вами, без фонового доступа к устройству. Если системный выбор недоступен, экспортируйте контакты устройства в .vcf. Повторный импорт позволяет обновить выбранные совпадения.</p></details>
-    <div className="space-y-3"><FormField id="contact-search" label="Поиск контактов"><Input id="contact-search" type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Имя, телефон, профессия…" /></FormField><details className="rounded-xl border border-border p-3"><summary className="cursor-pointer text-sm">Фильтры и сортировка</summary><div className="mt-3 grid gap-3 sm:grid-cols-3"><FormField id="contact-category-filter" label="Категория контактов"><Select id="contact-category-filter" value={category} onChange={e => setCategory(e.target.value)}><option value="">Все категории</option>{categories.map(c => <option key={c}>{c}</option>)}</Select></FormField><FormField id="contact-tag-filter" label="Тег контактов"><Select id="contact-tag-filter" value={tag} onChange={e => setTag(e.target.value)}><option value="">Все теги</option>{tags.map(c => <option key={c}>{c}</option>)}</Select></FormField><FormField id="contact-sort" label="Сортировка контактов"><Select id="contact-sort" value={sort} onChange={e => setSort(e.target.value)}><option value="name">По имени</option><option value="birthday">По месяцу рождения</option><option value="recent">Недавно изменённые</option></Select></FormField></div></details></div>
-    {error && <p role="alert" className="text-sm text-destructive">{error}</p>}{message && <p role="status" className="text-sm text-primary">{message}</p>}
-    {source.resource.status === "loading" ? <LoadingState /> : source.resource.status === "error" ? <ErrorState message={source.resource.message} retry={source.retry} /> : !filtered.length ? <div className="rounded-2xl border border-dashed border-border p-10 text-center"><BookUser className="mx-auto mb-3 size-8 text-primary" /><p>{contacts.length ? "Нет контактов с такими условиями поиска." : "Добавьте первого человека или импортируйте контакты."}</p></div> : <><p className="text-sm text-muted-foreground">Показано {filtered.length} из {contacts.length}</p><div className="grid gap-4 md:grid-cols-2">{filtered.map(c => <article key={c.id} className="min-w-0 space-y-3 rounded-2xl border border-border bg-card p-5"><h2 className="break-words text-lg font-semibold">{contactName(c.data)}</h2>{c.data.birth_date && <p className="text-sm">День рождения: {dateLabel(c.data.birth_date, { day: "numeric", month: "long", year: "numeric" })}</p>}{c.data.birthday_enabled && <p className="text-xs text-primary">{c.data.birth_date ? "День рождения связан с отсчётами" : "День рождения приостановлен: укажите дату"}</p>}{c.data.phones.map(phone => <p key={phone} className="break-words text-sm">{phone}</p>)}{[c.data.relationship, c.data.profession, c.data.activity].filter(Boolean).map((s, i) => <p key={i} className="break-words text-sm text-muted-foreground">{s}</p>)}{c.data.description && <details><summary className="cursor-pointer text-sm">Описание контакта</summary><Markdown value={c.data.description} allowImages={false} /></details>}<div className="flex flex-wrap gap-2">{c.data.categories.map(t => <span key={`category-${t}`} className="max-w-full break-words rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">{t}</span>)}{c.data.tags.map(t => <span key={`tag-${t}`} className="max-w-full break-words rounded-full bg-muted px-3 py-1 text-xs">#{t}</span>)}</div>{c.data.source_keys.length > 0 && <p className="text-xs text-muted-foreground">Импортирован · обновление доступно при повторном импорте</p>}<div className="flex flex-wrap gap-2"><Link className="inline-flex min-h-9 items-center rounded-lg border border-border px-3 text-sm" to={`/countdowns?contact=${c.id}`}>События контакта</Link><Button variant="outline" size="sm" disabled={busy} onClick={() => setEditor(c)}>Изменить контакт</Button><Button variant="outline" size="sm" disabled={busy} onClick={() => { setDeleting(c); setDeleteEvents("keep"); setError(null); }}>Удалить контакт</Button></div></article>)}</div></>}
-    {deleting && <Dialog title="Удалить контакт" onClose={() => { if (!busy) setDeleting(null); }}><div className="space-y-4"><p className="break-words">Удалить «{contactName(deleting.data)}» безвозвратно?</p><FormField id="contact-delete-events" label="Что сделать со связанными событиями"><Select id="contact-delete-events" disabled={busy} value={deleteEvents} onChange={e => setDeleteEvents(e.target.value)}><option value="keep">Сохранить как самостоятельные события</option><option value="delete">Удалить связанные события</option></Select></FormField><p className="text-xs text-muted-foreground">При сохранении события получают зашифрованный снимок сведений на момент удаления. Остальные контакты и события сохранятся.</p>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<Button disabled={busy} onClick={() => void remove(deleting)}>{busy ? "Удаляем…" : "Подтвердить удаление контакта"}</Button></div></Dialog>}
-    {editor && <ContactEditor contact={editor === "new" ? undefined : editor} close={() => setEditor(null)} saved={() => { setEditor(null); source.retry(); setMessage("Контакт сохранён."); }} />}
-    {incoming && <ContactImport contacts={contacts} incoming={incoming.contacts} warnings={incoming.warnings} close={() => setIncoming(null)} saved={message => { setIncoming(null); source.retry(); setMessage(message); }} />}
-    {taxonomy && <Labels contacts={contacts} close={() => setTaxonomy(false)} saved={() => { setTaxonomy(false); setCategory(""); setTag(""); source.retry(); setMessage("Метки обновлены."); }} />}
+    <FilterSearch label="Поиск контактов" value={query} change={setQuery} specs={specs} placeholder="Имя, телефон, профессия или фильтр…" />
+    {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+    {source.resource.status === "loading" ? <LoadingState /> : source.resource.status === "error" ? <ErrorState message={source.resource.message} retry={source.retry} /> : !filtered.length ? <div className="rounded-2xl border border-dashed border-border p-10 text-center"><BookUser className="mx-auto mb-3 size-8 text-primary" /><p>{contacts.length ? "Нет контактов с такими условиями поиска." : "Добавьте первого человека или импортируйте контакты."}</p></div> : <><p className="text-sm text-muted-foreground">Показано {filtered.length} из {contacts.length}</p><div className="grid gap-4 md:grid-cols-2">{filtered.map(c => <article key={c.id} className="min-w-0 space-y-3 rounded-2xl border border-border bg-card p-5"><h2 className="break-words text-lg font-semibold">{contactName(c.data)}</h2>{c.data.birth_date && <p className="text-sm">День рождения: {dateLabel(c.data.birth_date, { day: "numeric", month: "long", year: "numeric" })}</p>}{c.data.birthday_enabled && <p className="text-xs text-primary">{c.data.birth_date ? "День рождения связан с отсчётами" : "День рождения приостановлен: укажите дату"}</p>}{c.data.phones.map(phone => <p key={phone} className="break-words text-sm">{phone}</p>)}{[c.data.relationship, c.data.profession, c.data.activity].filter(Boolean).map((s, i) => <p key={i} className="break-words text-sm text-muted-foreground">{s}</p>)}{c.data.description && <details><summary className="cursor-pointer text-sm">Описание контакта</summary><Markdown value={c.data.description} allowImages={false} /></details>}<div className="flex flex-wrap gap-2">{c.data.categories.map(t => <TagChip key={`category-${t}`} name={t}/>)}{c.data.tags.map(t => <TagChip key={`tag-${t}`} name={t}/>)}</div>{c.data.source_keys.length > 0 && <p className="text-xs text-muted-foreground">Импортирован · обновление доступно при повторном импорте</p>}<div className="flex flex-wrap gap-2"><Link className="inline-flex min-h-9 items-center rounded-lg border border-border px-3 text-sm" to={`/countdowns?contact=${c.id}`}>События контакта</Link><Button variant="outline" size="sm" disabled={busy} onClick={() => setEditor(c)}>Изменить контакт</Button><Button variant="outline" size="sm" disabled={busy} onClick={() => void remove(c)}>Удалить контакт</Button></div></article>)}</div></>}
+
+    {editor && <ContactEditor contact={editor === "new" ? undefined : editor} close={() => setEditor(null)} saved={() => { setEditor(null); source.retry(); notify("Контакт сохранён."); }} />}
+    {incoming && <ContactImport contacts={contacts} incoming={incoming.contacts} warnings={incoming.warnings} close={() => setIncoming(null)} saved={message => { setIncoming(null); source.retry(); notify(message); }} />}
+    {taxonomy && <Labels contacts={contacts} close={() => setTaxonomy(false)} saved={() => { setTaxonomy(false);  source.retry(); notify("Метки обновлены."); }} />}
   </main>;
 }

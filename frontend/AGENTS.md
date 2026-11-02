@@ -4,10 +4,10 @@
 
 Use only the existing centralized system for each area below. Never implement these ad hoc in components. If a system lacks a capability, extend it instead of adding a parallel solution.
 
-- **Search & filters:** one unified filter system driven by a single search bar (`src/<path>`). No separate filter forms or dropdowns.
-- **Date & time:** one unified date/time system (`src/<path>`). Always display and parse relative to the user's settings (timezone, format). No direct `new Date()`, `toLocaleString`, or manual date formatting in components.
-- **Notifications & confirmations:** one unified system (`src/<path>`). No `alert`, `confirm`, or custom one-off modals.
-- **Tags & categories:** one unified tag management system (`src/<path>`).
+- **Search & filters:** one unified filter system driven by a single search bar. No separate filter forms or dropdowns.
+- **Date & time:** one unified date/time system. Always display and parse relative to the user's settings (timezone, format). No direct `new Date()`, `toLocaleString`, or manual date formatting in components.
+- **Notifications & confirmations:** one unified system. No `alert`, `confirm`, or custom one-off modals.
+- **Tags & categories:** one unified tag management system .
 
 ## New centralized systems
 

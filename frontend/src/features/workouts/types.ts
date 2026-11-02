@@ -11,7 +11,7 @@ export const kindLabels: Record<Exercise["kind"], string> = { repetitions: "По
 export const sessionLabels: Record<WorkoutSession["status"], string> = { running: "Выполняется", paused: "Пауза", completed: "Завершено", partial: "Выполнено частично", cancelled: "Остановлено" };
 export function newEntry(exercise: RecordData<Exercise>): Entry { return { id: crypto.randomUUID(), exercise_id: exercise.id, repetitions: exercise.data.kind === "duration" ? 0 : 10, duration_seconds: exercise.data.kind === "repetitions" ? 0 : 30, rest_seconds: 0, progression: null }; }
 export function newRound(): Round { return { id: crypto.randomUUID(), title: "Круг", repeat: 1, rest_seconds: 0, exercises: [] }; }
-export function formatTime(seconds: number) { return `${Math.floor(seconds / 60).toString().padStart(2, "0")}:${Math.floor(seconds % 60).toString().padStart(2, "0")}`; }
+export { durationClock as formatTime } from "@/lib/dates";
 export function moveItem<T>(items: T[], index: number, delta: number): T[] { const result = [...items]; [result[index], result[index + delta]] = [result[index + delta]!, result[index]!]; return result; }
 
 export type SessionSummary = { id: string; workout_id: string; title: string; date: string; status: WorkoutSession["status"]; confirmed_steps: number; habit_completed: boolean; started_at: string; ended_at: string | null };

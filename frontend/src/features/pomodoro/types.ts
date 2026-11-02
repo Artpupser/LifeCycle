@@ -3,4 +3,4 @@ export type PomodoroConfig = { id: string; name: string; data: Program; revision
 export type ProgramState = { run_id: string; name: string; interval_index: number; sequence_length: number; cycle: number; next_kind: "w" | "c" | "mc" | null; next_duration_seconds: number | null; repeat: boolean; revision: number; history_pending: number };
 export type Session = { id: string; task_id: string | null; phase: "work" | "break"; status: "running" | "paused" | "completed" | "cancelled"; duration_seconds: number; elapsed_seconds: number; started_at: string; ended_at: string | null; run_id: string | null; interval_index: number | null; interval_kind: "w" | "c" | "mc" | null; program_name: string | null; program: ProgramState | null };
 export const kindLabels = { w: "Работа", c: "Обычный отдых", mc: "Продолжительный отдых" };
-export function durationLabel(seconds: number) { return seconds % 60 === 0 ? `${seconds / 60} мин.` : `${seconds} сек.`; }
+export { durationLabel } from "@/lib/dates";

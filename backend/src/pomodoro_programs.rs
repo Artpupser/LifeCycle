@@ -17,6 +17,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::{PgConnection, types::Json as DbJson};
 use uuid::Uuid;
 
+const MAX_REPLAY_INTERVALS: i64 = 5000;
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Program {
@@ -358,13 +360,14 @@ async fn settle(db: &mut PgConnection, user: Uuid, run: &Run) -> Result<Option<S
     if let Some(old) = &active
         && (done || old.interval_index != Some(index))
     {
-        let end = run.wall(
-            run.data.offset(old.interval_index.unwrap()) + old.duration_seconds,
-            true,
-        );
+        let interval_index = old.interval_index.ok_or_else(|| {
+            tracing::error!(session_id = %old.id, "Program session is missing its interval index");
+            ApiError::internal()
+        })?;
+        let end = run.wall(run.data.offset(interval_index) + old.duration_seconds, true);
         sqlx::query("UPDATE app.pomodoro_sessions SET status='completed',elapsed_seconds=duration_seconds,segment_started_at=NULL,ended_at=$3,updated_at=$3 WHERE user_id=$1 AND id=$2").bind(user).bind(old.id).bind(end).execute(&mut *db).await?;
     }
-    let until = index.min(run.processed_intervals + 5000);
+    let until = index.min(run.processed_intervals + MAX_REPLAY_INTERVALS);
     let mut records = Vec::new();
     for ordinal in run.processed_intervals..until {
         let kind = &run.data.sequence[(ordinal % count) as usize];

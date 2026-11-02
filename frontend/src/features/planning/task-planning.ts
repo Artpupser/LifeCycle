@@ -1,3 +1,4 @@
+import { toInstant } from "@/lib/dates";
 import { localDateTimeToInstant, zonedDateTimeInput, shiftDate, dayDifference } from "@/lib/dates";
 import type { Schedule, TaskInput } from "./types";
 export type Planning = { startDate: string; endDate: string; startTime: string; endTime: string };
@@ -13,7 +14,7 @@ export function planningFromTask(task: Pick<TaskInput, "schedule" | "due_at">, z
 }
 export function buildPlanning(value: Planning, zone: string, original?: Schedule | null): { schedule: Schedule | null; due_at: string | null } {
   if (!value.startDate && !value.endDate) return { schedule:null,due_at:null };
-  if (!value.startDate) { const end=localDateTimeToInstant(`${value.endDate}T${value.endTime || "23:59"}`,zone); if(end===null)throw new Error("Такого времени окончания нет. Выберите другое время."); return {schedule:null,due_at:new Date(end).toISOString()}; }
+  if (!value.startDate) { const end=localDateTimeToInstant(`${value.endDate}T${value.endTime || "23:59"}`,zone); if(end===null)throw new Error("Такого времени окончания нет. Выберите другое время."); return {schedule:null,due_at:toInstant(end)}; }
   const startTime=value.startTime || "00:00"; const start=localDateTimeToInstant(`${value.startDate}T${startTime}`,zone);
   const endDate=value.endDate || value.startDate;
   let end=localDateTimeToInstant(`${endDate}T${value.endTime || (value.startTime ? startTime : "23:59")}`,zone);

@@ -131,13 +131,13 @@ test("countdown edits and persisted Pomodoro pause, resume and cancellation work
   await page.getByLabel("Название события", { exact: true }).fill("Ежегодный праздник");
   await page.getByLabel("Категория события", { exact: true }).fill("День рождения");
   await page.getByLabel("Дата события", { exact: true }).fill("2000-12-31");
-  await page.getByLabel("Повторять каждый год", { exact: true }).check();
+  await page.getByLabel("Повторение события", { exact: true }).selectOption("yearly");
   await page.getByRole("button", { name: "Сохранить событие", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Ежегодный праздник", exact: true })).toBeVisible();
   await expect(page.getByText("Каждый год", { exact: true })).toBeVisible();
   await page.reload();
   await page.getByRole("button", { name: "Изменить", exact: true }).click();
-  await expect(page.getByLabel("Повторять каждый год", { exact: true })).toBeChecked();
+  await expect(page.getByLabel("Повторение события", { exact: true })).toHaveValue("yearly");
   await page.getByLabel("Название события", { exact: true }).fill("Изменённый праздник");
   await page.getByRole("button", { name: "Сохранить событие", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Изменённый праздник", exact: true })).toBeVisible();

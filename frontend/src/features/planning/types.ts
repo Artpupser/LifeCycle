@@ -28,3 +28,13 @@ export function defaultSchedule(timezone: string): Schedule { return { start_dat
 export function taskInput(task: TaskInput): TaskInput {
   return { title: task.title, description: task.description, status: task.status, tags: task.tags, color: task.color, priority: task.priority, parent_id: task.parent_id, due_at: task.due_at, schedule: task.schedule };
 }
+
+/** Shared normalization for tags and categories across the frontend. */
+export function normalizeLabels(value: string | string[], separator: "comma" | "lines" = "comma") {
+  const seen = new Set<string>();
+  return (typeof value === "string" ? value.split(separator === "lines" ? /\r?\n/ : /[,\r\n]/) : value).map(label=>label.trim()).filter(label=>{
+    const key = label.toLocaleLowerCase("ru-RU");
+    if (!key || seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+}

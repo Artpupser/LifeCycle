@@ -25,7 +25,7 @@ export function EntryEditor({ initial, record, close, saved, conflict }: { initi
     const candidates = localDateTimeCandidates(local, settings.timezone);
     const instant = Date.parse(record.started_at);
     const occurrence = candidates.findIndex((candidate) => instant >= candidate && instant < candidate + 60_000);
-    return { ...initial, local_start: `${local}:${String(new Date(instant).getUTCSeconds()).padStart(2, "0")}`, timezone: settings.timezone, time_occurrence: occurrence > 0 ? "later" as const : "earlier" as const };
+    return { ...initial, local_start: zonedDateTimeInput(record.started_at, settings.timezone, true), timezone: settings.timezone, time_occurrence: occurrence > 0 ? "later" as const : "earlier" as const };
   });
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);

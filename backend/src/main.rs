@@ -20,13 +20,16 @@ async fn main() -> std::process::ExitCode {
 async fn run() -> Result<(), String> {
     let config = Config::from_env()?;
     let state = AppState::lazy(&config).map_err(str::to_owned)?;
-    state
-        .migrate()
-        .await
-        .map_err(|_| "Database connection or migration failed".to_owned())?;
+    state.migrate().await.map_err(|error| {
+        tracing::error!(%error, "Database connection or migration failed");
+        "Database connection or migration failed".to_owned()
+    })?;
     let listener = tokio::net::TcpListener::bind(config.bind)
         .await
-        .map_err(|_| "Cannot bind application listener".to_owned())?;
+        .map_err(|error| {
+            tracing::error!(%error, "Cannot bind application listener");
+            "Cannot bind application listener".to_owned()
+        })?;
     tracing::info!(address = %config.bind, "API listening");
     axum::serve(
         listener,
@@ -34,7 +37,10 @@ async fn run() -> Result<(), String> {
     )
     .with_graceful_shutdown(shutdown())
     .await
-    .map_err(|_| "HTTP server failed".to_owned())?;
+    .map_err(|error| {
+        tracing::error!(%error, "HTTP server failed");
+        "HTTP server failed".to_owned()
+    })?;
     state.database.close().await;
     Ok(())
 }

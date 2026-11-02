@@ -77,13 +77,13 @@ test("mobile private journal persists the full form, multiple daily events, Mark
   await page.getByRole("button",{name:"Сохранить событие",exact:true}).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(stats.getByText("40 мин",{exact:true})).toBeVisible();
-  await page.getByLabel("Тип в журнале",{exact:true}).selectOption("masturbation");
+  await page.getByLabel("Поиск в интимном журнале",{exact:true}).fill("тип:мастурбация");
   await expect(page.getByRole("heading",{name:"События (1)",exact:true})).toBeVisible();
   await page.getByRole("button",{name:"Подробности",exact:true}).click();
   await expect(page.getByRole("dialog").getByText("Сохраняемые ощущения",{exact:true})).toBeVisible();
   await page.getByRole("button",{name:"Закрыть окно",exact:true}).click();
   await expect(stats.getByText("Нет данных",{exact:true})).toBeVisible();
-  await page.getByLabel("Тип в журнале",{exact:true}).selectOption("");
+  await page.getByLabel("Поиск в интимном журнале",{exact:true}).fill("");
   await expect(page.getByRole("heading",{name:"События (2)",exact:true})).toBeVisible();
   await page.screenshot({path:testInfo.outputPath("mobile-journal.png"),fullPage:true});
   expect(await page.locator("html").evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(390);

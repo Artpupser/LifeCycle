@@ -1,3 +1,4 @@
+import { isCalendarDate } from "@/lib/dates";
 import { emptyContact, type ContactData } from "./types";
 
 function split(value: string, separator: string) {
@@ -40,7 +41,7 @@ export function parseVcards(text: string): { contacts: ContactData[]; warnings: 
         if (key === "BDAY") {
           const match = /^(\d{4})-?(\d{2})-?(\d{2})(?:T.*)?$/.exec(value);
           const date = match ? `${match[1]}-${match[2]}-${match[3]}` : null;
-          if (date && !Number.isNaN(Date.parse(`${date}T00:00:00Z`)) && new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) === date) data.birth_date = date;
+          if (date && isCalendarDate(date)) data.birth_date = date;
           else warnings.push(`Карточка ${index + 1}: дата рождения без полного года или в неизвестном формате пропущена.`);
         }
         if (key === "NOTE") data.description = unescape(value);

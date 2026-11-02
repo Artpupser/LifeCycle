@@ -35,7 +35,7 @@ export function BoardsPage() {
   const board = useResource<BoardState>(id ? `/boards/${id}` : null);
   const [now, setNow] = useState(Date.now);
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(timer); }, []);
-  const today = localDate(settings.timezone, new Date(now));
+  const today = localDate(settings.timezone, now);
   const day = useResource<DayPlan>(`/today?date=${today}`);
   const [query, setQuery] = useState(""); const filters=parseFilterQuery(query,taskFilters);
   const [quick,setQuick]=useState<{boardId?:string;columnId?:string;parentId?:string}|null>(null);
@@ -50,14 +50,14 @@ export function BoardsPage() {
   function createTask(columnId?: string) {setQuick(id && board.resource.status==="ready"?{boardId:id,columnId:columnId??board.resource.data.columns[0]?.id}:{});}
   function filter(task: Task) {
     const done = ["completed","rejected"].includes(taskResult(task,occurrences.find((item)=>item.task.id===task.id)));
-    const member=memberList.find(item=>item.task_id===task.id);const occurrence=occurrences.find(item=>item.task.id===task.id);const date=task.schedule?.start_date??(task.due_at?localDate(settings.timezone,new Date(task.due_at)):"");
+    const member=memberList.find(item=>item.task_id===task.id);const occurrence=occurrences.find(item=>item.task.id===task.id);const date=task.schedule?.start_date??(task.due_at?localDate(settings.timezone, task.due_at):"");
     return matchesFilter(filters,`${task.title} ${task.description}`,{tag:task.tags,done,overdue:isTaskOverdue(task,now,settings.timezone,occurrence),priority:[task.priority,({low:"низкий",normal:"нет",high:"высокий",urgent:"срочный"})[task.priority]],board:member?.board_name??"без",column:member?.column_name??"без",from:date||null,to:date||null,result:[taskResult(task,occurrence),taskResult(task,occurrence)==="rejected"?"отменено":done?"выполнено":"активно"]});
   }
   async function setResult(task: Task, status: string) {
     const recurring = task.schedule && task.schedule.recurrence !== "once";
     const occurrence = occurrences.find((item) => item.task.id === task.id);
     if (recurring && !occurrence) return false;
-    const date = recurring ? occurrence!.date : task.schedule?.start_date ?? (task.due_at ? localDate(settings.timezone, new Date(task.due_at)) : today);
+    const date = recurring ? occurrence!.date : task.schedule?.start_date ?? (task.due_at ? localDate(settings.timezone, task.due_at) : today);
     return action.run(() => api(`/tasks/${task.id}/occurrences/${date}`, { method: "POST", body: { status } }), refresh);
   }
   const toggle=(task:Task,completed:boolean)=>setResult(task,completed?"completed":"todo");

@@ -23,3 +23,12 @@ it("keeps ordinary URLs searchable and quoted literal colons literal",()=>{
  expect(parseFilterQuery('https://example.test "Идея:"',specs)).toEqual({text:'https://example.test Идея:',terms:[],errors:[]});
  expect(parseFilterQuery('папка:"Идеи \\"работы\\""',specs).terms[0]?.value).toBe('Идеи "работы"');
 });
+
+import { filterRange, rangeFilters } from "./filter-query";
+it("validates server ranges without silently dropping unsupported text, exclusions or duplicates",()=>{
+ const defaults={from:"2026-11-01",to:"2026-11-30"};
+ expect(filterRange(parseFilterQuery('с:2024-01-01 по:2024-12-31',rangeFilters),defaults).error).toBeNull();
+ for(const source of ['с:2025-01-01 по:2026-01-02','с:2026-11-30 по:2026-11-01','с:2026-02-29','-с:2026-11-01','с:2026-11-01 from:2026-11-02','неподдержанный текст']){
+  expect(filterRange(parseFilterQuery(source,rangeFilters),defaults).error).toBeTruthy();
+ }
+});

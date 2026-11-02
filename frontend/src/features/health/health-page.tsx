@@ -1,5 +1,7 @@
+import { PreferencesContext } from "@/features/settings/preferences-context";
+import { defaultTimePreferences, instantLabel, toInstant } from "@/lib/dates";
 import { Check, CircleAlert, Database, HardDrive, LoaderCircle, RefreshCw, Server, ShieldCheck, Zap } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useContext, useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchReadiness, HealthRequestError, type Readiness } from "./api";
@@ -12,16 +14,17 @@ const services = [
 
 type HealthState =
   | { kind: "loading" }
-  | { kind: "loaded"; readiness: Readiness; checkedAt: Date }
+  | { kind: "loaded"; readiness: Readiness; checkedAt: number }
   | { kind: "error"; message: string };
 
 export function HealthPage() {
+  const { settings } = useContext(PreferencesContext) ?? { settings: defaultTimePreferences() };
   const [state, setState] = useState<HealthState>({ kind: "loading" });
   const controller = useRef<AbortController | null>(null);
   const load = useCallback((request: AbortController) => {
     void fetchReadiness(request.signal)
       .then((readiness) => {
-        if (!request.signal.aborted) setState({ kind: "loaded", readiness, checkedAt: new Date() });
+        if (!request.signal.aborted) setState({ kind: "loaded", readiness, checkedAt: Date.now() });
       })
       .catch((error: unknown) => {
         if (!request.signal.aborted) {
@@ -102,7 +105,7 @@ export function HealthPage() {
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-xs leading-6 text-muted-foreground">
         <span className="flex items-center gap-2"><Server className="size-4" aria-hidden="true" /> Данные получены с сервера LifeCycle</span>
-        {state.kind === "loaded" && <span>Проверено: <time dateTime={state.checkedAt.toISOString()}>{state.checkedAt.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time></span>}
+        {state.kind === "loaded" && <span>Проверено: <time dateTime={toInstant(state.checkedAt)}>{instantLabel(state.checkedAt, settings.timezone, settings.time_format, true)}</time></span>}
       </div>
     </main>
   );

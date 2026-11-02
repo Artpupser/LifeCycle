@@ -610,21 +610,15 @@ pub async fn occurrences(
                 continue;
             }
             let ended = version.ended_at;
-            let local_today = Utc::now()
-                .with_timezone(
-                    &schedule
-                        .timezone
-                        .parse::<chrono_tz::Tz>()
-                        .map_err(|_| ApiError::internal())?,
-                )
-                .date_naive();
+            let now = Utc::now();
+            let schedule_zone = schedule
+                .timezone
+                .parse::<chrono_tz::Tz>()
+                .map_err(|_| ApiError::internal())?;
+            let local_today = now.with_timezone(&schedule_zone).date_naive();
             if ended.is_some_and(|end| {
                 starts_at.map_or_else(
-                    || {
-                        date >= end
-                            .with_timezone(&schedule.timezone.parse::<chrono_tz::Tz>().unwrap())
-                            .date_naive()
-                    },
+                    || date >= end.with_timezone(&schedule_zone).date_naive(),
                     |start| start >= end,
                 )
             }) {

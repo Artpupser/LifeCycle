@@ -1,36 +1,37 @@
 import { SidebarNavigation } from "@/components/sidebar-navigation";
 import { FeedbackProvider } from "@/components/feedback-provider";
-import { AiPage } from "@/features/ai/ai-page";
-import { AnalyticsPage } from "@/features/analytics/analytics-page";
-import { IntimacyPage } from "@/features/intimacy/intimacy-page";
-import { HabitsPage } from "@/features/habits/habits-page";
-import { WorkoutsPage } from "@/features/workouts/workouts-page";
-import { WorkoutSessionPage } from "@/features/workouts/workout-session-page";
 import { HabitReminders } from "@/features/habits/reminders";
 import { Heart, Activity, CalendarDays, CalendarClock, BookUser, ClipboardList, LogOut, NotebookPen, Settings2, Timer, UserRound, Menu, X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from "react-router";
 import logo from "@/assets/logo.svg";
 import { ErrorState, LoadingState } from "@/components/resource-state";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth/auth-context";
 import { AuthProvider } from "@/features/auth/auth-provider";
-import { LoginPage } from "@/features/auth/login-page";
-import { CountdownsPage } from "@/features/countdowns/countdowns-page";
-import { ContactsPage } from "@/features/contacts/contacts-page";
-import { NotesPage } from "@/features/notes/notes-page";
-import { PomodoroPage } from "@/features/pomodoro/pomodoro-page";
-import { BoardsPage } from "@/features/planning/boards-page";
-import { TaskTagsPage } from "@/features/planning/task-tags-page";
-import { TodayPage } from "@/features/planning/today-page";
-import { CalendarPage } from "@/features/planning/calendar-page";
-import { HealthPage } from "@/features/health/health-page";
-import { ProfilePage } from "@/features/profile/profile-page";
 import { PreferencesProvider } from "@/features/settings/preferences-provider";
-import { SettingsPage } from "@/features/settings/settings-page";
 import type { Settings } from "@/features/settings/types";
 import { useResource } from "@/hooks/use-resource";
 import { errorMessage } from "@/lib/api";
+
+const AiPage = lazy(() => import("@/features/ai/ai-page").then(module => ({default:module.AiPage})));
+const AnalyticsPage = lazy(() => import("@/features/analytics/analytics-page").then(module => ({default:module.AnalyticsPage})));
+const IntimacyPage = lazy(() => import("@/features/intimacy/intimacy-page").then(module => ({default:module.IntimacyPage})));
+const HabitsPage = lazy(() => import("@/features/habits/habits-page").then(module => ({default:module.HabitsPage})));
+const WorkoutsPage = lazy(() => import("@/features/workouts/workouts-page").then(module => ({default:module.WorkoutsPage})));
+const WorkoutSessionPage = lazy(() => import("@/features/workouts/workout-session-page").then(module => ({default:module.WorkoutSessionPage})));
+const LoginPage = lazy(() => import("@/features/auth/login-page").then(module => ({default:module.LoginPage})));
+const CountdownsPage = lazy(() => import("@/features/countdowns/countdowns-page").then(module => ({default:module.CountdownsPage})));
+const ContactsPage = lazy(() => import("@/features/contacts/contacts-page").then(module => ({default:module.ContactsPage})));
+const NotesPage = lazy(() => import("@/features/notes/notes-page").then(module => ({default:module.NotesPage})));
+const PomodoroPage = lazy(() => import("@/features/pomodoro/pomodoro-page").then(module => ({default:module.PomodoroPage})));
+const BoardsPage = lazy(() => import("@/features/planning/boards-page").then(module => ({default:module.BoardsPage})));
+const TaskTagsPage = lazy(() => import("@/features/planning/task-tags-page").then(module => ({default:module.TaskTagsPage})));
+const TodayPage = lazy(() => import("@/features/planning/today-page").then(module => ({default:module.TodayPage})));
+const CalendarPage = lazy(() => import("@/features/planning/calendar-page").then(module => ({default:module.CalendarPage})));
+const HealthPage = lazy(() => import("@/features/health/health-page").then(module => ({default:module.HealthPage})));
+const ProfilePage = lazy(() => import("@/features/profile/profile-page").then(module => ({default:module.ProfilePage})));
+const SettingsPage = lazy(() => import("@/features/settings/settings-page").then(module => ({default:module.SettingsPage})));
 
 function Shell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
@@ -78,8 +79,8 @@ function NotFound() {
 
 function AuthenticatedApp() {
   const { resource, retry } = useResource<Settings>("/settings");
-  if (resource.status !== "ready") return <Shell><Routes><Route path="/status" element={<HealthPage />} /><Route path="*" element={<main id="main" className="mx-auto max-w-4xl px-5 py-10 sm:px-10">{resource.status === "loading" ? <LoadingState /> : <ErrorState message={resource.message} retry={retry} />}</main>} /></Routes></Shell>;
-  return <PreferencesProvider initial={resource.data}><Shell><HabitReminders /><Routes>
+  if (resource.status !== "ready") return <Shell><Suspense fallback={<LoadingState />}><Routes><Route path="/status" element={<HealthPage />} /><Route path="*" element={<main id="main" className="mx-auto max-w-4xl px-5 py-10 sm:px-10">{resource.status === "loading" ? <LoadingState /> : <ErrorState message={resource.message} retry={retry} />}</main>} /></Routes></Suspense></Shell>;
+  return <PreferencesProvider initial={resource.data}><Shell><HabitReminders /><Suspense fallback={<LoadingState />}><Routes>
     <Route path="/" element={<Navigate to="/today" replace />} />
     <Route path="/login" element={<Navigate to="/today" replace />} />
     <Route path="/today" element={<TodayPage />} />
@@ -101,14 +102,14 @@ function AuthenticatedApp() {
     <Route path="/settings" element={<SettingsPage />} />
     <Route path="/status" element={<HealthPage />} />
     <Route path="*" element={<NotFound />} />
-  </Routes></Shell></PreferencesProvider>;
+  </Routes></Suspense></Shell></PreferencesProvider>;
 }
 
 function AppContent() {
   const { user, loading, error, reload } = useAuth();
-  if (loading || error) return <Shell><Routes><Route path="/status" element={<HealthPage />} /><Route path="*" element={<main id="main" className="mx-auto max-w-4xl px-5 py-10 sm:px-10">{loading ? <LoadingState /> : <ErrorState message={error!} retry={reload} />}</main>} /></Routes></Shell>;
+  if (loading || error) return <Shell><Suspense fallback={<LoadingState />}><Routes><Route path="/status" element={<HealthPage />} /><Route path="*" element={<main id="main" className="mx-auto max-w-4xl px-5 py-10 sm:px-10">{loading ? <LoadingState /> : <ErrorState message={error!} retry={reload} />}</main>} /></Routes></Suspense></Shell>;
   if (user) return <AuthenticatedApp key={user.id} />;
-  return <Shell><Routes><Route path="/status" element={<HealthPage />} /><Route path="/login" element={<LoginPage />} /><Route path="/" element={<Navigate to="/login" replace />} /><Route path="/ai" element={<Navigate to="/login" replace />} /><Route path="/analytics" element={<Navigate to="/login" replace />} /><Route path="/profile" element={<Navigate to="/login" replace />} /><Route path="/settings" element={<Navigate to="/login" replace />} /><Route path="/today" element={<Navigate to="/login" replace />} /><Route path="/tasks" element={<Navigate to="/login" replace />} /><Route path="/boards" element={<Navigate to="/login" replace />} /><Route path="/task-tags" element={<Navigate to="/login" replace />} /><Route path="/habits" element={<Navigate to="/login" replace />} /><Route path="/sex" element={<Navigate to="/login" replace />} /><Route path="/workouts/*" element={<Navigate to="/login" replace />} /><Route path="/calendar" element={<Navigate to="/login" replace />} /><Route path="/notes" element={<Navigate to="/login" replace />} /><Route path="/countdowns" element={<Navigate to="/login" replace />} /><Route path="/contacts" element={<Navigate to="/login" replace />} /><Route path="/pomodoro" element={<Navigate to="/login" replace />} /><Route path="*" element={<NotFound />} /></Routes></Shell>;
+  return <Shell><Suspense fallback={<LoadingState />}><Routes><Route path="/status" element={<HealthPage />} /><Route path="/login" element={<LoginPage />} /><Route path="/" element={<Navigate to="/login" replace />} /><Route path="/ai" element={<Navigate to="/login" replace />} /><Route path="/analytics" element={<Navigate to="/login" replace />} /><Route path="/profile" element={<Navigate to="/login" replace />} /><Route path="/settings" element={<Navigate to="/login" replace />} /><Route path="/today" element={<Navigate to="/login" replace />} /><Route path="/tasks" element={<Navigate to="/login" replace />} /><Route path="/boards" element={<Navigate to="/login" replace />} /><Route path="/task-tags" element={<Navigate to="/login" replace />} /><Route path="/habits" element={<Navigate to="/login" replace />} /><Route path="/sex" element={<Navigate to="/login" replace />} /><Route path="/workouts/*" element={<Navigate to="/login" replace />} /><Route path="/calendar" element={<Navigate to="/login" replace />} /><Route path="/notes" element={<Navigate to="/login" replace />} /><Route path="/countdowns" element={<Navigate to="/login" replace />} /><Route path="/contacts" element={<Navigate to="/login" replace />} /><Route path="/pomodoro" element={<Navigate to="/login" replace />} /><Route path="*" element={<NotFound />} /></Routes></Suspense></Shell>;
 }
 
 function ApplicationFeedback(){const {user}=useAuth();return <FeedbackProvider key={user?.id??"guest"}><AppContent/></FeedbackProvider>;}

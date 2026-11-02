@@ -1,7 +1,7 @@
 use axum::{
     Json,
     extract::{FromRequest, Request},
-    http::{StatusCode, header},
+    http::{HeaderValue, StatusCode, header},
     response::{IntoResponse, Response},
 };
 use serde::{Serialize, de::DeserializeOwned};
@@ -67,6 +67,13 @@ impl ApiError {
             retry_after: None,
         }
     }
+    pub(crate) fn internal_with_context(
+        context: &'static str,
+        error: &dyn std::fmt::Display,
+    ) -> Self {
+        tracing::error!(%error, context, "Internal operation failed");
+        Self::internal()
+    }
     pub fn rate_limited(seconds: u64) -> Self {
         Self {
             status: StatusCode::TOO_MANY_REQUESTS,
@@ -78,12 +85,13 @@ impl ApiError {
 }
 
 impl From<sqlx::Error> for ApiError {
-    fn from(_: sqlx::Error) -> Self {
-        Self::internal()
+    fn from(error: sqlx::Error) -> Self {
+        Self::internal_with_context("Database operation", &error)
     }
 }
 impl From<redis::RedisError> for ApiError {
-    fn from(_: redis::RedisError) -> Self {
+    fn from(error: redis::RedisError) -> Self {
+        tracing::error!(%error, "Redis operation failed");
         Self::unavailable()
     }
 }
@@ -104,7 +112,7 @@ impl IntoResponse for ApiError {
         if let Some(seconds) = retry {
             response
                 .headers_mut()
-                .insert(header::RETRY_AFTER, seconds.to_string().parse().unwrap());
+                .insert(header::RETRY_AFTER, HeaderValue::from(seconds));
         }
         response
     }

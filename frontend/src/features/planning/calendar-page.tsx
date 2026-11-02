@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePreferences } from "@/features/settings/preferences-context";
 import { useResource } from "@/hooks/use-resource";
-import { dateLabel, localDate, shiftDate } from "@/lib/dates";
+import { dateLabel, localDate, shiftDate, weekday, shiftMonth } from "@/lib/dates";
 import { occurrenceCoversDate } from "./task-timing";
 import { OccurrenceList } from "./occurrence-list";
 import type { CalendarPlan } from "./types";
@@ -16,13 +16,13 @@ export function CalendarPage() {
   const [selected, setSelected] = useState(() => localDate(settings.timezone));
   const month = selected.slice(0, 7);
   const first = `${month}-01`;
-  const day = new Date(`${first}T12:00:00Z`).getUTCDay();
+  const day = weekday(first);
   const offset = settings.week_starts_on === "monday" ? (day + 6) % 7 : day;
   const gridStart = shiftDate(first, -offset);
   const dates = Array.from({ length: 42 }, (_, index) => shiftDate(gridStart, index));
   const { resource, retry } = useResource<CalendarPlan>(`/calendar?from=${gridStart}&to=${dates[41]}`);
   const labels = settings.week_starts_on === "monday" ? ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] : ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-  function changeMonth(delta: number) { const value = new Date(`${first}T12:00:00Z`); value.setUTCMonth(value.getUTCMonth() + delta); setSelected(value.toISOString().slice(0, 10)); }
+  function changeMonth(delta: number) { setSelected(shiftMonth(first, delta)); }
   return <main id="main" className="mx-auto max-w-6xl space-y-7 px-5 py-10 sm:px-10"><header><p className="mb-2 text-sm text-primary">Расписание</p><h1 className="text-3xl font-semibold">Календарь</h1><p className="mt-2 text-sm text-muted-foreground">Выберите день, чтобы увидеть план и отметить результат.</p></header>
     <div className="flex flex-wrap items-center gap-2"><Button variant="outline" aria-label="Предыдущий месяц" onClick={() => changeMonth(-1)}><ChevronLeft /></Button><h2 className="min-w-40 text-center font-semibold">{dateLabel(first, { month: "long", year: "numeric" })}</h2><Button variant="outline" aria-label="Следующий месяц" onClick={() => changeMonth(1)}><ChevronRight /></Button><Input type="date" aria-label="Дата календаря" className="w-auto" value={selected} onChange={(event) => { if (event.target.value) setSelected(event.target.value); }} /><Button variant="outline" onClick={() => setSelected(localDate(settings.timezone))}>Сегодня</Button></div>
     {resource.status === "loading" ? <LoadingState /> : resource.status === "error" ? <ErrorState message={resource.message} retry={retry} /> : <><div className="overflow-x-auto rounded-xl border border-border"><div className="grid min-w-80 grid-cols-7">{labels.map((label) => <div key={label} className="bg-muted p-2 text-center text-xs text-muted-foreground">{label}</div>)}{dates.map((date) => {
