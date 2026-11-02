@@ -216,7 +216,7 @@ async fn create(
     ApiJson(v): ApiJson<Name>,
 ) -> Result<(StatusCode, Json<BoardState>), ApiError> {
     domain::text(&v.name, 1, 200)?;
-    domain::text(&v.emoji, 0, 16)?;
+    domain::text(&v.emoji, 0, 128)?;
     let mut tx = s.database.begin().await?;
     tasks::lock_tasks(&mut tx, u.id).await?;
     let id = Uuid::new_v4();
@@ -243,7 +243,7 @@ async fn update(
 ) -> Result<Json<BoardState>, ApiError> {
     domain::text(&v.name, 1, 200)?;
     if let Some(emoji) = &v.emoji {
-        domain::text(emoji, 0, 16)?;
+        domain::text(emoji, 0, 128)?;
     }
     if !["kanban", "gantt"].contains(&v.view.as_str())
         || !["day", "week", "fortnight"].contains(&v.zoom.as_str())

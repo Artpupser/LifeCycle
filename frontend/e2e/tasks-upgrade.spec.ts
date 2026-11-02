@@ -178,7 +178,7 @@ test("quick creation, personalized drag columns, priority grouping, cancellation
   await login(page,request);
   await createBoard(page,"Мой проект");
   await boardMenu(page);await page.getByRole("button",{name:"Переименовать доску",exact:true}).click();
-  await page.getByRole("button",{name:"Emoji 🚀",exact:true}).click();
+  await page.getByRole("button",{name:"Выбрать значок доски",exact:true}).click();await page.getByLabel("Поиск значков",{exact:true}).fill("rocket");await page.getByRole("button",{name:"tabler:rocket",exact:true}).click();
   await page.getByRole("button",{name:"Сохранить доску",exact:true}).click();
   await expect(page.getByRole("heading",{name:"Мой проект",exact:true})).toContainText("🚀");
   await page.getByLabel("Цвет колонки Запланировано",{exact:true}).click();
@@ -234,7 +234,7 @@ test("quick creation, personalized drag columns, priority grouping, cancellation
   await page.screenshot({path:testInfo.outputPath("task-groups.png"),fullPage:true});
   const habitBody={title:"Ошибочная привычка",schedule:{start_date:today,time:null,timezone:"UTC",duration_minutes:15,recurrence:"daily",end_date:null},habit:{icon:"🌱",sub_habits:[],reminder_enabled:false,reminder_minutes_before:null}};
   const habit=await (await page.request.post("/api/habits",{headers,data:habitBody})).json() as {id:string};
-  await page.goto("/habits");const habitCard=page.locator("article").filter({has:page.getByRole("heading",{name:"🌱 Ошибочная привычка",exact:true})});
+  await page.goto("/habits");const habitCard=page.locator("article").filter({has:page.getByRole("heading",{name:"Ошибочная привычка",exact:true})});
   await confirmUi(page, async()=>{await habitCard.getByRole("button",{name:"Удалить привычку",exact:true}).click();}, true);
   await expect(page.getByRole("region",{name:"Статистика привычек",exact:true}).locator("article")).toHaveCount(0);
   const savedHabit=await (await page.request.post("/api/habits",{headers,data:{...habitBody,title:"Сохранённая история"}})).json() as {id:string};

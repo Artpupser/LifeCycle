@@ -13,6 +13,7 @@ test("1.6 recurring events preserve Markdown, reach Today/calendar, and create e
   await page.getByLabel("Описание события", { exact: true }).fill("**Событие Markdown**\n\n<script>alert(1)</script>");
   await page.getByRole("button", { name: "Сохранить событие", exact: true }).click();
   const card = page.locator("article").filter({ has: page.getByRole("heading", { name: "Памятная дата 1.6", exact: true }) });
+  await card.getByText("Подробности",{exact:true}).click();
   await expect(card.locator("strong")).toHaveText("Событие Markdown");
   await expect(card).toContainText("Ежедневно"); await page.reload();
   await card.getByRole("button", { name: "Поздравление", exact: true }).click();

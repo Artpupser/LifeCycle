@@ -65,6 +65,7 @@ test("2.2 birthday links synchronize, suspend, unlink and preserve private local
   await expect(page.getByLabel("Дата события", { exact: true })).toBeDisabled();
   await page.getByLabel("Описание события", { exact: true }).fill("**Описание связанного события**");
   await page.getByRole("button", { name: "Сохранить событие", exact: true }).click();
+  await page.locator("article").getByText("Подробности",{exact:true}).click();
   await expect(page.locator("article strong")).toHaveText("Описание связанного события");
   await page.goto("/contacts"); await page.getByRole("button", { name: "Изменить контакт", exact: true }).click();
   await page.getByLabel("Имя контакта", { exact: true }).fill("Новое имя");
@@ -80,6 +81,7 @@ test("2.2 birthday links synchronize, suspend, unlink and preserve private local
   await page.getByRole("button", { name: "Сохранить контакт", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.goto("/countdowns"); await expect(page.locator("article")).toHaveCount(1);
+  await page.getByLabel(/Действия события/).click();
   await confirmUi(page, () => page.getByRole("button", { name: "Отвязать контакт", exact: true }).click());
   await expect(page.getByRole("button", { name: "Отвязать контакт", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "День рождения: Новое имя", exact: true })).toBeVisible();

@@ -1,0 +1,27 @@
+import { countryName, countryNames } from "@/systems/phone/countries";
+import { useState } from "react";
+import { Dialog } from "@/components/dialog";
+import { FilterSearch } from "@/components/filter-search";
+import { Button } from "@/components/ui/button";
+import { matchesFilter, parseFilterQuery, type FilterSpec } from "@/lib/filter-query";
+import { iconCatalog, loadIconPack, resolveIcon } from "./catalog";
+import { AppIcon } from "./app-icon";
+import { t, useLanguage } from "@/systems/i18n/locale";
+
+export function IconPicker({id,value,change,label=t("Выбрать значок")}: {id?:string;value:string;change:(value:string)=>void;label?:string}) {
+  useLanguage();
+  const [open,setOpen]=useState(false);
+  return <><Button id={id} variant="outline" aria-label={t(label)} onClick={()=>setOpen(true)}><AppIcon icon={value}/><span>{t(label)}</span></Button>{open && <IconBrowser value={value} choose={next=>{change(next);setOpen(false);}} close={()=>setOpen(false)}/>}</>;
+}
+function IconBrowser({value,choose,close}: {value:string;choose:(value:string)=>void;close:()=>void}) {
+  useLanguage();
+  const [query,setQuery]=useState(""); const [limit,setLimit]=useState(100);
+  const specs:FilterSpec[]=[{key:"pack",aliases:["пак","набор"],label:t("Набор"),example:t("набор:флаги"),values:["tabler","circle-flags","simple-icons","lifecycle","интерфейс","флаги","бренды","приложение","interface","flags","brands","app"]}];
+  const filters=parseFilterQuery(query,specs);
+  const packAliases={tabler:["интерфейс","interface"],"circle-flags":["флаги","flags"],"simple-icons":["бренды","brands"],lifecycle:["приложение","app"]};
+  const visible=iconCatalog.filter(icon=>{
+    const names=icon.pack==="circle-flags"?countryNames(icon.name.toUpperCase()):null;
+    return matchesFilter(filters,`${icon.name} ${icon.id} ${names?.ru??""} ${names?.en??""}`,{pack:[icon.pack,...packAliases[icon.pack]]});
+  });
+  return <Dialog title={t("Все значки")} onClose={close}><div className="space-y-4"><FilterSearch label={t("Поиск значков")} value={query} change={next=>{setQuery(next);setLimit(100);}} specs={specs} placeholder={t("Название или набор:флаги")}/><p className="text-xs text-muted-foreground">{t("Интерфейс, украшения, бренды и флаги — один каталог. Любой значок можно выбрать для любого объекта.")}</p><div className="grid max-h-[52svh] grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-7" aria-label={t("Каталог значков")}>{visible.slice(0,limit).map(icon=><button type="button" key={icon.id} title={icon.id} aria-label={icon.id} aria-pressed={resolveIcon(value)===icon.id} onPointerEnter={()=>void loadIconPack(icon.pack).catch(()=>{})} className={`flex min-h-20 min-w-0 flex-col items-center justify-center gap-2 rounded-xl border p-2 hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring ${resolveIcon(value)===icon.id?"border-primary bg-primary/10":"border-border"}`} onClick={()=>choose(icon.id)}><AppIcon icon={icon.id} className="size-7"/><span className="w-full truncate text-[10px] text-muted-foreground">{icon.pack==="circle-flags"?countryName(icon.name.toUpperCase()):icon.name}</span></button>)}</div>{!visible.length && <p role="status">{t("Значки не найдены")}</p>}{visible.length>limit && <Button variant="outline" onClick={()=>setLimit(limit+100)}>{t("Ещё значки")}</Button>}</div></Dialog>;
+}

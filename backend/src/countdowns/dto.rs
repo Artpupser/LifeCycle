@@ -43,7 +43,7 @@ impl CountdownInput {
     pub(super) fn validate(&self) -> Result<Option<Recurrence>, ApiError> {
         domain::text(&self.title, 1, 200)?;
         domain::text(&self.category, 1, 64)?;
-        domain::text(&self.icon, 0, 48)?;
+        domain::text(&self.icon, 0, 128)?;
         if !(MIN_EVENT_YEAR..=MAX_EVENT_YEAR).contains(&self.target_date.year()) {
             return Err(ApiError::validation(
                 "Countdown date must be between years 1900 and 9998",

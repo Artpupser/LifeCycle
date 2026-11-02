@@ -1,8 +1,18 @@
+import type { ThemeColors, ThemeName } from "@/systems/themes/themes";
+import type { Language } from "@/systems/i18n/locale";
 export type Settings = {
   timezone: string;
   time_format: "12h" | "24h";
-  language: "ru";
-  theme: "system" | "light" | "dark";
+  language: Language;
+  theme: ThemeName;
+  custom_theme?: ThemeColors | null;
+  background_image?: string | null;
+  background_dim?: number;
+  sounds_enabled?: boolean;
+  sound_ui?: boolean;
+  sound_notifications?: boolean;
+  sound_volume?: number;
+  sound_theme?: "soft" | "glass" | "mechanical" | "default";
   reminders_enabled: boolean;
   reminder_minutes_before: number;
   week_starts_on: "monday" | "sunday";

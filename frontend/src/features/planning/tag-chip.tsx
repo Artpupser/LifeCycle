@@ -1,3 +1,4 @@
+import { t, useLanguage } from "@/systems/i18n/locale";
 import { useState, type ChangeEvent } from "react";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ function readableTagText(color: string) {
 }
 
 export function TagChip({ name, color = "#6366F1" }: { name: string; color?: string }) {
+  useLanguage();
   return <span className="inline-flex max-w-full items-center rounded-md px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color, color: readableTagText(color) }}><span className="truncate">{name}</span></span>;
 }
 
@@ -27,11 +29,12 @@ type LabelInputProps = {
 
 /** All label editors share validation; line mode preserves legacy contact punctuation. */
 export function LabelInput({ id, label, value, change, suggestions = [], single = false, required = false, multiline = false }: LabelInputProps) {
+  useLanguage();
   const labels = single ? (value.trim() ? [value.trim()] : []) : normalizeLabels(value, multiline ? "lines" : "comma");
-  const error = required && !labels.length ? "Укажите метку." : labels.length > 30 ? "Не более 30 меток." : labels.some(item => [...item].length > 64) ? "Не более 64 символов в метке." : "";
+  const error = required && !labels.length ? t("Укажите метку.") : labels.length > 30 ? t("Не более 30 меток.") : labels.some(item => [...item].length > 64) ? t("Не более 64 символов в метке.") : "";
   const Component = multiline ? Textarea : Input;
   return <div className="space-y-2">
-    <Component id={id} aria-label={label} required={required} maxLength={single ? 128 : 3900}
+    <Component id={id} aria-label={t(label)} required={required} maxLength={single ? 128 : 3900}
       list={!multiline && suggestions.length ? `${id}-suggestions` : undefined} value={value}
       aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined}
       ref={(element: HTMLInputElement | HTMLTextAreaElement | null) => { element?.setCustomValidity(error); }}
@@ -42,6 +45,7 @@ export function LabelInput({ id, label, value, change, suggestions = [], single 
 }
 
 export function TagSelection({ value, change, tags }: { value: string[]; change: (value: string[]) => void; tags: { name: string; color?: string }[] }) {
+  useLanguage();
   const names = normalizeLabels([...tags.map(tag => tag.name), ...value]);
   return <div className="flex flex-wrap gap-3">{names.map(name => {
     const same = (item: string) => item.toLocaleLowerCase("ru-RU") === name.toLocaleLowerCase("ru-RU");
@@ -54,17 +58,18 @@ export function TagSelection({ value, change, tags }: { value: string[]; change:
   })}</div>;
 }
 
-export function LabelManager({ labels, busy, rename, remove, label = "Метка" }: { labels: string[]; busy: boolean; rename: (name: string, replacement: string) => void; remove: (name: string) => void; label?: string }) {
+export function LabelManager({ labels, busy, rename, remove, label = t("Метка") }: { labels: string[]; busy: boolean; rename: (name: string, replacement: string) => void; remove: (name: string) => void; label?: string }) {
+  useLanguage();
   const [name, setName] = useState("");
   const [replacement, setReplacement] = useState("");
   return <div className="space-y-4">
-    <Select aria-label={label} value={name} disabled={busy} onChange={event => { setName(event.target.value); setReplacement(event.target.value); }}>
-      <option value="">Выберите метку</option>{normalizeLabels(labels).sort().map(item => <option key={item}>{item}</option>)}
+    <Select aria-label={t(label)} value={name} disabled={busy} onChange={event => { setName(event.target.value); setReplacement(event.target.value); }}>
+      <option value="">{t("Выберите метку")}</option>{normalizeLabels(labels).sort().map(item => <option key={item}>{item}</option>)}
     </Select>
-    <FormField id="label-replacement" label="Новое название метки"><LabelInput id="label-replacement" single value={replacement} change={setReplacement} /></FormField>
+    <FormField id="label-replacement" label={t("Новое название метки")}><LabelInput id="label-replacement" single value={replacement} change={setReplacement} /></FormField>
     <div className="flex flex-wrap gap-2">
-      <Button disabled={busy || !name || !replacement.trim() || [...replacement.trim()].length > 64} onClick={() => rename(name, replacement.trim())}>Переименовать метку</Button>
-      <Button variant="outline" disabled={busy || !name} onClick={() => remove(name)}>Удалить метку</Button>
+      <Button disabled={busy || !name || !replacement.trim() || [...replacement.trim()].length > 64} onClick={() => rename(name, replacement.trim())}>{t("Переименовать метку")}</Button>
+      <Button variant="outline" disabled={busy || !name} onClick={() => remove(name)}>{t("Удалить метку")}</Button>
     </div>
   </div>;
 }

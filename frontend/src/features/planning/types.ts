@@ -1,3 +1,4 @@
+import { t } from "@/systems/i18n/locale";
 import type { EventOccurrence } from "@/features/countdowns/types";
 import type { HabitConfig, HabitMark } from "@/features/habits/types";
 import { localDate } from "@/lib/dates";
@@ -19,8 +20,8 @@ export type Task = TaskInput & { id: string; source_kind: string; source_id: str
 export type TaskOccurrence = { task: Task; date: string; starts_at: string | null; status: TaskStatus; editable: boolean; habit_mark?: HabitMark | null };
 export type DayPlan = { date: string; timezone: string; tasks: TaskOccurrence[]; events: EventOccurrence[] };
 export type CalendarPlan = { from: string; to: string; timezone: string; occurrences: TaskOccurrence[]; events: EventOccurrence[] };
-export const statusLabels: Record<TaskStatus, string> = { todo: "К выполнению", in_progress: "В работе", completed: "Выполнено", rejected: "Отменено" };
-export const priorityLabels: Record<TaskInput["priority"], string> = { low: "Низкий · синий", normal: "Без приоритета", high: "Высокий · оранжевый", urgent: "Срочный · красный" };
+export const statusLabels: Record<TaskStatus, string> = { get todo() { return t("К выполнению"); }, get in_progress() { return t("В работе"); }, get completed() { return t("Выполнено"); }, get rejected() { return t("Отменено"); } };
+export const priorityLabels: Record<TaskInput["priority"], string> = { get low() { return t("Низкий · синий"); }, get normal() { return t("Без приоритета"); }, get high() { return t("Высокий · оранжевый"); }, get urgent() { return t("Срочный · красный"); } };
 export const isRecurring = (task: TaskInput) => task.schedule !== null && task.schedule.recurrence !== "once";
 
 export function defaultSchedule(timezone: string): Schedule { return { start_date: localDate(timezone), time: "09:00", timezone, duration_minutes: 30, recurrence: "once", interval_days: 2, weekdays: [1], end_date: null }; }

@@ -96,3 +96,7 @@ button:not(:disabled) { cursor: pointer; }
 .workspace-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
 .workspace-scroll::-webkit-scrollbar-thumb { background: var(--border); border: 2px solid var(--background); border-radius: 10px; }
 .workspace-scroll::-webkit-scrollbar-track { background: var(--background); }
+
+.counter-card { position: relative; overflow: visible; gap: .25rem; background-image: linear-gradient(145deg, color-mix(in srgb, var(--primary) 5%, transparent), transparent 65%); }
+.counter-card > details { margin-bottom: 1rem; }
+.counter-card:focus-within { border-color: var(--primary); }

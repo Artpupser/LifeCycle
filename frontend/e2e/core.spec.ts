@@ -37,7 +37,7 @@ test("notes persist Markdown and private uploaded images across editing and fold
   await editor.getByRole("button",{name:"Просмотр",exact:true}).click();
   await expect(editor.getByRole("heading",{name:"Проверка Markdown",exact:true})).toBeVisible();
   await expect(editor.locator("script")).toHaveCount(0);await expect(editor.getByRole("link",{name:"Опасная ссылка"})).toHaveCount(0);await expect(page.locator('img[src^="https://example.org"]')).toHaveCount(0);
-  const image=editor.getByRole("img",{name:"private.png",exact:true});await expect(image).toBeVisible();await expect.poll(()=>image.evaluate(element=>(element as {naturalWidth:number}).naturalWidth)).toBe(1);
+  const image=editor.getByRole("img",{name:"private.png",exact:true});await expect(image).toBeVisible();await expect.poll(()=>image.evaluate(element=>(element as HTMLImageElement).naturalWidth)).toBe(1);
   await page.getByRole("button",{name:"Сохранить заметку",exact:true}).click();await expect(editor.getByText("Сохранено",{exact:true})).toBeVisible();
   await page.reload();await page.getByRole("button",{name:"Заметка из браузера",exact:true}).click();
   await expect(page.getByLabel("Содержание",{exact:true})).toHaveValue(/Сохранённый текст/);

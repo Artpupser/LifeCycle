@@ -1,3 +1,4 @@
+import { t } from "@/systems/i18n/locale";
 export type ServiceStatus = "ok" | "unavailable";
 export type Readiness = {
   status: "ready" | "unavailable";
@@ -11,15 +12,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function parseReadiness(value: unknown): Readiness {
-  if (!isRecord(value) || !isRecord(value.checks)) throw new HealthRequestError("Сервер вернул некорректный ответ.");
+  if (!isRecord(value) || !isRecord(value.checks)) throw new HealthRequestError(t("Сервер вернул некорректный ответ."));
   const { checks, status } = value;
-  if (status !== "ready" && status !== "unavailable") throw new HealthRequestError("Сервер вернул неизвестное состояние.");
+  if (status !== "ready" && status !== "unavailable") throw new HealthRequestError(t("Сервер вернул неизвестное состояние."));
   for (const key of ["postgres", "redis", "garage"]) {
-    if (checks[key] !== "ok" && checks[key] !== "unavailable") throw new HealthRequestError("Не удалось прочитать состояние сервисов.");
+    if (checks[key] !== "ok" && checks[key] !== "unavailable") throw new HealthRequestError(t("Не удалось прочитать состояние сервисов."));
   }
   const parsedChecks = checks as Readiness["checks"];
   if ((Object.values(parsedChecks).every((check) => check === "ok")) !== (status === "ready")) {
-    throw new HealthRequestError("Сервер вернул противоречивое состояние.");
+    throw new HealthRequestError(t("Сервер вернул противоречивое состояние."));
   }
   return { status, checks: parsedChecks };
 }
@@ -32,14 +33,14 @@ export async function fetchReadiness(signal?: AbortSignal): Promise<Readiness> {
     credentials: "same-origin",
     headers: { Accept: "application/json" },
   });
-  if (response.status !== 200 && response.status !== 503) throw new HealthRequestError("Не удалось проверить подключение к серверу.");
+  if (response.status !== 200 && response.status !== 503) throw new HealthRequestError(t("Не удалось проверить подключение к серверу."));
   let payload: unknown;
   try {
     payload = await response.json();
   } catch {
-    throw new HealthRequestError("Сервер вернул некорректный ответ.");
+    throw new HealthRequestError(t("Сервер вернул некорректный ответ."));
   }
   const data = parseReadiness(payload);
-  if ((response.status === 200) !== (data.status === "ready")) throw new HealthRequestError("Сервер вернул противоречивый код ответа.");
+  if ((response.status === 200) !== (data.status === "ready")) throw new HealthRequestError(t("Сервер вернул противоречивый код ответа."));
   return data;
 }

@@ -1,3 +1,4 @@
+import { t } from "@/systems/i18n/locale";
 import { toInstant } from "@/lib/dates";
 import { localDateTimeToInstant, zonedDateTimeInput, shiftDate, dayDifference } from "@/lib/dates";
 import type { Schedule, TaskInput } from "./types";
@@ -14,15 +15,15 @@ export function planningFromTask(task: Pick<TaskInput, "schedule" | "due_at">, z
 }
 export function buildPlanning(value: Planning, zone: string, original?: Schedule | null): { schedule: Schedule | null; due_at: string | null } {
   if (!value.startDate && !value.endDate) return { schedule:null,due_at:null };
-  if (!value.startDate) { const end=localDateTimeToInstant(`${value.endDate}T${value.endTime || "23:59"}`,zone); if(end===null)throw new Error("Такого времени окончания нет. Выберите другое время."); return {schedule:null,due_at:toInstant(end)}; }
+  if (!value.startDate) { const end=localDateTimeToInstant(`${value.endDate}T${value.endTime || "23:59"}`,zone); if(end===null)throw new Error(t("Такого времени окончания нет. Выберите другое время.")); return {schedule:null,due_at:toInstant(end)}; }
   const startTime=value.startTime || "00:00"; const start=localDateTimeToInstant(`${value.startDate}T${startTime}`,zone);
   const endDate=value.endDate || value.startDate;
   let end=localDateTimeToInstant(`${endDate}T${value.endTime || (value.startTime ? startTime : "23:59")}`,zone);
-  if(start===null || end===null)throw new Error("Такого местного времени нет. Выберите другое время.");
+  if(start===null || end===null)throw new Error(t("Такого местного времени нет. Выберите другое время."));
   if (!value.startTime && !value.endTime) end+=60_000;
   if(!value.endDate && !value.endTime && value.startTime)end=start+60*60_000;
   const duration=!value.startTime && !value.endTime ? (dayDifference(value.startDate,endDate)+1)*1440 : Math.round((end-start)/60_000);
   const recurrence=original?.recurrence ?? "once"; const maximum=recurrence==="once" ? 366*1440 :1440;
-  if(duration<1 || duration>maximum)throw new Error(recurrence==="once" ? "Окончание должно быть после начала, интервал — не более года." : "Повторяющийся интервал должен быть от минуты до суток.");
+  if(duration<1 || duration>maximum)throw new Error(recurrence==="once" ? t("Окончание должно быть после начала, интервал — не более года.") : t("Повторяющийся интервал должен быть от минуты до суток."));
   return {due_at:null,schedule:{...(original ?? { recurrence:"once",interval_days:1,weekdays:[],end_date:null }),timezone:zone,start_date:value.startDate,time:value.startTime || value.endTime ?startTime:null,duration_minutes:duration}};
 }

@@ -1,0 +1,15 @@
+import {afterEach,expect,it,vi} from "vitest";
+vi.mock("@foleyjs/core",()=>({play:vi.fn(),set:vi.fn()}));
+import {play,set} from "@foleyjs/core";
+import {configureSounds,playSound,previewSound} from "./sounds";
+afterEach(()=>{configureSounds({sounds_enabled:false});vi.clearAllMocks();vi.useRealTimers();});
+it("master mute blocks every channel and preview",()=>{
+ configureSounds({sounds_enabled:false});playSound("tap");playSound("chime","notification");previewSound({sounds_enabled:false});expect(play).not.toHaveBeenCalled();
+});
+it("UI and notification channels can be controlled separately",()=>{
+ configureSounds({sounds_enabled:true,sound_ui:false,sound_notifications:true,sound_volume:20,sound_theme:"glass"});playSound("tap");playSound("success","notification");expect(play).toHaveBeenCalledTimes(1);expect(play).toHaveBeenCalledWith("success");
+ expect(set).toHaveBeenCalledWith(expect.objectContaining({muted:false,volume:.2,theme:"glass"}));
+});
+it("disabling sound cancels a pending preview restore",()=>{
+ vi.useFakeTimers();configureSounds({sounds_enabled:true});previewSound({sounds_enabled:true});configureSounds({sounds_enabled:false});vi.advanceTimersByTime(2000);expect(set).toHaveBeenLastCalledWith(expect.objectContaining({muted:true}));
+});

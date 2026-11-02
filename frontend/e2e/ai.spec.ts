@@ -130,6 +130,7 @@ test("AI is a one-click chat with per-item sharing, automatic replies and safe r
   await expect(page.getByRole("checkbox", { name: /^Тренировки/ })).toBeChecked();
   await expect(page.getByRole("checkbox", { name: /^Редактор тренировок/ })).toHaveCount(0);
   await page.getByRole("button", { name: "Удалить API-ключ", exact: true }).click();
+  await page.getByRole("alertdialog").getByRole("button",{name:"Подтвердить удаление ключа",exact:true}).click();
   await expect(page.getByRole("button", { name: "Отправить", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Закрыть настройки AI", exact: true }).click();
   await page.screenshot({ path: testInfo.outputPath("mobile-ai-chat.png"), fullPage: true });

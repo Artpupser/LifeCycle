@@ -101,6 +101,14 @@ async fn download(
         header::CONTENT_DISPOSITION,
         HeaderValue::from_static("inline"),
     );
+    response.headers_mut().insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("private, no-store"),
+    );
+    response.headers_mut().insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
     Ok(response)
 }
 fn verify_image(mime: &str, bytes: &[u8]) -> Result<(), ApiError> {

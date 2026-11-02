@@ -7,7 +7,14 @@ Use only the existing centralized system for each area below. Never implement th
 - **Search & filters:** one unified filter system driven by a single search bar. No separate filter forms or dropdowns.
 - **Date & time:** one unified date/time system. Always display and parse relative to the user's settings (timezone, format). No direct `new Date()`, `toLocaleString`, or manual date formatting in components.
 - **Notifications & confirmations:** one unified system. No `alert`, `confirm`, or custom one-off modals.
-- **Tags & categories:** one unified tag management system .
+- **Tags & categories:** one unified tag management system.
+- **Markdown:** `src/components/markdown.tsx` owns rendering, editing and link policy. Reuse it in every Markdown field.
+- **User images:** `src/systems/media/` owns validation, upload, authenticated URLs and display. No separate upload handlers or raw image rendering in features.
+- **Icons & logos:** `src/systems/icons/` and `src/components/icons.tsx` use Iconify with the local catalog, including country flags. Reuse `AppIcon` and `IconPicker`; never import another icon library or fetch icons from a third party at runtime.
+- **Interface languages:** `src/systems/i18n/` owns RU/EN messages, interpolation and locale. Use `t` for authored interface copy and `useLanguage` for reactive components; never translate user content.
+- **Themes:** `src/systems/themes/` owns palettes, contrast, CSS tokens and backgrounds; account settings persist choices.
+- **Sounds:** `src/systems/sounds/` is the only Foley integration. Respect master mute, separate UI/notification switches and volume.
+- **Phone & country:** `src/systems/phone/` owns country names, calling codes, phone parsing and the shared country/phone inputs. Flags come from the icon catalog.
 
 ## New centralized systems
 

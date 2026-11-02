@@ -53,7 +53,7 @@ impl HabitConfig {
                 "A workout habit cannot have sub-habits",
             ));
         }
-        domain::text(&self.icon, 1, 32)?;
+        domain::text(&self.icon, 1, 128)?;
         if self.sub_habits.len() > 50 || self.reminder_minutes_before.is_some_and(|v| v > 1440) {
             return Err(ApiError::validation(
                 "At most 50 sub-habits and 1440 reminder minutes are supported",

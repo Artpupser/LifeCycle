@@ -1,3 +1,4 @@
+import { t } from "@/systems/i18n/locale";
 import { weekday, dateLabel, dayDifference, localDate, localDateTimeToInstant, shiftDate } from "@/lib/dates";
 import type { Schedule, Task } from "./types";
 function occurs(schedule: Schedule, date: string) {
@@ -34,11 +35,11 @@ export function taskTiming(task: Task, now: number, timezone: string): { text: s
   const today = localDate(timezone, now);
   const first = planned.instant === null ? planned.date : localDate(timezone, planned.instant);
   const running = planned.instant !== null && planned.end !== null && now >= planned.instant && now <= planned.end;
-  if (today === first || running || (planned.instant===null && task.schedule?.recurrence==="once" && today>=first && today<shiftDate(first,Math.ceil(task.schedule.duration_minutes/1440)))) return { text: "Сегодня", today: true };
+  if (today === first || running || (planned.instant===null && task.schedule?.recurrence==="once" && today>=first && today<shiftDate(first,Math.ceil(task.schedule.duration_minutes/1440)))) return { text: t("Сегодня"), today: true };
   const days = dayDifference(today, first);
-  if (days === 1) return { text: "Завтра", today: false };
-  if (days > 1) return { text: `Через ${days} ${days % 10 === 1 && days % 100 !== 11 ? "день" : days % 10 >= 2 && days % 10 <= 4 && !(days % 100 >= 12 && days % 100 <= 14) ? "дня" : "дней"}`, today: false };
-  return { text: `Начало ${dateLabel(first, { day: "numeric", month: "short" })}`, today: false };
+  if (days === 1) return { text: t("Завтра"), today: false };
+  if (days > 1) return { text: t("Через {v0} {v1}", {v0: days, v1: days % 10 === 1 && days % 100 !== 11 ? t("день") : days % 10 >= 2 && days % 10 <= 4 && !(days % 100 >= 12 && days % 100 <= 14) ? t("дня") : t("дней")}), today: false };
+  return { text: t("Начало {v0}", {v0: dateLabel(first, { day: "numeric", month: "short" })}), today: false };
 }
 
 export function taskResult(task: Task, occurrence?: { status: string }) {

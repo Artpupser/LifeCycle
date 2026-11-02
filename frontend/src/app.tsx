@@ -1,10 +1,12 @@
+import { t, useLanguage } from "@/systems/i18n/locale";
 import { SidebarNavigation } from "@/components/sidebar-navigation";
 import { FeedbackProvider } from "@/components/feedback-provider";
 import { HabitReminders } from "@/features/habits/reminders";
-import { Heart, Activity, CalendarDays, CalendarClock, BookUser, ClipboardList, LogOut, NotebookPen, Settings2, Timer, UserRound, Menu, X } from "lucide-react";
+import { Heart, Activity, CalendarDays, CalendarClock, BookUser, ClipboardList, LogOut, NotebookPen, Settings2, Timer, UserRound, Menu, X } from "@/components/icons";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from "react-router";
-import logo from "@/assets/logo.svg";
+import { AppIcon } from "@/systems/icons/app-icon";
+import { ThemeBackground } from "@/systems/themes/theme-background";
 import { ErrorState, LoadingState } from "@/components/resource-state";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth/auth-context";
@@ -34,6 +36,7 @@ const ProfilePage = lazy(() => import("@/features/profile/profile-page").then(mo
 const SettingsPage = lazy(() => import("@/features/settings/settings-page").then(module => ({default:module.SettingsPage})));
 
 function Shell({ children }: { children: ReactNode }) {
+  useLanguage();
   const { user, signOut } = useAuth();
   const [expanded, setExpanded] = useState(false);
   const [pending, setPending] = useState(false);
@@ -52,32 +55,36 @@ function Shell({ children }: { children: ReactNode }) {
     finally { setPending(false); }
   }
 
-  const navigation = user ? [{ to: "/today", label: "Сегодня", icon: CalendarDays }, { to: "/habits", label: "Привычки", icon: Activity }, { to: "/workouts", label: "Тренировки", icon: Activity }, { to: "/sex", label: "Интимный журнал", icon: Heart }, { to: "/tasks", label: "Задачи", icon: ClipboardList }, { to: "/calendar", label: "Календарь", icon: CalendarDays }, { to: "/notes", label: "Заметки", icon: NotebookPen }, { to: "/countdowns", label: "Отсчёты", icon: CalendarClock }, { to: "/contacts", label: "Контакты", icon: BookUser }, { to: "/pomodoro", label: "Pomodoro", icon: Timer }, { to: "/analytics", label: "Аналитика", icon: Activity }, { to: "/ai", label: "AI-помощник", icon: Activity }, { to: "/profile", label: "Профиль", icon: UserRound }, { to: "/settings", label: "Настройки", icon: Settings2 }, { to: "/status", label: "Подключение", icon: Activity }] : [{ to: "/login", label: "Войти", icon: UserRound }, { to: "/status", label: "Подключение", icon: Activity }];
+  const navigation = user ? [{ to: "/today", label: t("Сегодня"), icon: CalendarDays }, { to: "/habits", label: t("Привычки"), icon: Activity }, { to: "/workouts", label: t("Тренировки"), icon: Activity }, { to: "/sex", label: t("Интимный журнал"), icon: Heart }, { to: "/tasks", label: t("Задачи"), icon: ClipboardList }, { to: "/calendar", label: t("Календарь"), icon: CalendarDays }, { to: "/notes", label: t("Заметки"), icon: NotebookPen }, { to: "/countdowns", label: t("Отсчёты"), icon: CalendarClock }, { to: "/contacts", label: t("Контакты"), icon: BookUser }, { to: "/pomodoro", label: "Pomodoro", icon: Timer }, { to: "/analytics", label: t("Аналитика"), icon: Activity }, { to: "/ai", label: t("AI-помощник"), icon: Activity }, { to: "/profile", label: t("Профиль"), icon: UserRound }, { to: "/settings", label: t("Настройки"), icon: Settings2 }, { to: "/status", label: t("Подключение"), icon: Activity }] : [{ to: "/login", label: t("Войти"), icon: UserRound }, { to: "/status", label: t("Подключение"), icon: Activity }];
 
-  return <div className="app-shell h-svh overflow-hidden bg-background text-foreground">
-    <a href="#main" className="sr-only z-50 rounded-lg bg-primary px-4 py-3 text-primary-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Перейти к содержимому</a>
-    {expanded && <button className="fixed inset-0 z-30 bg-black/40 md:hidden" aria-label="Закрыть меню" onClick={() => setExpanded(false)} />}
+  return <div className="app-shell relative isolate h-svh overflow-hidden bg-background text-foreground">
+    <ThemeBackground/>
+    <a href="#main" className="sr-only z-50 rounded-lg bg-primary px-4 py-3 text-primary-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4">{t("Перейти к содержимому")}</a>
+    {expanded && <button className="fixed inset-0 z-30 bg-black/40 md:hidden" aria-label={t("Закрыть меню")} onClick={() => setExpanded(false)} />}
     <aside className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-border bg-card transition-[width] ${expanded ? "w-60" : "w-16 md:w-60"}`}>
-      <div className="flex h-20 shrink-0 items-center justify-center gap-2 px-3 md:justify-start md:px-5"><Link to={user ? "/today" : "/login"} className="flex min-w-0 items-center gap-3 rounded-lg" aria-label="LifeCycle — главная" onClick={() => setExpanded(false)}><img src={logo} alt="" width="36" height="36" className="shrink-0" /><span className={`${expanded ? "block" : "hidden md:block"} text-xl font-semibold`}>LifeCycle<span className="text-primary">.</span></span></Link></div>
-      <Button variant="ghost" size="icon" className="mx-auto mb-3 md:hidden" aria-label={expanded ? "Свернуть навигацию" : "Развернуть навигацию"} onClick={() => setExpanded(!expanded)}>{expanded ? <X /> : <Menu />}</Button>
+      <div className="flex h-20 shrink-0 items-center justify-center gap-2 px-3 md:justify-start md:px-5"><Link to={user ? "/today" : "/login"} className="flex min-w-0 items-center gap-3 rounded-lg" aria-label={t("LifeCycle — главная")} onClick={() => setExpanded(false)}><AppIcon icon="lifecycle:mark" className="size-9 shrink-0"/><span className={`${expanded ? "block" : "hidden md:block"} text-xl font-semibold`}>LifeCycle<span className="text-primary">.</span></span></Link></div>
+      <Button variant="ghost" size="icon" className="mx-auto mb-3 md:hidden" aria-label={expanded ? t("Свернуть навигацию") : t("Развернуть навигацию")} onClick={() => setExpanded(!expanded)}>{expanded ? <X /> : <Menu />}</Button>
       <SidebarNavigation key={user?.id??"guest"} items={navigation} authenticated={Boolean(user)} expanded={expanded} close={()=>setExpanded(false)} onConfigure={()=>{if(window.innerWidth<768)setExpanded(true);}} />
-      <div className="shrink-0 space-y-3 border-t border-border p-2 md:p-4">{user && <><p className={`${expanded ? "block" : "hidden md:block"} truncate px-2 text-xs text-muted-foreground`} title={user.email}>{user.email}</p><Button variant="ghost" className="w-full justify-start px-3" aria-label="Выйти" onClick={() => void logout()} disabled={pending}><LogOut className="size-5 shrink-0" aria-hidden="true" /><span className={expanded ? "" : "sr-only md:not-sr-only"}>{pending ? "Выходим…" : "Выйти"}</span></Button></>}{error && <p role="alert" className="break-words text-xs text-destructive">{error}</p>}</div>
+      <div className="shrink-0 space-y-3 border-t border-border p-2 md:p-4">{user && <><p className={`${expanded ? "block" : "hidden md:block"} truncate px-2 text-xs text-muted-foreground`} title={user.email}>{user.email}</p><Button variant="ghost" className="w-full justify-start px-3" aria-label={t("Выйти")} onClick={() => void logout()} disabled={pending}><LogOut className="size-5 shrink-0" aria-hidden="true" /><span className={expanded ? "" : "sr-only md:not-sr-only"}>{pending ? t("Выходим…") : t("Выйти")}</span></Button></>}{error && <p role="alert" className="break-words text-xs text-destructive">{error}</p>}</div>
     </aside>
-    <div className="ml-16 flex h-svh min-w-0 flex-col md:ml-60"><div className="app-content min-h-0 min-w-0 flex-1 overflow-y-auto">{children}</div></div>
+    <div className="relative ml-16 flex h-svh min-w-0 flex-col md:ml-60"><div className="app-content min-h-0 min-w-0 flex-1 overflow-y-auto">{children}</div></div>
   </div>;
 
 }
 
 function LegacyBoards() {
+  useLanguage();
   const location = useLocation();
   return <Navigate to={{ pathname: "/tasks", search: location.search }} replace />;
 }
 
 function NotFound() {
-  return <main id="main" className="mx-auto max-w-4xl px-5 py-16 sm:px-10"><p className="mb-3 text-sm text-primary">404</p><h1 className="text-3xl font-semibold">Страница не найдена</h1><Link to="/" className="mt-6 inline-block text-primary underline underline-offset-4">Вернуться на главную</Link></main>;
+  useLanguage();
+  return <main id="main" className="mx-auto max-w-4xl px-5 py-16 sm:px-10"><p className="mb-3 text-sm text-primary">404</p><h1 className="text-3xl font-semibold">{t("Страница не найдена")}</h1><Link to="/" className="mt-6 inline-block text-primary underline underline-offset-4">{t("Вернуться на главную")}</Link></main>;
 }
 
 function AuthenticatedApp() {
+  useLanguage();
   const { resource, retry } = useResource<Settings>("/settings");
   if (resource.status !== "ready") return <Shell><Suspense fallback={<LoadingState />}><Routes><Route path="/status" element={<HealthPage />} /><Route path="*" element={<main id="main" className="mx-auto max-w-4xl px-5 py-10 sm:px-10">{resource.status === "loading" ? <LoadingState /> : <ErrorState message={resource.message} retry={retry} />}</main>} /></Routes></Suspense></Shell>;
   return <PreferencesProvider initial={resource.data}><Shell><HabitReminders /><Suspense fallback={<LoadingState />}><Routes>
@@ -106,14 +113,17 @@ function AuthenticatedApp() {
 }
 
 function AppContent() {
+  useLanguage();
   const { user, loading, error, reload } = useAuth();
   if (loading || error) return <Shell><Suspense fallback={<LoadingState />}><Routes><Route path="/status" element={<HealthPage />} /><Route path="*" element={<main id="main" className="mx-auto max-w-4xl px-5 py-10 sm:px-10">{loading ? <LoadingState /> : <ErrorState message={error!} retry={reload} />}</main>} /></Routes></Suspense></Shell>;
   if (user) return <AuthenticatedApp key={user.id} />;
   return <Shell><Suspense fallback={<LoadingState />}><Routes><Route path="/status" element={<HealthPage />} /><Route path="/login" element={<LoginPage />} /><Route path="/" element={<Navigate to="/login" replace />} /><Route path="/ai" element={<Navigate to="/login" replace />} /><Route path="/analytics" element={<Navigate to="/login" replace />} /><Route path="/profile" element={<Navigate to="/login" replace />} /><Route path="/settings" element={<Navigate to="/login" replace />} /><Route path="/today" element={<Navigate to="/login" replace />} /><Route path="/tasks" element={<Navigate to="/login" replace />} /><Route path="/boards" element={<Navigate to="/login" replace />} /><Route path="/task-tags" element={<Navigate to="/login" replace />} /><Route path="/habits" element={<Navigate to="/login" replace />} /><Route path="/sex" element={<Navigate to="/login" replace />} /><Route path="/workouts/*" element={<Navigate to="/login" replace />} /><Route path="/calendar" element={<Navigate to="/login" replace />} /><Route path="/notes" element={<Navigate to="/login" replace />} /><Route path="/countdowns" element={<Navigate to="/login" replace />} /><Route path="/contacts" element={<Navigate to="/login" replace />} /><Route path="/pomodoro" element={<Navigate to="/login" replace />} /><Route path="*" element={<NotFound />} /></Routes></Suspense></Shell>;
 }
 
-function ApplicationFeedback(){const {user}=useAuth();return <FeedbackProvider key={user?.id??"guest"}><AppContent/></FeedbackProvider>;}
+function ApplicationFeedback(){
+  useLanguage();const {user}=useAuth();return <FeedbackProvider key={user?.id??"guest"}><AppContent/></FeedbackProvider>;}
 
 export function App() {
+  useLanguage();
   return <BrowserRouter><AuthProvider><ApplicationFeedback/></AuthProvider></BrowserRouter>;
 }

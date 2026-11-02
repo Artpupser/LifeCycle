@@ -76,7 +76,7 @@ test("mobile analytics uses real outcomes, explicit private summaries, revocatio
   await page.getByLabel("Поиск и период аналитики", { exact: true }).fill(`с:${yesterday} по:${today}`);
   await expect(page.getByRole("region", { name: "Задачи", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "1. Ритм аналитики", exact: true }).click();
-  await expect(page.getByRole("dialog").getByRole("heading", { name: "🌱 Ритм аналитики", exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("heading", { name: "Ритм аналитики", exact: true })).toBeVisible();
   await expect(page.getByRole("dialog").getByRole("link", { name: "Открыть Today", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Закрыть окно", exact: true }).click();
   await page.getByRole("link", { name: "Аналитика", exact: true }).click();

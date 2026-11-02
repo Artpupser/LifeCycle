@@ -1,15 +1,16 @@
+import { t, useLanguage } from "@/systems/i18n/locale";
 import { PreferencesContext } from "@/features/settings/preferences-context";
 import { defaultTimePreferences, instantLabel, toInstant } from "@/lib/dates";
-import { Check, CircleAlert, Database, HardDrive, LoaderCircle, RefreshCw, Server, ShieldCheck, Zap } from "lucide-react";
+import { Check, CircleAlert, Database, HardDrive, LoaderCircle, RefreshCw, Server, ShieldCheck, Zap } from "@/components/icons";
 import { useContext, useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchReadiness, HealthRequestError, type Readiness } from "./api";
 
 const services = [
-  { key: "postgres", name: "PostgreSQL", description: "Основное хранилище данных", icon: Database },
-  { key: "redis", name: "Redis", description: "Быстрый доступ и координация", icon: Zap },
-  { key: "garage", name: "Garage", description: "Хранилище изображений S3", icon: HardDrive },
+  { key: "postgres", name: "PostgreSQL", get description() { return t("Основное хранилище данных"); }, icon: Database },
+  { key: "redis", name: "Redis", get description() { return t("Быстрый доступ и координация"); }, icon: Zap },
+  { key: "garage", name: "Garage", get description() { return t("Хранилище изображений S3"); }, icon: HardDrive },
 ] as const;
 
 type HealthState =
@@ -18,6 +19,7 @@ type HealthState =
   | { kind: "error"; message: string };
 
 export function HealthPage() {
+  useLanguage();
   const { settings } = useContext(PreferencesContext) ?? { settings: defaultTimePreferences() };
   const [state, setState] = useState<HealthState>({ kind: "loading" });
   const controller = useRef<AbortController | null>(null);
@@ -28,7 +30,7 @@ export function HealthPage() {
       })
       .catch((error: unknown) => {
         if (!request.signal.aborted) {
-          setState({ kind: "error", message: error instanceof HealthRequestError ? error.message : error instanceof Error && error.name === "TimeoutError" ? "Сервер не ответил вовремя. Повторите проверку." : "Сервер недоступен. Проверьте подключение и повторите попытку." });
+          setState({ kind: "error", message: error instanceof HealthRequestError ? error.message : error instanceof Error && error.name === "TimeoutError" ? t("Сервер не ответил вовремя. Повторите проверку.") : t("Сервер недоступен. Проверьте подключение и повторите попытку.") });
         }
       });
   }, []);
@@ -51,19 +53,19 @@ export function HealthPage() {
   const loading = state.kind === "loading";
   const ready = state.kind === "loaded" && state.readiness.status === "ready";
   const HeadingIcon = loading ? LoaderCircle : ready ? ShieldCheck : CircleAlert;
-  const heading = loading ? "Проверяем подключение" : ready ? "Всё готово к работе" : "Подключение требует внимания";
+  const heading = loading ? t("Проверяем подключение") : ready ? t("Всё готово к работе") : t("Подключение требует внимания");
 
   return (
     <main id="main" className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-10 sm:py-16">
       <div className="mb-10 flex flex-wrap items-end justify-between gap-5">
         <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Рабочее пространство</p>
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Начинается с основы.</h1>
-          <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">LifeCycle связывает ваши планы в единый ритм. Здесь можно проверить подключение приложения.</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{t("Рабочее пространство")}</p>
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("Начинается с основы.")}</h1>
+          <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">{t("LifeCycle связывает ваши планы в единый ритм. Здесь можно проверить подключение приложения.")}</p>
         </div>
         <Button variant="outline" onClick={() => void check()} disabled={loading}>
           <RefreshCw className={loading ? "animate-spin" : undefined} aria-hidden="true" />
-          {loading ? "Проверяем…" : "Проверить снова"}
+          {loading ? t("Проверяем…") : t("Проверить снова")}
         </Button>
       </div>
 
@@ -74,14 +76,14 @@ export function HealthPage() {
               <HeadingIcon className={loading ? "size-7 animate-spin" : "size-7"} aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1" aria-live="polite" aria-atomic="true">
-              <CardTitle id="connection-title" className="text-xl">{heading}</CardTitle>
+              <CardTitle id="connection-title" className="text-xl">{t(heading)}</CardTitle>
               <CardDescription className="mt-2">
-                {state.kind === "error" ? state.message : loading ? "Получаем актуальный ответ от сервера." : ready ? "Сервер и все хранилища отвечают на запросы." : "Сервер отвечает, но часть хранилищ сейчас недоступна."}
+                {state.kind === "error" ? state.message : loading ? t("Получаем актуальный ответ от сервера.") : ready ? t("Сервер и все хранилища отвечают на запросы.") : t("Сервер отвечает, но часть хранилищ сейчас недоступна.")}
               </CardDescription>
             </div>
             <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border px-3 py-1.5 text-xs font-medium">
               <span className={`size-1.5 rounded-full ${ready ? "bg-primary" : "bg-muted-foreground"}`} />
-              {loading ? "Проверка" : ready ? "Подключено" : "Недоступно"}
+              {loading ? t("Проверка") : ready ? t("Подключено") : t("Недоступно")}
             </span>
           </CardHeader>
           <CardContent className="grid gap-px bg-border p-0 md:grid-cols-3">
@@ -94,7 +96,7 @@ export function HealthPage() {
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
                   <div className={`mt-6 flex items-center gap-2 text-sm ${status === "ok" ? "text-primary" : "text-muted-foreground"}`}>
                     {status === "ok" ? <Check className="size-4" aria-hidden="true" /> : status === "unavailable" ? <CircleAlert className="size-4" aria-hidden="true" /> : <span className="size-1.5 rounded-full bg-muted-foreground" />}
-                    {status === "ok" ? "Доступно" : status === "unavailable" ? "Недоступно" : loading ? "Ожидание ответа" : "Не удалось проверить"}
+                    {status === "ok" ? t("Доступно") : status === "unavailable" ? t("Недоступно") : loading ? t("Ожидание ответа") : t("Не удалось проверить")}
                   </div>
                 </div>
               );
@@ -104,8 +106,8 @@ export function HealthPage() {
       </section>
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-xs leading-6 text-muted-foreground">
-        <span className="flex items-center gap-2"><Server className="size-4" aria-hidden="true" /> Данные получены с сервера LifeCycle</span>
-        {state.kind === "loaded" && <span>Проверено: <time dateTime={toInstant(state.checkedAt)}>{instantLabel(state.checkedAt, settings.timezone, settings.time_format, true)}</time></span>}
+        <span className="flex items-center gap-2"><Server className="size-4" aria-hidden="true" /> {t(" Данные получены с сервера LifeCycle")}</span>
+        {state.kind === "loaded" && <span>{t("Проверено: ")}<time dateTime={toInstant(state.checkedAt)}>{instantLabel(state.checkedAt, settings.timezone, settings.time_format, true)}</time></span>}
       </div>
     </main>
   );

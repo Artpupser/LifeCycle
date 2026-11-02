@@ -1,3 +1,4 @@
+import { t } from "@/systems/i18n/locale";
 import { dayDifference, isCalendarDate } from "./dates";
 export type FilterSpec={key:string;label:string;aliases?:string[];example:string;values?:string[];type?:"date";control?:boolean};
 export type FilterTerm={key:string;value:string;negative:boolean};
@@ -11,11 +12,11 @@ export function parseFilterQuery(source:string,specs:FilterSpec[]):FilterQuery {
     const match=token.match(/^(-?)([\p{L}_]+):(.*)$/u);
     if(!match||/^(https?|mailto):/i.test(token)){words.push(decode(token));continue;}
     const [,negative,key,raw]=match;const spec=specs.find(item=>[item.key,...item.aliases??[]].some(alias=>normalize(alias)===normalize(key)));
-    if(!spec){result.errors.push(`Неизвестный фильтр «${key}». Откройте подсказку рядом с поиском.`);continue;}
-    if(!raw||raw.startsWith('"')&&!raw.endsWith('"')){result.errors.push(`Укажите значение фильтра «${spec.label}».`);continue;}
-    const value=decode(raw);if((spec.type==="date"||spec.key==="from"||spec.key==="to")&&!isCalendarDate(value)){result.errors.push("Дата фильтра: ГГГГ-ММ-ДД.");continue;}if(!value.trim()){result.errors.push(`Пустое значение фильтра «${spec.label}».`);continue;}
+    if(!spec){result.errors.push(t("Неизвестный фильтр «{v0}». Откройте подсказку рядом с поиском.", {v0: key}));continue;}
+    if(!raw||raw.startsWith('"')&&!raw.endsWith('"')){result.errors.push(t("Укажите значение фильтра «{v0}».", {v0: spec.label}));continue;}
+    const value=decode(raw);if((spec.type==="date"||spec.key==="from"||spec.key==="to")&&!isCalendarDate(value)){result.errors.push(t("Дата фильтра: ГГГГ-ММ-ДД."));continue;}if(!value.trim()){result.errors.push(t("Пустое значение фильтра «{v0}».", {v0: spec.label}));continue;}
     if(spec.values&&!spec.values.some(item=>normalize(item)===normalize(value))){result.errors.push(`${spec.label}: ${spec.values.join(", ")}.`);continue;}
-    if(spec.control && (negative || result.terms.some(term=>term.key===spec.key))){result.errors.push(`Фильтр «${spec.label}» задаётся один раз, без исключения.`);continue;}
+    if(spec.control && (negative || result.terms.some(term=>term.key===spec.key))){result.errors.push(t("Фильтр «{v0}» задаётся один раз, без исключения.", {v0: spec.label}));continue;}
     result.terms.push({key:spec.key,value,negative:negative==="-"});
   }
   result.text=words.join(" ");return result;
@@ -35,20 +36,20 @@ export function matchesFilter(query:FilterQuery,text:string,fields:Record<string
   if(!normalize(text).includes(normalize(query.text)))return false;
   return query.terms.every(term=>term.negative?!matchValue(fields[term.key],term.key==="from"?`>=${term.value}`:term.key==="to"?`<=${term.value}`:term.value):matchValue(fields[term.key],term.key==="from"?`>=${term.value}`:term.key==="to"?`<=${term.value}`:term.value));
 }
-export const tagFilter:FilterSpec={key:"tag",aliases:["тег"],label:"Тег",example:'тег:"работа"'};
-export const aiFilter:FilterSpec={key:"ai",aliases:["доступ"],label:"AI доступ",example:"ai:да",values:["да","нет","yes","no","true","false","private","ai_shared"]};
+export const tagFilter:FilterSpec={key:"tag",aliases:["тег"],get label() { return t("Тег"); },example:'тег:"работа"'};
+export const aiFilter:FilterSpec={key:"ai",aliases:["доступ"],get label() { return t("AI доступ"); },example:"ai:да",values:["да","нет","yes","no","true","false","private","ai_shared"]};
 
 export const rangeFilters: FilterSpec[] = [
-  { key: "from", aliases: ["с"], label: "Период с", example: "с:2026-11-01", type: "date", control: true },
-  { key: "to", aliases: ["по"], label: "Период по", example: "по:2026-11-30", type: "date", control: true },
+  { key: "from", aliases: ["с"], get label() { return t("Период с"); }, example: "с:2026-11-01", type: "date", control: true },
+  { key: "to", aliases: ["по"], get label() { return t("Период по"); }, example: "по:2026-11-30", type: "date", control: true },
 ];
 /** Validate server-backed ranges before loading either rows or their statistics. */
 export function filterRange(query: FilterQuery, defaults: { from: string; to: string }) {
   const from = filterValue(query, "from") || defaults.from;
   const to = filterValue(query, "to") || defaults.to;
   const days = dayDifference(from, to);
-  const error = query.errors[0] ?? (query.text ? "Используйте фильтры из подсказки рядом с поиском." : days < 0 || days > 365 ? "Период: от 1 до 366 дат включительно." : null);
+  const error = query.errors[0] ?? (query.text ? t("Используйте фильтры из подсказки рядом с поиском.") : days < 0 || days > 365 ? "Период: от 1 до 366 дат включительно." : null);
   return { from, to, error };
 }
-export const categoryFilter: FilterSpec = { key: "category", aliases: ["категория"], label: "Категория", example: 'категория:"Личное"' };
+export const categoryFilter: FilterSpec = { key: "category", aliases: ["категория"], get label() { return t("Категория"); }, example: 'категория:"Личное"' };
 export function filterLiteral(value: string) { return JSON.stringify(value); }
