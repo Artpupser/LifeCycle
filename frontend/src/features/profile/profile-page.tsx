@@ -7,11 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { useResource } from "@/hooks/use-resource";
 import { api, errorMessage } from "@/lib/api";
+import { usePreferences } from "@/features/settings/preferences-context";
+import { localDate } from "@/lib/dates";
+import { FirstFields, HarmfulHabitsFields, OriginFields } from "./history-fields";
 import { useAuth } from "@/features/auth/auth-context";
 import { draftToProfile, profileToDraft, type MedicalKey, type NumericProfileKey, type Profile, type ProfileDraft } from "./types";
 
 function Section({ title, description, children }: { title: string; description: string; children: ReactNode }) {
-  return <Card><CardHeader><CardTitle>{title}</CardTitle><CardDescription>{description}</CardDescription></CardHeader><CardContent className="grid gap-5 sm:grid-cols-2">{children}</CardContent></Card>;
+  return <Card className="min-w-0"><CardHeader><CardTitle>{title}</CardTitle><CardDescription>{description}</CardDescription></CardHeader><CardContent className="grid min-w-0 grid-cols-1 gap-5 sm:grid-cols-2">{children}</CardContent></Card>;
 }
 
 function OptionalBoolean({ id, label, value, onChange }: { id: string; label: string; value: boolean | null; onChange: (value: boolean | null) => void }) {
@@ -20,6 +23,8 @@ function OptionalBoolean({ id, label, value, onChange }: { id: string; label: st
 
 function ProfileEditor({ initial }: { initial: Profile }) {
   const { user } = useAuth();
+  const { settings } = usePreferences();
+  const today = localDate(settings.timezone);
   const [saved, setSaved] = useState(() => profileToDraft(initial));
   const [draft, setDraft] = useState(() => profileToDraft(initial));
   const [pending, setPending] = useState(false);
@@ -55,13 +60,17 @@ function ProfileEditor({ initial }: { initial: Profile }) {
   const medicalFields: { key: MedicalKey; label: string }[] = [{ key: "conditions", label: "Заболевания" }, { key: "daily_medications", label: "Лекарства на ежедневной основе" }, { key: "past_medications", label: "Лекарства, которые принимали раньше" }, { key: "surgeries", label: "Перенесённые операции" }];
 
   return <form onSubmit={(event) => void submit(event)} className="space-y-6">
-    <fieldset disabled={pending} className="space-y-6">
+    <fieldset disabled={pending} className="min-w-0 space-y-6">
       <Section title="Основное" description="Все поля анкеты необязательны. Заполняйте только то, что хотите сохранить в своём профиле.">
         {textField("nickname", "Псевдоним", 80)}{textField("name", "Имя", 80)}
         <FormField id="profile-email" label="Электронная почта" hint="Адрес, который используется для входа."><Input id="profile-email" type="email" value={user?.email ?? ""} readOnly aria-describedby="profile-email-hint" /></FormField>
         <FormField id="gender" label="Пол"><Select id="gender" value={draft.gender} onChange={(event) => update("gender", event.target.value as Profile["gender"])}><option value="unspecified">Не указан</option><option value="female">Женский</option><option value="male">Мужской</option><option value="other">Другое</option></Select></FormField>
-        <FormField id="birth_date" label="Дата рождения"><Input id="birth_date" type="date" min="1900-01-01" max={new Date().toISOString().slice(0, 10)} value={draft.birth_date ?? ""} onChange={(event) => update("birth_date", event.target.value || null)} /></FormField>
-        {textField("birth_country", "Страна рождения")}{textField("residence_country", "Страна проживания")}
+        {textField("residence_country", "Страна проживания")}
+      </Section>
+      <Section title="Рождение и происхождение" description="Исторические сведения хранятся отдельно от текущего имени, пола и страны проживания. Их можно исправить или очистить явно.">
+        <FormField id="birth_date" label="Дата рождения"><Input id="birth_date" type="date" min="1900-01-01" max={today} value={draft.birth_date ?? ""} onChange={event => update("birth_date", event.target.value || null)} /></FormField>
+        {textField("birth_country", "Страна рождения")}
+        <OriginFields value={draft.origin} change={origin => update("origin", origin)} />
       </Section>
       <Section title="Физические данные" description="Личные параметры и особенности.">
         {numberField("height_cm", "Рост, см", 1, 300, "0.1")}{numberField("weight_kg", "Вес, кг", 1, 700, "0.1")}
@@ -73,7 +82,13 @@ function ProfileEditor({ initial }: { initial: Profile }) {
         <OptionalBoolean id="has_family" label="Есть семья" value={draft.has_family} onChange={(value) => update("has_family", value)} />
         <OptionalBoolean id="has_partner" label="Есть партнёр" value={draft.has_partner} onChange={(value) => update("has_partner", value)} />
       </Section>
-      <Section title="Здоровье" description="Одна запись на строку. Эти сведения сохраняются в личном профиле; доступ AI будет настраиваться отдельно.">
+      <Section title="Вредные привычки" description="Курение, алкоголь и другие привычки: Да / Нет / Не указано. Сохраняйте отдельные периоды и историю прекращения или возвращения.">
+        <HarmfulHabitsFields value={draft.harmful_habits} change={habits => update("harmful_habits", habits)} today={today} />
+      </Section>
+      <Section title="Первые события и достижения" description="Факты жизненной истории. Изменение текущей работы, имени или страны не перезаписывает эти записи. Любое поле можно очистить.">
+        <FirstFields value={draft.firsts} change={firsts => update("firsts", firsts)} year={Number(today.slice(0, 4))} />
+      </Section>
+      <Section title="Здоровье" description="Одна запись на строку. Сведения зашифрованы на сервере. Полная анкета, включая историю, доступна AI только при разрешении «Полная анкета профиля». Проверьте точный предпросмотр перед отправкой.">
         {medicalFields.map(({ key, label }) => <FormField key={key} id={key} label={label}><Textarea id={key} name={key} maxLength={50_099} value={draft[key]} onChange={(event) => update(key, event.target.value)} /></FormField>)}
       </Section>
       <Section title="Личные сведения" description="Необязательные сведения. Значения скрытых полей сохраняются при смене пола.">
@@ -84,7 +99,7 @@ function ProfileEditor({ initial }: { initial: Profile }) {
     <div className="sticky bottom-3 z-10 rounded-2xl border border-border bg-card/95 p-4 shadow-xl backdrop-blur-sm">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="text-sm" aria-live="polite">{error ? <span className="text-destructive" role="alert">{error}</span> : success ? <span className="text-primary">Профиль сохранён</span> : <span className="text-muted-foreground">{dirty ? "Есть несохранённые изменения" : "Все изменения сохранены"}</span>}</div>
-        <div className="flex gap-2"><Button variant="outline" disabled={pending || !dirty} onClick={() => { setDraft(saved); setError(null); setSuccess(false); }}>Отменить</Button><Button type="submit" disabled={pending || !dirty}>{pending ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <Save aria-hidden="true" />}{pending ? "Сохраняем…" : "Сохранить профиль"}</Button></div>
+        <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={pending || !dirty} onClick={() => { setDraft(saved); setError(null); setSuccess(false); }}>Отменить</Button><Button type="submit" disabled={pending || !dirty}>{pending ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <Save aria-hidden="true" />}{pending ? "Сохраняем…" : "Сохранить профиль"}</Button></div>
       </div>
     </div>
   </form>;

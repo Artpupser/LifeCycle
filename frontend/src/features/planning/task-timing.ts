@@ -58,7 +58,7 @@ export function isTaskOverdue(task: Task, now: number, timezone: string, occurre
   const end=taskDeadline(task,now,timezone);return end!==null && now>end;
 }
 export function taskGroup(task: Task, now: number, timezone: string, occurrence?: {status:string}) {
-  return isTaskOverdue(task,now,timezone,occurrence)?0:["completed","rejected"].includes(taskResult(task,occurrence))?1:2;
+  return isTaskOverdue(task,now,timezone,occurrence)?0:["completed","rejected"].includes(taskResult(task,occurrence))?2:1;
 }
 export function sortedTasks(tasks: Task[], now: number, timezone: string, occurrences: {task:{id:string};status:string}[] =[]) {
   return tasks.map((task,index)=>({task,index,group:taskGroup(task,now,timezone,occurrences.find((item)=>item.task.id===task.id))})).sort((a,b)=>a.group-b.group || a.index-b.index).map(({task})=>task);

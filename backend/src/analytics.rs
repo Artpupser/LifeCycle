@@ -270,6 +270,24 @@ async fn build_report(
     let now = Utc::now();
     let mut guard = s.database.begin().await?;
     tasks::lock_tasks(&mut guard, user).await?;
+    crate::pomodoro_programs::lock(&mut guard, user).await?;
+    let timer = crate::pomodoro_programs::sync(&mut guard, user).await?;
+    if timer
+        .as_ref()
+        .and_then(|t| t.program.as_ref())
+        .is_some_and(|p| p.history_pending > 0)
+    {
+        guard.commit().await?;
+        return Err(ApiError::new(
+            axum::http::StatusCode::CONFLICT,
+            "pomodoro_history_pending",
+            "Timer history is synchronizing; retry the report",
+        ));
+    }
+    // Publish timer history before the report's existing pooled reads.
+    guard.commit().await?;
+    let mut guard = s.database.begin().await?;
+    tasks::lock_tasks(&mut guard, user).await?;
     let ai_mode = allowed.is_some();
     let allowed = match allowed {
         Some(value) => value,

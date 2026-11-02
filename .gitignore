@@ -403,3 +403,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Application source helpers are not Python build outputs.
+!frontend/src/lib/
+!frontend/src/lib/*.ts

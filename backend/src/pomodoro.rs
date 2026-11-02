@@ -15,17 +15,23 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 #[derive(Serialize, sqlx::FromRow)]
-struct Session {
-    id: Uuid,
-    task_id: Option<Uuid>,
-    phase: String,
-    status: String,
-    duration_seconds: i64,
-    elapsed_seconds: i64,
-    started_at: DateTime<Utc>,
-    segment_started_at: Option<DateTime<Utc>>,
-    ended_at: Option<DateTime<Utc>>,
-    updated_at: DateTime<Utc>,
+pub(crate) struct Session {
+    pub(crate) id: Uuid,
+    pub(crate) task_id: Option<Uuid>,
+    pub(crate) phase: String,
+    pub(crate) status: String,
+    pub(crate) duration_seconds: i64,
+    pub(crate) elapsed_seconds: i64,
+    pub(crate) started_at: DateTime<Utc>,
+    pub(crate) segment_started_at: Option<DateTime<Utc>>,
+    pub(crate) ended_at: Option<DateTime<Utc>>,
+    pub(crate) updated_at: DateTime<Utc>,
+    pub(crate) run_id: Option<Uuid>,
+    pub(crate) interval_index: Option<i64>,
+    pub(crate) interval_kind: Option<String>,
+    pub(crate) program_name: Option<String>,
+    #[sqlx(skip)]
+    pub(crate) program: Option<crate::pomodoro_programs::ProgramState>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -34,7 +40,7 @@ struct Start {
     phase: String,
 }
 impl Session {
-    fn elapsed_at(&self, now: DateTime<Utc>) -> i64 {
+    pub(crate) fn elapsed_at(&self, now: DateTime<Utc>) -> i64 {
         let running = self
             .segment_started_at
             .map_or(0, |start| (now - start).num_seconds().max(0));
@@ -54,7 +60,15 @@ async fn active(
     State(s): State<AppState>,
     u: CurrentUser,
 ) -> Result<Json<Option<Session>>, ApiError> {
-    let row=sqlx::query_as::<_,Session>("SELECT * FROM app.pomodoro_sessions WHERE user_id=$1 AND status IN ('running','paused') LIMIT 1").bind(u.id).fetch_optional(&s.database).await?;
+    let mut tx = s.database.begin().await?;
+    tasks::lock_tasks(&mut tx, u.id).await?;
+    crate::pomodoro_programs::lock(&mut tx, u.id).await?;
+    if let Some(row) = crate::pomodoro_programs::sync(&mut tx, u.id).await? {
+        tx.commit().await?;
+        return Ok(Json(Some(row.for_display())));
+    }
+    let row=sqlx::query_as::<_,Session>("SELECT * FROM app.pomodoro_sessions WHERE user_id=$1 AND status IN ('running','paused') LIMIT 1").bind(u.id).fetch_optional(&mut *tx).await?;
+    tx.commit().await?;
     Ok(Json(row.map(Session::for_display)))
 }
 async fn start(
@@ -77,10 +91,8 @@ async fn start(
     if let Some(task) = v.task_id {
         tasks::get_active(&s, u.id, task).await?;
     }
-    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1,17))")
-        .bind(u.id.to_string())
-        .execute(&mut *tx)
-        .await?;
+    crate::pomodoro_programs::lock(&mut tx, u.id).await?;
+    crate::pomodoro_programs::sync(&mut tx, u.id).await?;
     if sqlx::query_scalar::<_, Uuid>(
         "SELECT id FROM app.pomodoro_sessions WHERE user_id=$1 AND status IN ('running','paused')",
     )
@@ -111,11 +123,30 @@ async fn change(
     State(s): State<AppState>,
     u: CurrentUser,
     Path((id, action)): Path<(Uuid, String)>,
+    body: axum::body::Bytes,
 ) -> Result<Json<Session>, ApiError> {
-    if !["pause", "resume", "finish", "cancel"].contains(&action.as_str()) {
+    if !["pause", "resume", "finish", "cancel", "reset"].contains(&action.as_str()) {
         return Err(domain::not_found());
     }
+    let input = if body.is_empty() {
+        Default::default()
+    } else {
+        serde_json::from_slice(&body).map_err(|_| ApiError::validation("Invalid timer action"))?
+    };
+    let run: Option<Option<Uuid>> =
+        sqlx::query_scalar("SELECT run_id FROM app.pomodoro_sessions WHERE id=$1 AND user_id=$2")
+            .bind(id)
+            .bind(u.id)
+            .fetch_optional(&s.database)
+            .await?;
+    if run.flatten().is_some() {
+        return Ok(Json(
+            crate::pomodoro_programs::change(&s, u.id, id, &action, input).await?,
+        ));
+    }
     let mut tx = s.database.begin().await?;
+    tasks::lock_tasks(&mut tx, u.id).await?;
+    crate::pomodoro_programs::lock(&mut tx, u.id).await?;
     let mut row = sqlx::query_as::<_, Session>(
         "SELECT * FROM app.pomodoro_sessions WHERE id=$1 AND user_id=$2 FOR UPDATE",
     )
@@ -183,6 +214,11 @@ mod tests {
             segment_started_at: Some(now - chrono::Duration::seconds(20)),
             ended_at: None,
             updated_at: now,
+            run_id: None,
+            interval_index: None,
+            interval_kind: None,
+            program_name: None,
+            program: None,
         };
         assert_eq!(row.elapsed_at(now), 30);
         row.segment_started_at = None;

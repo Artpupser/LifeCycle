@@ -70,6 +70,7 @@ pub fn routes() -> Router<AppState> {
             get(folder).put(update_folder).delete(delete_folder),
         )
         .route("/api/notes", get(notes).post(create_note))
+        .route("/api/notes/bulk", axum::routing::post(bulk))
         .route(
             "/api/notes/{id}",
             get(note).put(update_note).delete(delete_note),
@@ -314,4 +315,133 @@ pub(crate) async fn delete_note_in(
     }
     domain::event(tx, user, "note_deleted", "note", id, serde_json::json!({})).await?;
     Ok(())
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BulkItem {
+    id: Uuid,
+    updated_at: DateTime<Utc>,
+}
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum BulkAction {
+    Move,
+    TagsAdd,
+    TagsRemove,
+    Color,
+    Delete,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BulkNotes {
+    items: Vec<BulkItem>,
+    action: BulkAction,
+    folder_id: Option<Uuid>,
+    #[serde(default)]
+    tags: Vec<String>,
+    color: Option<String>,
+    #[serde(default)]
+    confirmed: bool,
+}
+async fn bulk(
+    State(s): State<AppState>,
+    u: CurrentUser,
+    ApiJson(value): ApiJson<BulkNotes>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let unique: std::collections::BTreeSet<_> = value.items.iter().map(|item| item.id).collect();
+    if value.items.is_empty() || value.items.len() > 200 || unique.len() != value.items.len() {
+        return Err(ApiError::validation("Select 1 to 200 distinct notes"));
+    }
+    domain::tags(&value.tags)?;
+    if matches!(value.action, BulkAction::Color) {
+        domain::color(
+            value
+                .color
+                .as_deref()
+                .ok_or_else(|| ApiError::validation("Choose a color"))?,
+        )?;
+    }
+    if matches!(value.action, BulkAction::Delete) && !value.confirmed {
+        return Err(ApiError::validation("Confirm deletion"));
+    }
+    let mut tx = s.database.begin().await?;
+    tasks::lock_tasks(&mut tx, u.id).await?;
+    let ids: Vec<_> = unique.into_iter().collect();
+    let rows = sqlx::query_as::<_, Note>(
+        "SELECT * FROM app.notes WHERE user_id=$1 AND id=ANY($2) ORDER BY id FOR UPDATE",
+    )
+    .bind(u.id)
+    .bind(&ids)
+    .fetch_all(&mut *tx)
+    .await?;
+    if rows.len() != ids.len() {
+        return Err(domain::not_found());
+    }
+    for row in &rows {
+        if value
+            .items
+            .iter()
+            .find(|item| item.id == row.id)
+            .is_none_or(|item| item.updated_at != row.updated_at)
+        {
+            return Err(domain::conflict(
+                "A selected note changed; refresh the selection",
+            ));
+        }
+    }
+    // Validate all derived tag sets and the target folder before the first mutation.
+    if matches!(value.action, BulkAction::Move)
+        && let Some(folder) = value.folder_id
+        && !sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS(SELECT 1 FROM app.note_folders WHERE user_id=$1 AND id=$2)",
+        )
+        .bind(u.id)
+        .bind(folder)
+        .fetch_one(&mut *tx)
+        .await?
+    {
+        return Err(domain::not_found());
+    }
+    let mut changes = vec![];
+    for row in rows {
+        let mut tags = row.tags.0;
+        if matches!(value.action, BulkAction::TagsAdd) {
+            for tag in &value.tags {
+                if !tags.contains(tag) {
+                    tags.push(tag.clone());
+                }
+            }
+        }
+        if matches!(value.action, BulkAction::TagsRemove) {
+            tags.retain(|tag| !value.tags.contains(tag));
+        }
+        domain::tags(&tags)?;
+        let input = NoteInput {
+            title: row.title,
+            content: row.content,
+            tags,
+            color: if matches!(value.action, BulkAction::Color) {
+                value.color.clone().unwrap_or(row.color)
+            } else {
+                row.color
+            },
+            folder_id: if matches!(value.action, BulkAction::Move) {
+                value.folder_id
+            } else {
+                row.folder_id
+            },
+        };
+        changes.push((row.id, input));
+    }
+    let affected = changes.len();
+    for (id, input) in changes {
+        if matches!(value.action, BulkAction::Delete) {
+            delete_note_in(&mut tx, u.id, id).await?;
+        } else {
+            save_note_in(&mut tx, u.id, id, input, false).await?;
+        }
+    }
+    tx.commit().await?;
+    Ok(Json(serde_json::json!({"affected":affected})))
 }

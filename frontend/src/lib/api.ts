@@ -13,6 +13,9 @@ export class ApiError extends Error {
 }
 
 export function apiErrorMessage(status: number, code: string) {
+  if (code === "pomodoro_history_pending") return "Восстанавливается история Pomodoro после длительного отсутствия. Повторите запрос через несколько секунд.";
+  if (code === "profile_stale") return "Профиль изменился в другом окне. Проверьте актуальные данные перед повторным сохранением.";
+  if (["event_stale", "pomodoro_config_stale"].includes(code)) return "Запись изменилась в другом окне. Обновите данные перед повторным сохранением.";
   if (["board_stale", "tag_stale", "task_stale"].includes(code)) return "Данные изменились в другом окне. Обновите список и повторите действие.";
   if (code === "workout_preferences_stale") return "Цели и условия изменились в другом окне. Ваш текст остался в форме; загрузите сохранённые данные перед повторным сохранением.";
   if (code === "ai_access_stale") return "Доступ уже изменён в другом окне. Обновите страницу и повторите выбор.";

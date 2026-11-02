@@ -109,27 +109,7 @@ impl Schedule {
         let Some(time) = self.time else {
             return Ok(None);
         };
-        let zone = self
-            .timezone
-            .parse::<Tz>()
-            .map_err(|_| ApiError::validation("Invalid timezone"))?;
-        let requested = date.and_time(time);
-        for shift in 0..=1560 {
-            let candidate = requested
-                .checked_add_signed(Duration::minutes(shift))
-                .ok_or_else(|| ApiError::validation("Schedule date is out of range"))?;
-            let local = match zone.from_local_datetime(&candidate) {
-                LocalResult::Single(value) => value,
-                LocalResult::Ambiguous(first, second) => first.min(second),
-                LocalResult::None => continue,
-            };
-            return Ok(Some(local.with_timezone(&Utc)));
-        }
-        Err(ApiError::new(
-            StatusCode::BAD_REQUEST,
-            "invalid_schedule",
-            "Local time cannot be resolved in the selected timezone",
-        ))
+        Ok(Some(resolve_local_start(date, time, &self.timezone)?))
     }
 
     pub fn occurrences(
@@ -149,6 +129,34 @@ impl Schedule {
             .filter(|date| self.occurs_on(*date))
             .collect())
     }
+}
+
+// Tasks keep minute precision; event clocks can use seconds with the same DST policy.
+pub(crate) fn resolve_local_start(
+    date: NaiveDate,
+    time: NaiveTime,
+    timezone: &str,
+) -> Result<DateTime<Utc>, ApiError> {
+    let zone = timezone
+        .parse::<Tz>()
+        .map_err(|_| ApiError::validation("Invalid timezone"))?;
+    let requested = date.and_time(time);
+    for shift in 0..=1560 {
+        let candidate = requested
+            .checked_add_signed(Duration::minutes(shift))
+            .ok_or_else(|| ApiError::validation("Schedule date is out of range"))?;
+        let local = match zone.from_local_datetime(&candidate) {
+            LocalResult::Single(value) => value,
+            LocalResult::Ambiguous(first, second) => first.min(second),
+            LocalResult::None => continue,
+        };
+        return Ok(local.with_timezone(&Utc));
+    }
+    Err(ApiError::new(
+        StatusCode::BAD_REQUEST,
+        "invalid_schedule",
+        "Local time cannot be resolved in the selected timezone",
+    ))
 }
 
 mod optional_time {

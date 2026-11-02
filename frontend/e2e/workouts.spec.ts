@@ -1,3 +1,4 @@
+import { confirmUi } from "./upgrade-helpers";
 import { expect, test, type Page, type APIRequestContext } from "@playwright/test";
 
 async function login(page: Page, request: APIRequestContext) {
@@ -119,8 +120,7 @@ test("timed workout checks actual expiry, round rests and cancellation after rel
   await expect(page.getByRole("button", { name: "Завершить отдых", exact: true })).toBeEnabled({ timeout: 5000 });
   await page.getByRole("button", { name: "Завершить отдых", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Планка браузера", exact: true })).toBeVisible();
-  page.once("dialog", (dialog) => void dialog.accept());
-  await page.getByRole("button", { name: "Остановить тренировку", exact: true }).click();
+  await confirmUi(page, async()=>{await page.getByRole("button", { name: "Остановить тренировку", exact: true }).click();}, true);
   await expect(page.getByRole("heading", { name: "Остановлено", exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { name: "1. Планка браузера", exact: true })).toBeVisible();

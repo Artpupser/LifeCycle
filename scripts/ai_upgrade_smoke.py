@@ -159,9 +159,11 @@ def training(owner, other):
     # Original create can no longer be undone after subsequent edits, even when content matches.
     cmd(proposal, 'undo', expected=409)
     owner.request('PUT', '/api/profile', {'conditions': ['Synthetic restriction requiring manual review']})
+    config = owner.request('GET', '/api/ai/settings')[0]
     current = owner.request('GET', '/api/workouts/' + wid)[0]
     prepare([action('workout', wid, {'title': 'Unsafe automatic change'}, current['updated_at'])], expected=409)
     owner.request('PUT', '/api/profile', {'conditions': []})
+    config = owner.request('GET', '/api/ai/settings')[0]
     fresh_id = str(uuid4())
     fresh = prepare([action('exercise', fresh_id, exercise('Undo after revoke ' + fresh_id))])
     cmd(fresh, 'apply')

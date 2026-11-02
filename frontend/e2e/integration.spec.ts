@@ -34,10 +34,10 @@ test("open tabs refresh saved notes and clear private data on logout and account
   const other = await context.newPage();
   await other.goto("/notes");
   await other.bringToFront();
-  await other.getByRole("button", { name: "Редактировать", exact: true }).click();
+  await other.getByRole("button", { name: "Первая версия", exact: true }).click();
   await other.getByLabel("Название заметки", { exact: true }).fill("Согласованная версия");
   await other.getByRole("button", { name: "Сохранить заметку", exact: true }).click();
-  await expect(other.getByRole("dialog")).toHaveCount(0);
+  await expect(other.getByRole("region", { name: "Редактор заметки", exact: true }).getByText("Сохранено", { exact: true })).toBeVisible();
   await page.bringToFront();
   await page.evaluate("window.dispatchEvent(new Event('focus'))");
   await expect(page.getByRole("button", { name: "Согласованная версия", exact: true })).toBeVisible();

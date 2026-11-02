@@ -30,11 +30,11 @@ it("keeps deadline-only legacy tasks editable through their end fields",()=>{
   expect(projected).toMatchObject({startDate:"",endDate:"2026-11-01",endTime:"15:00"});
   expect(buildPlanning(projected,"Europe/Moscow")).toEqual(plan);
 });
-it("groups overdue, completed/cancelled and active independently of priority",()=>{
+it("groups overdue, active and completed/cancelled independently of priority",()=>{
   const now=Date.parse("2026-11-01T12:00Z");
   const task=(id:string,status:string,due_at:string|null,priority="normal")=>({id,status,due_at,priority,schedule:null} as Task);
   const tasks=[task("active","todo",null,"urgent"),task("done","completed","2020-01-01Z"),task("late","todo","2026-11-01T10:00Z","low"),task("cancelled","rejected","2020-01-01Z"),task("active2","todo",null)];
-  expect(sortedTasks(tasks,now,"UTC").map(t=>t.id)).toEqual(["late","done","cancelled","active","active2"]);
+  expect(sortedTasks(tasks,now,"UTC").map(t=>t.id)).toEqual(["late","active","active2","done","cancelled"]);
   expect(isTaskOverdue(tasks[3],now,"UTC")).toBe(false);
 });
 it("snaps absolute Gantt times to quarters, retaining the other edge on resize",()=>{

@@ -134,6 +134,7 @@ struct PreviewInput {
     to: NaiveDate,
     message: String,
     search: Option<String>,
+    scenario: Option<String>,
 }
 #[derive(Serialize)]
 struct Preview {
@@ -508,6 +509,11 @@ async fn preview(
     ApiJson(v): ApiJson<PreviewInput>,
 ) -> Result<Json<Preview>, ApiError> {
     domain::text(&v.message, 1, 8000)?;
+    let greeting = match v.scenario.as_deref() {
+        None | Some("assistant") => false,
+        Some("greeting") => true,
+        _ => return Err(ApiError::validation("Unsupported AI scenario")),
+    };
     ai_context::validate_range(v.from, v.to)?;
     if let Some(search) = &v.search {
         domain::text(search, 0, 200)?;
@@ -528,16 +534,20 @@ async fn preview(
     if messages.iter().any(|m| m.status == "pending") {
         return Err(domain::conflict("Wait for or cancel the pending request"));
     }
-    let mut context = ai_context::build(
-        &s,
-        u.id,
-        &c.permissions.0,
-        v.from,
-        v.to,
-        v.search.as_deref(),
-    )
-    .await?;
-    if c.permissions.changes {
+    let mut context = if greeting {
+        json!({"scenario":"greeting","selection":"Use only the information manually entered in this message. No application records, contacts, profile, notes, history or tools. Produce a greeting for the owner to review; do not send it to anyone."})
+    } else {
+        ai_context::build(
+            &s,
+            u.id,
+            &c.permissions.0,
+            v.from,
+            v.to,
+            v.search.as_deref(),
+        )
+        .await?
+    };
+    if !greeting && c.permissions.changes {
         let mut entities = Vec::new();
         if c.permissions.training() {
             entities.extend(["exercise", "workout"]);
@@ -552,7 +562,11 @@ async fn preview(
             context["action_protocol"] = json!({"version":1,"entities":entities,"max_actions":20,"confirmation_required":true,"read":"Only records included in this exact preview. IDs and updated_at identify source facts; missing/truncated data must not be guessed.","writes":"Deferred proposals via /api/ai/actions; create or patch only. No deletes, permission changes, provider access or contacts."});
         }
     }
-    let history = allowed_history(&messages, c.revision);
+    let history = if greeting {
+        vec![]
+    } else {
+        allowed_history(&messages, c.revision)
+    };
     let history_turns = history.len() / 2;
     let request = ai_provider::payload(
         &c.provider,

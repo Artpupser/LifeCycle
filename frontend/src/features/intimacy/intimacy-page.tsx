@@ -1,3 +1,4 @@
+import { confirmAction } from "@/lib/feedback";
 import { EyeOff, Heart, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Dialog } from "@/components/dialog";
@@ -40,7 +41,7 @@ function VisibleJournal({ hide }: { hide: () => void }) {
   const journal = useResource<Journal>(`/sex?${params}`);
   const changeFilter = (fields: Partial<typeof filter>) => { setFilter({ ...filter, ...fields, offset:0 }); setSelected(null); };
   async function remove(entry: Entry) {
-    if (!window.confirm("Безвозвратно удалить это интимное событие? Оно исчезнет из журнала и статистики.")) return;
+    if (!await confirmAction("Безвозвратно удалить это интимное событие? Оно исчезнет из журнала и статистики.")) return;
     setPending(true); setError(null);
     try { await api(`/sex/${entry.id}?revision=${entry.revision}`, { method:"DELETE" }); setSelected(null); setFilter((current) => ({ ...current, offset:0 })); journal.retry(); }
     catch (failure) { setError(errorMessage(failure)); if (failure instanceof ApiError && failure.code === "stale_intimacy") { setSelected(null); journal.retry(); } }

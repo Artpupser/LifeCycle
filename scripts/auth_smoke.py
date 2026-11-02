@@ -194,7 +194,8 @@ def run(args):
     }
     first.request("PUT", "/api/profile", profile)
     saved, _ = first.request("GET", "/api/profile")
-    require(saved == profile, "Complete profile did not persist unchanged")
+    require({key: saved[key] for key in profile} == profile, "Complete legacy profile did not persist unchanged")
+    profile = saved
 
     settings = {
         "timezone": "Europe/Moscow",
@@ -234,6 +235,7 @@ def run(args):
     other_profile = copy.deepcopy(profile)
     other_profile["nickname"] = "smoke-other-profile"
     other_profile["name"] = "Other Account"
+    other_profile["revision"] = second_profile["revision"]
     second.request("PUT", "/api/profile", other_profile)
     second_settings = dict(settings, theme="light", timezone="UTC")
     second.request("PUT", "/api/settings", second_settings)

@@ -1,3 +1,4 @@
+import { confirmUi } from "./upgrade-helpers";
 import { expect, test, type Page } from "@playwright/test";
 import { login } from "./upgrade-helpers";
 
@@ -63,8 +64,7 @@ test("unified tasks use colored tags, completion and horizontally scrolling boar
   await column.getByLabel("Настройки колонки Проверка", { exact: true }).click();
   await column.getByRole("button", { name: "Настроить колонку", exact: true }).click();
   await page.getByLabel("Куда перенести задачи при удалении", { exact: true }).selectOption({ label: "В работе" });
-  page.once("dialog", (dialog) => void dialog.accept());
-  await page.getByRole("button", { name: "Удалить колонку", exact: true }).click();
+  await confirmUi(page, async()=>{await page.getByRole("button", { name: "Удалить колонку", exact: true }).click();}, true);
   await expect(column).toHaveCount(0); await expect(working.locator("article")).toHaveCount(2);
   await boardMenu(page); await page.getByRole("button", { name: "Переименовать доску", exact: true }).click();
   await page.getByLabel("Название доски", { exact: true }).fill("Личный проект");
@@ -92,8 +92,7 @@ test("unified tasks use colored tags, completion and horizontally scrolling boar
   await working.getByRole("button", { name: "Первая задача", exact: true }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath("boards-mobile.png"), fullPage: true });
   expect(await page.locator("html").evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(390);
-  await boardMenu(page); page.once("dialog", (dialog) => void dialog.accept());
-  await page.getByRole("button", { name: "Удалить доску", exact: true }).click();
+  await boardMenu(page); await confirmUi(page, async()=>{await page.getByRole("button", { name: "Удалить доску", exact: true }).click();}, true);
   await expect(page.getByRole("button", { name: "Первая задача", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Gantt", exact: true })).toHaveCount(0);
   expect(failures).toEqual([]);
@@ -229,21 +228,21 @@ test("quick creation, personalized drag columns, priority grouping, cancellation
   await page.getByRole("button",{name:/Все задачи/}).click();await page.reload();
   const articles=page.locator("main article");
   await expect(articles).toHaveCount(4);
-  const ranks=await articles.evaluateAll(items=>items.map(item=>({overdue:0,finished:1,active:2})[item.getAttribute("data-task-result") as "active"]));
+  const ranks=await articles.evaluateAll(items=>items.map(item=>({overdue:0,finished:2,active:1})[item.getAttribute("data-task-result") as "active"]));
   expect(ranks).toEqual([...ranks].sort());
   await expect(page.locator('article[data-task-result="overdue"]').filter({hasText:"Просроченная"})).toContainText("Просрочена");
   await page.screenshot({path:testInfo.outputPath("task-groups.png"),fullPage:true});
   const habitBody={title:"Ошибочная привычка",schedule:{start_date:today,time:null,timezone:"UTC",duration_minutes:15,recurrence:"daily",end_date:null},habit:{icon:"🌱",sub_habits:[],reminder_enabled:false,reminder_minutes_before:null}};
   const habit=await (await page.request.post("/api/habits",{headers,data:habitBody})).json() as {id:string};
   await page.goto("/habits");const habitCard=page.locator("article").filter({has:page.getByRole("heading",{name:"🌱 Ошибочная привычка",exact:true})});
-  page.once("dialog",dialog=>void dialog.accept());await habitCard.getByRole("button",{name:"Удалить привычку",exact:true}).click();
+  await confirmUi(page, async()=>{await habitCard.getByRole("button",{name:"Удалить привычку",exact:true}).click();}, true);
   await expect(page.getByRole("region",{name:"Статистика привычек",exact:true}).locator("article")).toHaveCount(0);
   const savedHabit=await (await page.request.post("/api/habits",{headers,data:{...habitBody,title:"Сохранённая история"}})).json() as {id:string};
   expect((await page.request.post(`/api/habits/${savedHabit.id}/marks/${today}`,{headers,data:{status:"completed"}})).ok()).toBe(true);
   expect((await page.request.delete(`/api/habits/${savedHabit.id}`,{headers})).ok()).toBe(true);
   await page.reload();const stat=page.getByRole("region",{name:"Статистика привычек",exact:true}).locator("article").filter({hasText:"Сохранённая история"});
-  await expect(stat).toBeVisible();page.once("dialog",dialog=>void dialog.dismiss());await stat.getByRole("button",{name:"Удалить аналитику",exact:true}).click();await expect(stat).toBeVisible();
-  page.once("dialog",dialog=>void dialog.accept());await stat.getByRole("button",{name:"Удалить аналитику",exact:true}).click();await expect(stat).toHaveCount(0);
+  await expect(stat).toBeVisible();await confirmUi(page, async()=>{await stat.getByRole("button",{name:"Удалить аналитику",exact:true}).click();}, false);await expect(stat).toBeVisible();
+  await confirmUi(page, async()=>{await stat.getByRole("button",{name:"Удалить аналитику",exact:true}).click();}, true);await expect(stat).toHaveCount(0);
   expect((await page.request.get(`/api/habits/${habit.id}/history`)).status()).toBe(404);
   expect(failures).toEqual([]);
 });

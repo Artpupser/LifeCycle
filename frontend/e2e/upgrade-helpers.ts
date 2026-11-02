@@ -19,3 +19,11 @@ export async function login(page: Page, request: APIRequestContext) {
   await page.getByRole("button", { name: "Продолжить", exact: true }).click();
   await expect(page.getByRole("button", { name: "Выйти", exact: true })).toBeVisible();
 }
+
+export async function confirmUi(page:Page,trigger:()=>Promise<unknown>,approve=true){
+  await trigger();const dialog=page.getByRole("alertdialog");await expect(dialog).toBeVisible();
+  if(approve)await dialog.getByRole("button").last().click();else await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+}
+export async function quickNote(page:Page,title:string){await page.getByRole("button",{name:"Новая заметка",exact:true}).click();await page.getByLabel("Название новой заметки",{exact:true}).fill(title);await page.getByLabel("Название новой заметки",{exact:true}).press("Enter");await expect(page.getByRole("button",{name:title,exact:true})).toBeVisible();}
+export async function noteProperties(page:Page,title:string){await page.getByRole("button",{name:title,exact:true}).click();await page.getByRole("tab",{name:"Характеристики",exact:true}).click();}

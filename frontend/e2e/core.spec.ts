@@ -1,3 +1,4 @@
+import { confirmUi, quickNote } from "./upgrade-helpers";
 import { expect, test, type Page, type APIRequestContext } from "@playwright/test";
 
 async function login(page: Page, request: APIRequestContext) {
@@ -20,58 +21,33 @@ async function login(page: Page, request: APIRequestContext) {
   await expect(page.getByRole("button", { name: "Выйти", exact: true })).toBeVisible();
 }
 
-test("notes persist Markdown and private uploaded images across editing and folder removal", async ({ page, request }) => {
-  const failures: string[] = [];
-  page.on("pageerror", (error) => failures.push(error.message));
-  await login(page, request);
-  await page.getByRole("link", { name: "Заметки", exact: true }).click();
-  await page.getByRole("button", { name: "Новая папка", exact: true }).click();
-  await page.getByLabel("Название папки", { exact: true }).fill("Идеи браузера");
-  await page.getByRole("button", { name: "Сохранить папку", exact: true }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.getByLabel("Папка заметок", { exact: true }).selectOption({ label: "Идеи браузера" });
-  await page.getByRole("button", { name: "Новая заметка", exact: true }).click();
-  await page.getByLabel("Название заметки", { exact: true }).fill("Заметка из браузера");
-  await page.getByLabel("Теги заметки", { exact: true }).fill("browser, markdown");
-  await page.getByLabel("Содержание", { exact: true }).fill("# Проверка Markdown\n\n**Сохранённый текст**\n\n<script>window.markdownInjected = true</script>\n\n[Опасная ссылка](javascript:alert(1))\n\n![Внешняя картинка](https://example.org/tracking.png)");
-  await page.getByLabel("Загрузить изображение", { exact: true }).setInputFiles({ name: "private.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNQMHAAAAEEAJGibWOuAAAAAElFTkSuQmCC", "base64") });
-  await expect(page.getByLabel("Содержание", { exact: true })).toHaveValue(/!\[private.png\]\(\/api\/media\/[a-f0-9-]+\)/);
-  await page.getByRole("button", { name: "Просмотр", exact: true }).click();
-  await expect(page.getByRole("dialog").getByRole("heading", { name: "Проверка Markdown", exact: true })).toBeVisible();
-  await expect(page.getByRole("dialog").locator("script")).toHaveCount(0);
-  await expect(page.getByRole("dialog").getByRole("link", { name: "Опасная ссылка" })).toHaveCount(0);
-  await expect(page.locator('img[src^="https://example.org"]')).toHaveCount(0);
-  await page.getByRole("button", { name: "Сохранить заметку", exact: true }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  const note = page.locator("article").filter({ has: page.getByRole("button", { name: "Заметка из браузера", exact: true }) });
-  await note.getByRole("button", { name: "Заметка из браузера", exact: true }).click();
-  const image = page.getByRole("dialog").getByRole("img", { name: "private.png", exact: true });
-  await expect(image).toBeVisible();
-  await expect.poll(() => image.evaluate((element) => (element as { naturalWidth: number }).naturalWidth)).toBe(1);
-  await page.getByRole("dialog").getByRole("button", { name: "Закрыть окно", exact: true }).click();
-  await page.reload();
-  await page.getByLabel("Поиск заметок", { exact: true }).fill("Заметка из браузера");
-  await expect(note).toBeVisible();
-  await note.getByRole("button", { name: "Редактировать", exact: true }).click();
-  await expect(page.getByLabel("Содержание", { exact: true })).toHaveValue(/Сохранённый текст/);
-  await page.getByLabel("Название заметки", { exact: true }).fill("Изменённая заметка");
-  await page.getByRole("button", { name: "Сохранить заметку", exact: true }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.getByLabel("Поиск заметок", { exact: true }).fill("Изменённая заметка");
-  await expect(page.getByRole("button", { name: "Изменённая заметка", exact: true })).toBeVisible();
-  await page.getByLabel("Папка заметок", { exact: true }).selectOption({ label: "Идеи браузера" });
-  page.once("dialog", (dialog) => void dialog.accept());
-  await page.getByRole("button", { name: "Удалить папку", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Изменённая заметка", exact: true })).toBeVisible();
-  page.once("dialog", (dialog) => void dialog.dismiss());
-  await page.locator("article").getByRole("button", { name: "Удалить", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Изменённая заметка", exact: true })).toBeVisible();
-  page.once("dialog", (dialog) => void dialog.accept());
-  await page.locator("article").getByRole("button", { name: "Удалить", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Изменённая заметка", exact: true })).toHaveCount(0);
-  await page.reload();
-  await expect(page.getByRole("button", { name: "Изменённая заметка", exact: true })).toHaveCount(0);
-  expect(failures).toEqual([]);
+test("notes persist Markdown and private uploaded images across editing and folder removal", async ({page,request})=>{
+  const failures:string[]=[];page.on("pageerror",error=>failures.push(error.message));
+  await login(page,request);await page.goto("/notes");
+  await page.getByText("Папки",{exact:true}).click();await page.getByRole("button",{name:"Новая папка",exact:true}).click();
+  await page.getByLabel("Название папки",{exact:true}).fill("Идеи браузера");await page.getByRole("button",{name:"Сохранить папку",exact:true}).click();
+  await quickNote(page,"Заметка из браузера");await page.getByRole("button",{name:"Заметка из браузера",exact:true}).click();
+  const editor=page.getByRole("region",{name:"Редактор заметки",exact:true});
+  await page.getByRole("tab",{name:"Характеристики",exact:true}).click();
+  await page.getByLabel("Папка",{exact:true}).selectOption({label:"Идеи браузера"});await page.getByLabel("Теги заметки",{exact:true}).fill("browser, markdown");
+  await page.getByRole("tab",{name:"Содержание",exact:true}).click();
+  await page.getByLabel("Содержание",{exact:true}).fill('# Проверка Markdown\n\n**Сохранённый текст**\n\n<script>window.markdownInjected = true</script>\n\n[Опасная ссылка](javascript:alert(1))\n\n![Внешняя картинка](https://example.org/tracking.png)');
+  await page.getByLabel("Загрузить изображение",{exact:true}).setInputFiles({name:"private.png",mimeType:"image/png",buffer:Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNQMHAAAAEEAJGibWOuAAAAAElFTkSuQmCC","base64")});
+  await expect(page.getByLabel("Содержание",{exact:true})).toHaveValue(/!\[private.png\]\(\/api\/media\/[a-f0-9-]+\)/);
+  await editor.getByRole("button",{name:"Просмотр",exact:true}).click();
+  await expect(editor.getByRole("heading",{name:"Проверка Markdown",exact:true})).toBeVisible();
+  await expect(editor.locator("script")).toHaveCount(0);await expect(editor.getByRole("link",{name:"Опасная ссылка"})).toHaveCount(0);await expect(page.locator('img[src^="https://example.org"]')).toHaveCount(0);
+  const image=editor.getByRole("img",{name:"private.png",exact:true});await expect(image).toBeVisible();await expect.poll(()=>image.evaluate(element=>(element as {naturalWidth:number}).naturalWidth)).toBe(1);
+  await page.getByRole("button",{name:"Сохранить заметку",exact:true}).click();await expect(editor.getByText("Сохранено",{exact:true})).toBeVisible();
+  await page.reload();await page.getByRole("button",{name:"Заметка из браузера",exact:true}).click();
+  await expect(page.getByLabel("Содержание",{exact:true})).toHaveValue(/Сохранённый текст/);
+  await page.getByLabel("Название заметки",{exact:true}).fill("Изменённая заметка");await page.getByRole("button",{name:"Сохранить заметку",exact:true}).click();await page.getByRole("button",{name:"Закрыть редактор заметки",exact:true}).click();
+  await page.getByLabel("Поиск заметок",{exact:true}).fill('папка:"Идеи браузера"');await expect(page.getByRole("button",{name:"Изменённая заметка",exact:true})).toBeVisible();
+  await page.getByText("Папки",{exact:true}).click();await confirmUi(page,()=>page.getByLabel("Удалить папку Идеи браузера",{exact:true}).click());
+  await page.getByLabel("Поиск заметок",{exact:true}).fill("");await expect(page.getByRole("button",{name:"Изменённая заметка",exact:true})).toBeVisible();
+  const card=page.locator("article").filter({has:page.getByRole("button",{name:"Изменённая заметка",exact:true})});
+  await card.getByLabel("Действия заметки Изменённая заметка",{exact:true}).click();await confirmUi(page,()=>card.getByRole("button",{name:"Удалить заметку",exact:true}).click(),false);
+  await expect(card).toBeVisible();await card.getByLabel("Действия заметки Изменённая заметка",{exact:true}).click();await confirmUi(page,()=>card.getByRole("button",{name:"Удалить заметку",exact:true}).click());await expect(card).toHaveCount(0);await page.reload();await expect(card).toHaveCount(0);expect(failures).toEqual([]);
 });
 
 test("recurring task connects list, Kanban, Gantt, Today and calendar without sharing daily completion", async ({ page, request }) => {
@@ -132,8 +108,7 @@ test("recurring task connects list, Kanban, Gantt, Today and calendar without sh
   await expect(page.getByRole("dialog")).toContainText("Выполнено");
   await page.getByRole("dialog").getByRole("button", { name: "Закрыть окно", exact: true }).click();
   await page.getByLabel(`Действия задачи ${title}`, { exact: true }).click();
-  page.once("dialog", (dialog) => void dialog.accept());
-  await page.getByRole("button", { name: "Удалить задачу", exact: true }).click();
+  await confirmUi(page, async()=>{await page.getByRole("button", { name: "Удалить задачу", exact: true }).click();}, true);
   await expect(page.getByRole("button", { name: title, exact: true })).toHaveCount(0);
   await page.getByRole("link", { name: "Календарь", exact: true }).click();
   await page.getByLabel("Дата календаря", { exact: true }).fill(today);
@@ -168,8 +143,7 @@ test("countdown edits and persisted Pomodoro pause, resume and cancellation work
   await expect(page.getByRole("heading", { name: "Изменённый праздник", exact: true })).toBeVisible();
   expect(await page.locator("html").evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(390);
   await page.screenshot({ path: testInfo.outputPath("mobile-countdown.png"), fullPage: true });
-  page.once("dialog", (dialog) => void dialog.accept());
-  await page.getByRole("button", { name: "Удалить событие Изменённый праздник", exact: true }).click();
+  await confirmUi(page, async()=>{await page.getByRole("button", { name: "Удалить событие Изменённый праздник", exact: true }).click();}, true);
   await expect(page.getByRole("heading", { name: "Изменённый праздник", exact: true })).toHaveCount(0);
   await page.getByRole("link", { name: "Pomodoro", exact: true }).click();
   await page.getByRole("button", { name: "Начать фокус", exact: true }).click();

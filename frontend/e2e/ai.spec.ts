@@ -1,3 +1,4 @@
+import { noteProperties } from "./upgrade-helpers";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
@@ -35,10 +36,14 @@ test("AI is a one-click chat with per-item sharing, automatic replies and safe r
   const privateWorkout = await write("/workouts", plan("PRIVATE_WORKOUT_MARKER", privateExercise.id));
   expect(note.ai_shared).toBe(false); expect(workout.ai_shared).toBe(false); expect(exercise.ai_shared).toBe(false);
   await page.goto("/notes");
+  await noteProperties(page,"PRIVATE_NOTE_MARKER");
+  await expect(page.getByRole("checkbox", { name: "AI Доступ: PRIVATE_NOTE_MARKER", exact: true })).not.toBeChecked();
+  await page.getByRole("button",{name:"Закрыть редактор заметки",exact:true}).click();
+  await noteProperties(page,"Выбранная заметка");
   await page.getByRole("checkbox", { name: "AI Доступ: Выбранная заметка", exact: true }).check();
   await expect(page.getByRole("checkbox", { name: "AI Доступ: Выбранная заметка", exact: true })).toBeEnabled();
-  await expect(page.getByRole("checkbox", { name: "AI Доступ: PRIVATE_NOTE_MARKER", exact: true })).not.toBeChecked();
   await page.reload();
+  await noteProperties(page,"Выбранная заметка");
   await expect(page.getByRole("checkbox", { name: "AI Доступ: Выбранная заметка", exact: true })).toBeChecked();
   await page.goto("/workouts");
   await page.getByRole("checkbox", { name: "AI Доступ: Выбранная тренировка", exact: true }).check();

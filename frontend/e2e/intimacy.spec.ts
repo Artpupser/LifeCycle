@@ -1,3 +1,4 @@
+import { confirmUi } from "./upgrade-helpers";
 import { expect, test, type Page, type APIRequestContext } from "@playwright/test";
 
 async function login(page: Page, request: APIRequestContext) {
@@ -28,8 +29,7 @@ test("mobile private journal persists the full form, multiple daily events, Mark
   await page.setViewportSize({width:390,height:844});
   await login(page,request);
   await page.getByRole("button",{name:"Новое событие",exact:true}).click();
-  page.once("dialog",(dialog) => void dialog.accept());
-  await page.getByLabel("Тип события",{exact:true}).selectOption("sex");
+  await confirmUi(page, async()=>{await page.getByLabel("Тип события",{exact:true}).selectOption("sex");}, true);
   await page.getByLabel("Местное время начала",{exact:true}).fill("2026-10-20T12:30");
   await page.getByLabel("Длительность, минут",{exact:true}).fill("25");
   await page.getByLabel("Количество эякуляций",{exact:true}).fill("0");
@@ -92,8 +92,7 @@ test("mobile private journal persists the full form, multiple daily events, Mark
   await expect(page.getByRole("region",{name:"Интимная статистика"})).toHaveCount(0);
   await page.getByRole("button",{name:"Показать журнал",exact:true}).click();
   await expect(page.getByRole("heading",{name:"События (2)",exact:true})).toBeVisible();
-  page.once("dialog",(dialog) => void dialog.accept());
-  await sex.getByRole("button",{name:"Удалить",exact:true}).click();
+  await confirmUi(page, async()=>{await sex.getByRole("button",{name:"Удалить",exact:true}).click();}, true);
   await expect(page.getByRole("heading",{name:"События (1)",exact:true})).toBeVisible();
   await expect(stats.getByText("Нет данных",{exact:true})).toBeVisible();
   await page.reload();

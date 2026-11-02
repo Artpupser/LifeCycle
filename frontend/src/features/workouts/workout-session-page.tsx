@@ -1,3 +1,4 @@
+import { confirmAction } from "@/lib/feedback";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { FormField } from "@/components/form-field";
@@ -23,7 +24,7 @@ function SessionPanel({ session, receivedAt, update, refresh }: { session: Worko
   const elapsed = session.elapsed_seconds + (session.status === "running" ? Math.max(0, Math.floor((now - receivedAt) / 1000)) : 0);
   const remaining = Math.max(0, (step?.duration_seconds ?? 0) - elapsed);
   async function command(name: string) {
-    if (name === "cancel" && !window.confirm("Остановить тренировку? Выполненные шаги сохранятся.")) return;
+    if (name === "cancel" && !await confirmAction("Остановить тренировку? Выполненные шаги сохранятся.")) return;
     await action.run(async () => {
       const result = await api<WorkoutSession>(`/workout-sessions/${session.id}/${name}`, { method: "POST", body: { revision: session.revision, ...(actual !== null && name === "next" ? { actual_repetitions: actual } : {}), ...(name === "note" ? { note } : {}) } });
       update(result); setActualDraft(null); habitChanged();

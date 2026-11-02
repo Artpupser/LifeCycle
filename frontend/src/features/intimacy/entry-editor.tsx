@@ -1,3 +1,4 @@
+import { confirmAction } from "@/lib/feedback";
 import { useState, type FormEvent } from "react";
 import { Dialog } from "@/components/dialog";
 import { FormField } from "@/components/form-field";
@@ -42,9 +43,9 @@ export function EntryEditor({ initial, record, close, saved, conflict }: { initi
     catch (failure) { setError(errorMessage(failure)); if (failure instanceof ApiError && failure.code === "stale_intimacy") { setStale(true); conflict(); } }
     finally { setBusy(false); }
   }
-  function changeKind(kind: Kind) {
+  async function changeKind(kind: Kind) {
     if (kind === value.kind) return;
-    if (!window.confirm("Сменить тип события? Поля партнёра или мастурбации будут очищены, общие поля сохранятся.")) return;
+    if (!await confirmAction("Сменить тип события? Поля партнёра или мастурбации будут очищены, общие поля сохранятся.")) return;
     setValue({ ...value, kind, partner: null, solo: null });
   }
   const closeEditor = () => { if (!busy && !uploading) close(); };

@@ -100,6 +100,7 @@ struct TodayResponse {
     date: NaiveDate,
     timezone: String,
     tasks: Vec<TaskOccurrenceResponse>,
+    events: Vec<crate::countdowns::EventOccurrence>,
 }
 #[derive(Serialize)]
 struct CalendarResponse {
@@ -107,6 +108,7 @@ struct CalendarResponse {
     to: NaiveDate,
     timezone: String,
     occurrences: Vec<TaskOccurrenceResponse>,
+    events: Vec<crate::countdowns::EventOccurrence>,
 }
 
 pub fn routes() -> Router<AppState> {
@@ -672,10 +674,12 @@ async fn today(
     let (local, timezone) = domain::local_today(&s, u.id).await?;
     let date = q.date.unwrap_or(local);
     let tasks = occurrences(&s, u.id, date, date, &timezone).await?;
+    let events = crate::countdowns::occurrences(&s, u.id, date, date, &timezone).await?;
     Ok(Json(TodayResponse {
         date,
         timezone,
         tasks,
+        events,
     }))
 }
 async fn calendar(
@@ -685,11 +689,13 @@ async fn calendar(
 ) -> Result<Json<CalendarResponse>, ApiError> {
     let timezone = domain::settings(&s, u.id).await?.timezone;
     let occurrences = occurrences(&s, u.id, q.from, q.to, &timezone).await?;
+    let events = crate::countdowns::occurrences(&s, u.id, q.from, q.to, &timezone).await?;
     Ok(Json(CalendarResponse {
         from: q.from,
         to: q.to,
         timezone,
         occurrences,
+        events,
     }))
 }
 pub async fn occurrences(

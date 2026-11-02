@@ -10,7 +10,9 @@ import { usePreferences } from "@/features/settings/preferences-context";
 import { useResource } from "@/hooks/use-resource";
 import { ApiError, api, errorMessage } from "@/lib/api";
 
-type Session = { id: string; task_id: string | null; phase: "work" | "break"; status: "running" | "paused" | "completed" | "cancelled"; duration_seconds: number; elapsed_seconds: number };
+import { PomodoroPrograms } from "./programs";
+import { PomodoroHistory } from "./history";
+import { kindLabels, durationLabel, type Session, type PomodoroConfig } from "./types";
 type Snapshot = { session: Session | null; receivedAt: number };
 
 export function PomodoroPage() {
@@ -23,6 +25,9 @@ export function PomodoroPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [historyVersion, setHistoryVersion] = useState(0);
+  const [notifications, setNotifications] = useState(() => typeof Notification !== "undefined" ? Notification.permission : "denied");
+  const previous = useRef<Session | null | undefined>(undefined);
   const requestVersion = useRef(0);
   const mutation = useRef(false);
   const mounted = useRef(false);
@@ -31,29 +36,40 @@ export function PomodoroPage() {
     const version = ++requestVersion.current;
     try {
       const session = await api<Session | null>("/pomodoro");
-      if (mounted.current && version === requestVersion.current) { setSnapshot({ session, receivedAt: Date.now() }); setError(null); }
+      if (mounted.current && version === requestVersion.current) {
+        const old = previous.current;
+        if (old?.program && old.id !== session?.id) {
+          const message = session?.program ? `Новый этап: ${kindLabels[session.interval_kind ?? "w"]}.` : "Алгоритм завершён. История сохранена.";
+          setMessage(message); setHistoryVersion(v => v + 1);
+          if (typeof Notification !== "undefined" && Notification.permission === "granted") new Notification("LifeCycle · Pomodoro", { body: message });
+        }
+        previous.current = session; setSnapshot({ session, receivedAt: Date.now() }); setError(null);
+      }
     } catch (failure) { if (mounted.current && version === requestVersion.current) setError(errorMessage(failure)); }
   }, []);
   useEffect(() => {
     mounted.current = true;
     const initial = window.setTimeout(() => void refresh(), 0);
     const tick = window.setInterval(() => setNow(Date.now()), 1000);
-    const sync = window.setInterval(() => void refresh(), 15000);
+    const sync = window.setInterval(() => void refresh(), 2000);
     const focus = () => void refresh();
-    window.addEventListener("focus", focus);
-    return () => { mounted.current = false; window.clearTimeout(initial); window.clearInterval(tick); window.clearInterval(sync); window.removeEventListener("focus", focus); };
+    const visible = () => { if (document.visibilityState === "visible") void refresh(); };
+    window.addEventListener("focus", focus); document.addEventListener("visibilitychange", visible);
+    return () => { mounted.current = false; window.clearTimeout(initial); window.clearInterval(tick); window.clearInterval(sync); window.removeEventListener("focus", focus); document.removeEventListener("visibilitychange", visible); };
   }, [refresh]);
-  async function change(action: string, phase?: Session["phase"]) {
+  async function change(action: string, phase?: Session["phase"], config?: PomodoroConfig) {
+    if (mutation.current) return;
     mutation.current = true; ++requestVersion.current; setBusy(true); setError(null); setMessage(null);
     try {
-      const session = await api<Session>(phase ? "/pomodoro" : `/pomodoro/${snapshot?.session?.id}/${action}`, { method: "POST", ...(phase ? { body: { phase, task_id: taskId || null } } : {}) });
+      const session = await api<Session>(config ? "/pomodoro/program" : phase ? "/pomodoro" : `/pomodoro/${snapshot?.session?.id}/${action}`, { method: "POST", body: config ? { config_id: config.id, revision: config.revision, task_id: taskId || null } : phase ? { phase, task_id: taskId || null } : { ...(snapshot?.session?.program ? { revision: snapshot.session.program.revision } : {}) } });
       if (mounted.current) {
+        previous.current = ["completed", "cancelled"].includes(session.status) ? null : session; setHistoryVersion(v => v + 1);
         setSnapshot({ session: ["completed", "cancelled"].includes(session.status) ? null : session, receivedAt: Date.now() });
         setNow(Date.now());
         if (session.status === "completed") setMessage("Интервал завершён. Результат сохранён.");
         if (session.status === "cancelled") setMessage("Таймер остановлен.");
       }
-    } catch (failure) { if (mounted.current) setError(failure instanceof ApiError && failure.status === 409 ? "Состояние таймера изменилось или время ещё не истекло. Обновите таймер." : errorMessage(failure)); }
+    } catch (failure) { if (mounted.current) setError(failure instanceof ApiError && failure.status === 409 && failure.code !== "pomodoro_history_pending" ? "Состояние таймера изменилось или время ещё не истекло. Обновите таймер." : errorMessage(failure)); }
     finally { mutation.current = false; if (mounted.current) setBusy(false); }
   }
   const session = snapshot?.session;
@@ -62,5 +78,5 @@ export function PomodoroPage() {
   const remaining = session ? session.duration_seconds - elapsed : settings.pomodoro_work_minutes * 60;
   const taskList = tasks.resource.status === "ready" ? tasks.resource.data : [];
   const linkedTask = taskList.find((task) => task.id === session?.task_id);
-  return <main id="main" className="mx-auto max-w-3xl space-y-7 px-5 py-10 sm:px-10"><header><p className="mb-2 text-sm text-primary">Время сосредоточиться</p><h1 className="text-3xl font-semibold">Pomodoro</h1><p className="mt-3 text-sm text-muted-foreground">Работа {settings.pomodoro_work_minutes} мин. · Перерыв {settings.pomodoro_break_minutes} мин. <Link to="/settings" className="text-primary underline underline-offset-4">Настроить</Link></p></header>{!snapshot && !error ? <LoadingState /> : <section className="rounded-2xl border border-border bg-card p-6 text-center sm:p-10"><div className="mb-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">{session?.phase === "break" ? <Coffee className="size-5" aria-hidden="true" /> : <TimerReset className="size-5" aria-hidden="true" />}{session?.phase === "break" ? "Перерыв" : "Фокус"}{session?.status === "paused" && " · Пауза"}</div><p className="text-7xl font-semibold tabular-nums tracking-tight" role="timer" aria-label="Оставшееся время">{String(Math.floor(remaining / 60)).padStart(2, "0")}:{String(remaining % 60).padStart(2, "0")}</p>{linkedTask && <p className="mt-4 break-words text-sm text-muted-foreground">Задача: {linkedTask.title}</p>}{session?.task_id && !linkedTask && <p className="mt-4 text-sm text-muted-foreground">Таймер связан с сохранённой задачей.</p>}{!active && <div className="mx-auto mt-8 max-w-md text-left"><FormField id="pomodoro-task" label="Задача для фокуса"><Select id="pomodoro-task" disabled={busy} value={taskId} onChange={(event) => setTaskId(event.target.value)}><option value="">Без задачи</option>{taskList.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}{taskId && !taskList.some((task) => task.id === taskId) && <option value={taskId}>Выбранная задача</option>}</Select></FormField>{tasks.resource.status === "error" && <p className="mt-2 text-xs text-destructive">Список задач недоступен. <button className="underline" onClick={tasks.retry}>Повторить</button></p>}</div>}<div className="mt-8 flex flex-wrap justify-center gap-3">{active ? <>{remaining === 0 ? <Button disabled={busy} onClick={() => void change("finish")}><CircleCheck aria-hidden="true" />Завершить интервал</Button> : <Button disabled={busy} onClick={() => void change(session.status === "running" ? "pause" : "resume")}>{session.status === "running" ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}{session.status === "running" ? "Пауза" : "Продолжить"}</Button>}<Button variant="outline" disabled={busy} onClick={() => void change("cancel")}><X aria-hidden="true" />Остановить</Button></> : <><Button disabled={busy || !snapshot} onClick={() => void change("", "work")}><Play aria-hidden="true" />Начать фокус</Button><Button variant="outline" disabled={busy || !snapshot} onClick={() => void change("", "break")}><Coffee aria-hidden="true" />Начать перерыв</Button></>}<Button variant="outline" disabled={busy} onClick={() => void refresh()} aria-label="Обновить таймер"><RefreshCw aria-hidden="true" /></Button></div>{remaining === 0 && active && <p className="mt-5 text-sm text-primary" role="status">Время истекло. Завершите интервал, чтобы сохранить результат.</p>}<p className="mt-6 text-xs leading-5 text-muted-foreground">Таймер сохраняется на сервере и восстанавливается после перезагрузки. Завершение интервала не меняет статус задачи.</p></section>}{error && <p role="alert" className="text-sm text-destructive">{error}</p>}{message && <p role="status" className="text-sm text-primary">{message}</p>}</main>;
+  return <main id="main" className="mx-auto max-w-3xl space-y-7 px-5 py-10 sm:px-10"><header><p className="mb-2 text-sm text-primary">Время сосредоточиться</p><h1 className="text-3xl font-semibold">Pomodoro</h1><p className="mt-3 text-sm text-muted-foreground">Работа {settings.pomodoro_work_minutes} мин. · Перерыв {settings.pomodoro_break_minutes} мин. <Link to="/settings" className="text-primary underline underline-offset-4">Настроить</Link></p></header>{!snapshot && !error ? <LoadingState /> : <section className="rounded-2xl border border-border bg-card p-6 text-center sm:p-10"><div className="mb-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">{session?.phase === "break" ? <Coffee className="size-5" aria-hidden="true" /> : <TimerReset className="size-5" aria-hidden="true" />}{session?.interval_kind ? kindLabels[session.interval_kind] : session?.phase === "break" ? "Перерыв" : "Фокус"}{session?.status === "paused" && " · Пауза"}</div>{session?.program && <div className="mb-5 space-y-1 text-sm"><p className="break-words font-medium">{session.program.name}</p><p className="text-muted-foreground">Этап {session.program.interval_index % session.program.sequence_length + 1} / {session.program.sequence_length} · Цикл {session.program.cycle}</p><p>Далее: {session.program.next_kind ? `${kindLabels[session.program.next_kind]} ${durationLabel(session.program.next_duration_seconds!)}` : "Завершение алгоритма"}</p>{session.program.history_pending > 0 && <p>Восстанавливается история: {session.program.history_pending} интервалов.</p>}</div>}<p className="text-7xl font-semibold tabular-nums tracking-tight" role="timer" aria-label="Оставшееся время">{String(Math.floor(remaining / 60)).padStart(2, "0")}:{String(remaining % 60).padStart(2, "0")}</p>{linkedTask && <p className="mt-4 break-words text-sm text-muted-foreground">Задача: {linkedTask.title}</p>}{session?.task_id && !linkedTask && <p className="mt-4 text-sm text-muted-foreground">Таймер связан с сохранённой задачей.</p>}{!active && <div className="mx-auto mt-8 max-w-md text-left"><FormField id="pomodoro-task" label="Задача для фокуса"><Select id="pomodoro-task" disabled={busy} value={taskId} onChange={(event) => setTaskId(event.target.value)}><option value="">Без задачи</option>{taskList.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}{taskId && !taskList.some((task) => task.id === taskId) && <option value={taskId}>Выбранная задача</option>}</Select></FormField>{tasks.resource.status === "error" && <p className="mt-2 text-xs text-destructive">Список задач недоступен. <button className="underline" onClick={tasks.retry}>Повторить</button></p>}</div>}<div className="mt-8 flex flex-wrap justify-center gap-3">{active ? <>{remaining === 0 && !session.program ? <Button disabled={busy} onClick={() => void change("finish")}><CircleCheck aria-hidden="true" />Завершить интервал</Button> : <Button disabled={busy} onClick={() => void change(session.status === "running" ? "pause" : "resume")}>{session.status === "running" ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}{session.status === "running" ? "Пауза" : "Продолжить"}</Button>}{session.program && <Button variant="outline" disabled={busy} onClick={() => void change("reset")}><TimerReset aria-hidden="true" />Сбросить</Button>}<Button variant="outline" disabled={busy} onClick={() => void change("cancel")}><X aria-hidden="true" />Остановить</Button></> : <><Button disabled={busy || !snapshot} onClick={() => void change("", "work")}><Play aria-hidden="true" />Начать фокус</Button><Button variant="outline" disabled={busy || !snapshot} onClick={() => void change("", "break")}><Coffee aria-hidden="true" />Начать перерыв</Button></>}<Button variant="outline" disabled={busy} onClick={() => void refresh()} aria-label="Обновить таймер"><RefreshCw aria-hidden="true" /></Button></div>{remaining === 0 && active && !session?.program && <p className="mt-5 text-sm text-primary" role="status">Время истекло. Завершите интервал, чтобы сохранить результат.</p>}<p className="mt-6 text-xs leading-5 text-muted-foreground">Таймер сохраняется на сервере и восстанавливается после перезагрузки. Завершение интервала не меняет статус задачи.</p></section>}<div className="space-y-3"><p className="text-xs text-muted-foreground">Алгоритмы переключают этапы по серверному времени, включая время вне вкладки. Уведомления доступны при открытом приложении; фоновую доставку определяет браузер и ОС.</p>{typeof Notification !== "undefined" && notifications !== "granted" && <Button variant="outline" onClick={() => void Notification.requestPermission().then(setNotifications).catch(() => setError("Браузер не разрешил уведомления."))}>Включить уведомления этапов</Button>}</div><PomodoroPrograms active={Boolean(active)} busy={busy || !snapshot} start={config => void change("", undefined, config)} workMinutes={settings.pomodoro_work_minutes} breakMinutes={settings.pomodoro_break_minutes} /><PomodoroHistory key={historyVersion} timezone={settings.timezone} />{error && <p role="alert" className="text-sm text-destructive">{error}</p>}{message && <p role="status" className="text-sm text-primary">{message}</p>}</main>;
 }

@@ -18,8 +18,10 @@ mod health;
 mod intimacy;
 mod mail;
 mod media;
+mod navigation;
 mod notes;
 mod pomodoro;
+mod pomodoro_programs;
 pub mod profile;
 pub mod schedule;
 pub mod settings;
@@ -51,6 +53,7 @@ pub fn router(state: AppState) -> Router {
         .merge(profile::routes())
         .merge(settings::routes())
         .merge(notes::routes())
+        .merge(navigation::routes())
         .merge(tasks::routes())
         .merge(boards::routes())
         .merge(task_tags::routes())
@@ -58,6 +61,7 @@ pub fn router(state: AppState) -> Router {
         .merge(media::routes())
         .merge(countdowns::routes())
         .merge(pomodoro::routes())
+        .merge(pomodoro_programs::routes())
         .merge(workouts::routes())
         .merge(workout_preferences::routes())
         .merge(workout_sessions::routes())
