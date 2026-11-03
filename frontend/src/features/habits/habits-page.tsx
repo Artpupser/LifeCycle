@@ -1,6 +1,8 @@
+import {useHistory} from "@/systems/history/use-history";
+import { HistoryEntries } from "@/systems/history/history";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { AppIcon } from "@/systems/icons/app-icon";
-import { TagChip } from "@/features/planning/tag-chip";
+import { TagChip } from "@/systems/labels/inputs";
 import { toInstant } from "@/lib/dates";
 import { FilterSearch } from "@/components/filter-search";
 import { parseFilterQuery, matchesFilter, filterValue, tagFilter, type FilterSpec } from "@/lib/filter-query";
@@ -26,8 +28,8 @@ import { habitChanged, type Habit, type HabitInput, type HabitStatistics } from 
 function HabitHistory({ id, close }: { id: string; close: () => void }) {
   useLanguage();
   const { settings } = usePreferences();
-  const history = useResource<TaskOccurrence[]>(`/habits/${id}/history`);
-  return <Dialog title={t("История привычки")} onClose={close}>{history.resource.status === "loading" ? <LoadingState /> : history.resource.status === "error" ? <ErrorState message={history.resource.message} retry={history.retry} /> : history.resource.data.length ? <OccurrenceList occurrences={history.resource.data} timezone={settings.timezone} changed={history.retry} /> : <p className="text-sm text-muted-foreground">{t("Сохранённых отметок пока нет.")}</p>}</Dialog>;
+  const history = useHistory<TaskOccurrence[]>({kind:"habit",id});
+  return <Dialog title={t("История привычки")} onClose={close}>{history.resource.status === "loading" ? <LoadingState /> : history.resource.status === "error" ? <ErrorState message={history.resource.message} retry={history.retry} /> : history.resource.data.length ? <HistoryEntries items={history.resource.data} itemKey={item=>`${id}:${item.date}`} kind="habit" removed={history.retry} render={item=><OccurrenceList occurrences={[item]} timezone={settings.timezone} changed={history.retry}/>}/> : <p className="text-sm text-muted-foreground">{t("Сохранённых отметок пока нет.")}</p>}</Dialog>;
 }
 function HabitDetail({ habit, close }: { habit: Habit; close: () => void }) {
   useLanguage();

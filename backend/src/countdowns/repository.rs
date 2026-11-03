@@ -88,7 +88,7 @@ pub(super) async fn rows(state: &AppState, user: Uuid) -> Result<Vec<Row>, ApiEr
         .await?;
     let mut rows: Vec<Row> =
         sqlx::query_as(
-        r"SELECT id, title, category, icon, target_date, recurrence, target_time, timezone, description,
+        r"SELECT id, title, category, tags, icon, target_date, recurrence, target_time, timezone, description,
         details, display, created_at, updated_at, contact_id, contact_birthday, contact_snapshot FROM
         app.countdowns WHERE user_id=$1 ORDER BY target_date, id",
     )
@@ -119,15 +119,25 @@ pub(super) async fn save(
     mode: WriteMode,
 ) -> Result<Countdown, ApiError> {
     let recurrence = input.validate()?;
+    let category = super::domain::category(&input.category)?;
+    let submitted_tags = input.tags.clone();
     let profile_zone = domain::settings(state, user).await?.timezone;
     let mut tx = state.database.begin().await?;
     contacts::lock(&mut tx, user).await?;
+    if let Some(id) = category.strip_prefix("custom:") {
+        let id = Uuid::parse_str(id).map_err(|_| ApiError::validation("Invalid category"))?;
+        let valid:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.labels WHERE user_id=$1 AND id=$2 AND kind='category')").bind(user).bind(id).fetch_one(&mut *tx).await?;
+        if !valid {
+            return Err(domain::not_found());
+        }
+    }
+
     if mode == WriteMode::Create {
         sqlx::query("INSERT INTO app.countdowns(id,user_id,title,category,icon,target_date) VALUES($1,$2,$3,$4,$5,$6)")
             .bind(id)
         .bind(user)
         .bind(&input.title)
-        .bind(&input.category)
+        .bind(&category)
         .bind(&input.icon)
         .bind(input.target_date)
         .execute(&mut *tx).await?;
@@ -220,18 +230,18 @@ pub(super) async fn save(
         input.target_time.unwrap_or(old.target_time)
     };
     let stored_details = if private { Details::default() } else { details };
-    let row: Row = sqlx::query_as(
+    let mut row: Row = sqlx::query_as(
         r"UPDATE app.countdowns SET title=$3, category=$4, icon=$5, target_date=$6, repeat_yearly=$7,
         recurrence=$8, target_time=$9, timezone=$10, description=$11, details=$12, display=$13,
         contact_id=$14, contact_snapshot=$15, contact_birthday=$16, updated_at=clock_timestamp() WHERE id=$1
-        AND user_id=$2 RETURNING id, title, category, icon, target_date, recurrence, target_time, timezone,
+        AND user_id=$2 RETURNING id, title, category, tags, icon, target_date, recurrence, target_time, timezone,
         description, details, display, created_at, updated_at, contact_id, contact_birthday,
         contact_snapshot",
     )
     .bind(id)
     .bind(user)
     .bind(if snapshot.is_some() { "Событие" } else { title })
-    .bind(input.category.trim())
+    .bind(if birthday {"birthday"} else {category.as_str()})
     .bind(input.icon)
     .bind(target_date)
     .bind(recurrence == Recurrence::Yearly)
@@ -246,12 +256,21 @@ pub(super) async fn save(
     .bind(birthday)
     .fetch_one(&mut *tx)
     .await?;
+    if let Some(tags) = submitted_tags {
+        sqlx::query("UPDATE app.countdowns SET tags=$3 WHERE user_id=$1 AND id=$2")
+            .bind(user)
+            .bind(id)
+            .bind(DbJson(&tags))
+            .execute(&mut *tx)
+            .await?;
+        row.tags = DbJson(tags);
+    }
     let row = if let ContactBinding::Birthday(contact) = binding
         && !old.contact_birthday
     {
         contacts::enable_birthday(state, user, contact, &mut tx).await?;
         sqlx::query_as(
-            r"SELECT id, title, category, icon, target_date, recurrence, target_time, timezone,
+            r"SELECT id, title, category, tags, icon, target_date, recurrence, target_time, timezone,
                      description, details, display, created_at, updated_at, contact_id,
                      contact_birthday, contact_snapshot
               FROM app.countdowns WHERE id=$1 AND user_id=$2",
@@ -349,7 +368,7 @@ pub(crate) async fn detach_contact(
     db: &mut sqlx::PgConnection,
 ) -> Result<(), ApiError> {
     let rows: Vec<Row> = sqlx::query_as(
-        r"SELECT id, title, category, icon, target_date, recurrence, target_time, timezone, description,
+        r"SELECT id, title, category, tags, icon, target_date, recurrence, target_time, timezone, description,
         details, display, created_at, updated_at, contact_id, contact_birthday, contact_snapshot FROM
         app.countdowns WHERE user_id=$1 AND contact_id=$2 FOR UPDATE",
     )
@@ -396,7 +415,7 @@ async fn load_for_update(
     id: Uuid,
 ) -> Result<Row, ApiError> {
     sqlx::query_as(
-        r"SELECT id, title, category, icon, target_date, recurrence, target_time, timezone, description,
+        r"SELECT id, title, category, tags, icon, target_date, recurrence, target_time, timezone, description,
         details, display, created_at, updated_at, contact_id, contact_birthday, contact_snapshot FROM
         app.countdowns WHERE id=$1 AND user_id=$2 FOR UPDATE",
     )

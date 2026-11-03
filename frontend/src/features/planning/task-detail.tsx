@@ -1,3 +1,5 @@
+import {useHistory} from "@/systems/history/use-history";
+import { HistoryRemove } from "@/systems/history/history";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { Dialog } from "@/components/dialog";
 import { Markdown } from "@/components/markdown";
@@ -10,8 +12,8 @@ import type { Task, TaskOccurrence } from "./types";
 export function TaskHistory({ id, close }: { id: string; close: () => void }) {
   useLanguage();
   const { settings } = usePreferences();
-  const history = useResource<TaskOccurrence[]>(`/tasks/${id}/history`);
-  return <Dialog title={t("История задачи")} onClose={close}>{history.resource.status === "loading" ? <LoadingState /> : history.resource.status === "error" ? <ErrorState message={history.resource.message} retry={history.retry} /> : history.resource.data.length ? <ul className="divide-y divide-border">{history.resource.data.map((item) => <li key={item.date} className="space-y-3 py-4"><p className="text-xs text-muted-foreground">{item.starts_at ? dateTimeLabel(item.starts_at, settings.timezone, settings.time_format) : dateLabel(item.date)} · {item.status === "completed" ? t("Выполнено") : item.status === "rejected" ? t("Отменено") : t("Не выполнено")}</p><p className="font-medium">{item.task.title}</p><Markdown value={item.task.description} /></li>)}</ul> : <p>{t("Отметок пока нет.")}</p>}</Dialog>;
+  const history = useHistory<TaskOccurrence[]>({kind:"task",id});
+  return <Dialog title={t("История задачи")} onClose={close}>{history.resource.status === "loading" ? <LoadingState /> : history.resource.status === "error" ? <ErrorState message={history.resource.message} retry={history.retry} /> : history.resource.data.length ? <ul className="divide-y divide-border">{history.resource.data.map((item) => <li key={item.date} className="space-y-3 py-4"><p className="text-xs text-muted-foreground">{item.starts_at ? dateTimeLabel(item.starts_at, settings.timezone, settings.time_format) : dateLabel(item.date)} · {item.status === "completed" ? t("Выполнено") : item.status === "rejected" ? t("Отменено") : t("Не выполнено")}</p><p className="font-medium">{item.task.title}</p><Markdown value={item.task.description} /><HistoryRemove kind="task" itemKey={`${id}:${item.date}`} removed={history.retry}/></li>)}</ul> : <p>{t("Отметок пока нет.")}</p>}</Dialog>;
 }
 export function TaskDetail({ id, close, edit, history, child }: { id: string; close: () => void; edit: (task: Task) => void; history: () => void; child: (task: Task) => void }) {
   useLanguage();

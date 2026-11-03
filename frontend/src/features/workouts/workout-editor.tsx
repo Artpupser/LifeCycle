@@ -1,5 +1,6 @@
+import { formatLabels } from "@/systems/labels/values";
 import { t, useLanguage } from "@/systems/i18n/locale";
-import { LabelInput } from "@/features/planning/tag-chip";
+import { LabelInput } from "@/systems/labels/inputs";
 import { normalizeLabels } from "@/features/planning/types";
 import { useState, type FormEvent } from "react";
 import { Dialog } from "@/components/dialog";
@@ -21,7 +22,7 @@ export function WorkoutEditor({ initial, exercises, close, saved, submitDraft }:
   useLanguage();
   const { settings } = usePreferences();
   const [value, setValue] = useState<Workout>(initial?.data ?? { title: "", description: "", tags: [], rounds: [newRound()] });
-  const [tags, setTags] = useState(value.tags.join(", "));
+  const [tags, setTags] = useState(formatLabels(value.tags));
   const [uploading, setUploading] = useState(false);
   const action = useAction();
   function roundChange(id: string, update: Partial<Round>) { setValue((old) => ({ ...old, rounds: old.rounds.map((round) => round.id === id ? { ...round, ...update } : round) })); }

@@ -1,5 +1,5 @@
 import { t, useLanguage } from "@/systems/i18n/locale";
-import { LabelInput } from "@/features/planning/tag-chip";
+import { LabelInput } from "@/systems/labels/inputs";
 import { normalizeLabels } from "@/features/planning/types";
 import {useState} from "react";
 import {Dialog} from "@/components/dialog";

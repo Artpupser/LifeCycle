@@ -1,3 +1,4 @@
+import { installDragAnimations } from "./drag";
 import {useEffect,useSyncExternalStore,type ReactNode} from "react";
 import {MotionConfig} from "motion/react";
 import {animate,press} from "motion";
@@ -19,12 +20,13 @@ export function AnimationProvider({children}:{children:ReactNode}) {
     };
     const scan=(node:Node)=>{if(!(node instanceof Element))return;if(node.matches(selector))attach(node);node.querySelectorAll(selector).forEach(attach);};
     scan(document.body);
+    const cleanupDrag=installDragAnimations(document.body);
     const observer=new MutationObserver(records=>{
       for(const record of records)record.addedNodes.forEach(scan);
       for(const [element,cleanup] of gestures)if(!element.isConnected){cleanup();gestures.delete(element);}
     });
     observer.observe(document.body,{childList:true,subtree:true});
-    return()=>{observer.disconnect();gestures.forEach(cleanup=>cleanup());};
+    return()=>{cleanupDrag();observer.disconnect();gestures.forEach(cleanup=>cleanup());};
   },[]);
   return <MotionConfig reducedMotion={enabled?"user":"always"} transition={enabled?transitions.surface:{duration:0}}>{children}</MotionConfig>;
 }

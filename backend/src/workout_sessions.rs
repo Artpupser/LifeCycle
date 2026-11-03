@@ -192,7 +192,7 @@ async fn history(
     u: CurrentUser,
     Query(q): Query<HistoryQuery>,
 ) -> Result<Json<Vec<Summary>>, ApiError> {
-    let rows = sqlx::query_as::<_,Summary>("SELECT id,workout_id,snapshot->'plan'->>'title' AS title,(snapshot->>'date')::date AS date,status,jsonb_array_length(results) AS confirmed_steps,habit_completed,started_at,ended_at FROM app.workout_sessions WHERE user_id=$1 AND ($2::uuid IS NULL OR workout_id=$2) AND ($3::timestamptz IS NULL OR started_at<$3) ORDER BY started_at DESC,id LIMIT 50").bind(u.id).bind(q.workout_id).bind(q.before).fetch_all(&s.database).await?;
+    let rows = sqlx::query_as::<_,Summary>("SELECT id,workout_id,snapshot->'plan'->>'title' AS title,(snapshot->>'date')::date AS date,status,jsonb_array_length(results) AS confirmed_steps,habit_completed,started_at,ended_at FROM app.workout_sessions WHERE user_id=$1 AND NOT EXISTS(SELECT 1 FROM app.history_removals h WHERE h.user_id=$1 AND h.kind='workout' AND h.item_key=app.workout_sessions.id::text) AND ($2::uuid IS NULL OR workout_id=$2) AND ($3::timestamptz IS NULL OR started_at<$3) ORDER BY started_at DESC,id LIMIT 50").bind(u.id).bind(q.workout_id).bind(q.before).fetch_all(&s.database).await?;
     Ok(Json(rows))
 }
 async fn start(

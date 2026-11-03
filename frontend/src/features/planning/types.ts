@@ -31,11 +31,4 @@ export function taskInput(task: TaskInput): TaskInput {
 }
 
 /** Shared normalization for tags and categories across the frontend. */
-export function normalizeLabels(value: string | string[], separator: "comma" | "lines" = "comma") {
-  const seen = new Set<string>();
-  return (typeof value === "string" ? value.split(separator === "lines" ? /\r?\n/ : /[,\r\n]/) : value).map(label=>label.trim()).filter(label=>{
-    const key = label.toLocaleLowerCase("ru-RU");
-    if (!key || seen.has(key)) return false;
-    seen.add(key); return true;
-  });
-}
+export { normalizeLabels } from "@/systems/labels/values";

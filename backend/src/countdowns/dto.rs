@@ -15,6 +15,7 @@ fn nullable<'de, D: Deserializer<'de>>(display: D) -> Result<Option<Option<Naive
 pub(super) struct CountdownInput {
     pub(super) title: String,
     pub(super) category: String,
+    pub(super) tags: Option<Vec<String>>,
     pub(super) icon: String,
     pub(super) target_date: NaiveDate,
     pub(super) repeat_yearly: Option<bool>,
@@ -42,7 +43,10 @@ pub(super) struct Unlink {
 impl CountdownInput {
     pub(super) fn validate(&self) -> Result<Option<Recurrence>, ApiError> {
         domain::text(&self.title, 1, 200)?;
-        domain::text(&self.category, 1, 64)?;
+        super::domain::category(&self.category)?;
+        if let Some(tags) = &self.tags {
+            domain::tags(tags)?;
+        }
         domain::text(&self.icon, 0, 128)?;
         if !(MIN_EVENT_YEAR..=MAX_EVENT_YEAR).contains(&self.target_date.year()) {
             return Err(ApiError::validation(

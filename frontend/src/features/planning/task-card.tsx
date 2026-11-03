@@ -5,10 +5,10 @@ import { useState, type ReactNode } from "react";
 import { Clock3, MoreHorizontal, Pencil, Trash2, X, RotateCcw, CircleSlash, AlertTriangle } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/markdown";
-import { TagChip } from "./tag-chip";
+import { TagChip } from "@/systems/labels/inputs";
 import { taskTiming, taskResult, isTaskOverdue, priorityColors } from "./task-timing";
 import type { Task, TaskOccurrence } from "./types";
-import type { TaskTag } from "./task-tags-page";
+import type { Label as TaskTag } from "@/systems/labels/types";
 export function TaskCheckbox({ task, occurrence, busy, toggle }: { task: Task; occurrence?: TaskOccurrence; busy: boolean; toggle: (completed: boolean) => Promise<boolean> | void }) {
   useLanguage();
   const recurring = task.schedule && task.schedule.recurrence !== "once";
@@ -28,7 +28,7 @@ export function TaskCard({ task, occurrence, tags, now, timezone, busy, toggle, 
   const overdue=isTaskOverdue(task,now,timezone,occurrence);
   const priority=priorityColors[task.priority];
   const timing = taskTiming(task, now, timezone);
-  return <AnimatedArticle draggable={draggable} onDragStart={dragStart} onDragOver={dragOver} onDrop={drop} data-task-result={overdue?"overdue":completed?"finished":"active"} style={priority?{borderLeft:`4px solid ${priority}`,backgroundColor:`color-mix(in srgb, ${priority} 8%, var(--card))`}:undefined} className={`group min-w-0 space-y-3 rounded-xl border bg-card p-4 shadow-sm hover:shadow-md ${completed ? "border-border/60 opacity-70" : "border-border"}`}>
+  return <AnimatedArticle data-drag-item="task" data-drag-key={`task-${task.id}`} draggable={draggable} onDragStart={dragStart} onDragOver={dragOver} onDrop={drop} data-task-result={overdue?"overdue":completed?"finished":"active"} style={priority?{borderLeft:`4px solid ${priority}`,backgroundColor:`color-mix(in srgb, ${priority} 8%, var(--card))`}:undefined} className={`group min-w-0 space-y-3 rounded-xl border bg-card p-4 shadow-sm hover:shadow-md ${completed ? "border-border/60 opacity-70" : "border-border"}`}>
     <div className="flex items-start gap-3"><TaskCheckbox task={task} occurrence={occurrence} busy={busy} toggle={toggle} /><button className={`min-w-0 flex-1 break-words text-left text-sm font-medium leading-6 hover:text-primary ${completed ? "text-muted-foreground line-through" : ""}`} onClick={edit}>{task.title}</button><details data-menu onClick={closeActionMenu} className="relative shrink-0"><summary aria-label={t("Действия задачи {v0}", {v0: task.title})} className="cursor-pointer list-none rounded-lg p-1 text-muted-foreground hover:bg-muted"><MoreHorizontal className="size-4" /></summary><div className="absolute right-0 top-7 z-20 min-w-40 rounded-xl border border-border bg-card p-1 shadow-xl"><Button className="w-full justify-start" size="sm" variant="ghost" onClick={edit}><Pencil />{t("Редактировать")}</Button>{cancel && <Button className="w-full justify-start" size="sm" variant="ghost" disabled={busy} onClick={cancel}>{result==="rejected"?<RotateCcw/>:<CircleSlash/>}{result==="rejected"?t("Вернуть в работу"):t("Отменить задачу")}</Button>}{menuActions}<Button className="w-full justify-start text-destructive" size="sm" variant="ghost" disabled={busy} onClick={remove}><Trash2 />{t("Удалить задачу")}</Button></div></details></div>
     {overdue && <p className="inline-flex items-center gap-1 rounded-md bg-red-500/10 px-2 py-1 text-xs font-semibold text-destructive"><AlertTriangle className="size-3"/>{t("Просрочена")}</p>}{result==="rejected" && <p className="text-xs text-muted-foreground">{t("Отменена")}</p>}
     {task.description && <div className="max-h-14 overflow-hidden text-xs text-muted-foreground"><Markdown value={task.description} /></div>}

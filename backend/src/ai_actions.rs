@@ -152,7 +152,7 @@ async fn list(
     u: CurrentUser,
     Query(p): Query<Page>,
 ) -> Result<Json<Vec<View>>, ApiError> {
-    let rows:Vec<Row>=sqlx::query_as(&format!("SELECT {COLUMNS} FROM app.ai_actions WHERE user_id=$1 AND ($2::timestamptz IS NULL OR created_at<$2) ORDER BY created_at DESC,id LIMIT 50"))
+    let rows:Vec<Row>=sqlx::query_as(&format!("SELECT {COLUMNS} FROM app.ai_actions WHERE user_id=$1 AND NOT EXISTS(SELECT 1 FROM app.history_removals h WHERE h.user_id=$1 AND h.kind='ai' AND h.item_key=app.ai_actions.id::text) AND ($2::timestamptz IS NULL OR created_at<$2) ORDER BY created_at DESC,id LIMIT 50"))
         .bind(u.id).bind(p.before).fetch_all(&s.database).await?;
     Ok(Json(
         rows.into_iter()

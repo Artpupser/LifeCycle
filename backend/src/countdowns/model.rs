@@ -33,6 +33,8 @@ pub(super) struct Row {
     pub(super) id: Uuid,
     pub(super) title: String,
     pub(super) category: String,
+    #[sqlx(default)]
+    pub(super) tags: DbJson<Vec<String>>,
     pub(super) icon: String,
     pub(super) target_date: NaiveDate,
     pub(super) recurrence: String,
@@ -62,6 +64,7 @@ pub(crate) struct Countdown {
     pub(super) id: Uuid,
     pub(super) title: String,
     pub(super) category: String,
+    pub(super) tags: Vec<String>,
     pub(super) icon: String,
     pub(super) target_date: Option<NaiveDate>,
     pub(super) repeat_yearly: bool,

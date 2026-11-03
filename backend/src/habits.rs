@@ -677,7 +677,7 @@ async fn history(
     .bind(id)
     .fetch_one(&s.database)
     .await?;
-    let rows=sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT snapshot FROM app.task_occurrences WHERE user_id=$1 AND task_id=$2 ORDER BY occurrence_date DESC")
+    let rows=sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT snapshot FROM app.task_occurrences WHERE user_id=$1 AND task_id=$2 AND NOT EXISTS(SELECT 1 FROM app.history_removals h WHERE h.user_id=$1 AND h.kind='habit' AND h.item_key=$2::text||':'||occurrence_date::text) ORDER BY occurrence_date DESC")
         .bind(u.id).bind(id).fetch_all(&s.database).await?;
     Ok(Json(
         rows.into_iter()

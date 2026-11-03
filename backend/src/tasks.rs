@@ -426,7 +426,7 @@ pub(crate) async fn save_in(
             return Err(ApiError::validation("Task hierarchy cannot contain cycles"));
         }
     }
-    crate::task_tags::register(tx, user, &v.tags).await?;
+    crate::labels::register(s, tx, user, &v.tags).await?;
     let query = if create {
         "INSERT INTO app.tasks (id,user_id,title,description,status,tags,color,priority,parent_id,due_at,schedule)
          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *"
@@ -645,7 +645,7 @@ async fn history(
     .bind(u.id)
     .fetch_optional(&s.database)
     .await?;
-    let rows = sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT snapshot FROM app.task_occurrences WHERE user_id=$1 AND task_id=$2 AND snapshot->'task'->>'source_kind'='manual' ORDER BY occurrence_date DESC").bind(u.id).bind(id).fetch_all(&s.database).await?;
+    let rows = sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT snapshot FROM app.task_occurrences WHERE user_id=$1 AND task_id=$2 AND snapshot->'task'->>'source_kind'='manual' AND NOT EXISTS(SELECT 1 FROM app.history_removals h WHERE h.user_id=$1 AND h.kind='task' AND h.item_key=$2::text||':'||occurrence_date::text) ORDER BY occurrence_date DESC").bind(u.id).bind(id).fetch_all(&s.database).await?;
     if rule.is_none() && rows.is_empty() {
         return Err(domain::not_found());
     }

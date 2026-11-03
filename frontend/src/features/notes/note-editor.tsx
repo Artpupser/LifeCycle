@@ -1,5 +1,6 @@
+import { formatLabels } from "@/systems/labels/values";
 import { t, useLanguage } from "@/systems/i18n/locale";
-import { LabelInput } from "@/features/planning/tag-chip";
+import { LabelInput } from "@/systems/labels/inputs";
 import { normalizeLabels } from "@/features/planning/types";
 import {useEffect,useState,type FormEvent} from "react";
 import {X} from "@/components/icons";
@@ -15,7 +16,7 @@ import type {Folder,Note,NoteInput} from "./note-types";
 function input(value:NoteInput):NoteInput{return {title:value.title,content:value.content,tags:value.tags,color:value.color,folder_id:value.folder_id};}
 export function NoteEditor({initial,folders,saved,close,submitDraft,embedded=false,dirtyChanged,accessChanged}:{initial:NoteInput&{id?:string;ai_shared?:boolean;ai_access_revision?:number};folders:Folder[];saved:(note?:Note)=>void;close:()=>void;submitDraft?:(value:NoteInput)=>Promise<void>;embedded?:boolean;dirtyChanged?:(dirty:boolean)=>void;accessChanged?:(next:AiAccess)=>void}) {
   useLanguage();
-  const [value,setValue]=useState(()=>input(initial));const [tags,setTags]=useState(initial.tags.join(", "));
+  const [value,setValue]=useState(()=>input(initial));const [tags,setTags]=useState(formatLabels(initial.tags));
   const [baseline,setBaseline]=useState(()=>JSON.stringify(input(initial)));
   const [tab,setTab]=useState<"content"|"properties">("content");
   const [access,setAccess]=useState<AiAccess>({ai_shared:initial.ai_shared??false,ai_access_revision:initial.ai_access_revision??0});

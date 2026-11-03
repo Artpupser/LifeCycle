@@ -149,6 +149,7 @@ pub(super) fn computed(
         id: row.id,
         title: row.title,
         category: row.category,
+        tags: row.tags.0,
         icon: row.icon,
         target_date: (!row.suspended).then_some(row.target_date),
         repeat_yearly,
@@ -174,4 +175,21 @@ pub(super) fn computed(
         contact_birthday: row.contact_birthday,
         suspended: row.suspended,
     })
+}
+
+pub(super) fn category(value: &str) -> Result<String, ApiError> {
+    if let Some(id) = value.strip_prefix("custom:") {
+        let id = uuid::Uuid::parse_str(id).map_err(|_| ApiError::validation("Invalid category"))?;
+        return Ok(format!("custom:{id}"));
+    }
+    let result = match value.trim().to_lowercase().as_str() {
+        "birthday" | "день рождения" | "др" => Ok("birthday"),
+        "anniversary" | "годовщина" => Ok("anniversary"),
+        "holiday" | "праздник" => Ok("holiday"),
+        "personal" | "личное" => Ok("personal"),
+        "work" | "работа" => Ok("work"),
+        "other" | "событие" => Ok("other"),
+        _ => Err(ApiError::validation("Choose an event category")),
+    };
+    result.map(str::to_owned)
 }

@@ -1,5 +1,6 @@
 import {t} from "@/systems/i18n/locale";
 export const navigationCatalog=[
+  {to:"/labels",label:"Теги и категории",icon:"tabler:tags"},
   {to:"/today",label:"Сегодня",icon:"tabler:sun"},
   {to:"/habits",label:"Привычки",icon:"tabler:seedling"},
   {to:"/workouts",label:"Тренировки",icon:"tabler:barbell"},

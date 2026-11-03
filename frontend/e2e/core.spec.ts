@@ -129,7 +129,7 @@ test("countdown edits and persisted Pomodoro pause, resume and cancellation work
   await page.getByRole("link", { name: "Отсчёты", exact: true }).click();
   await page.getByRole("button", { name: "Новое событие", exact: true }).click();
   await page.getByLabel("Название события", { exact: true }).fill("Ежегодный праздник");
-  await page.getByLabel("Категория события", { exact: true }).fill("День рождения");
+  await page.getByLabel("Категория события", { exact: true }).selectOption("birthday");
   await page.getByLabel("Дата события", { exact: true }).fill("2000-12-31");
   await page.getByLabel("Повторение события", { exact: true }).selectOption("yearly");
   await page.getByRole("button", { name: "Сохранить событие", exact: true }).click();

@@ -109,7 +109,7 @@ async fn sync_birthday(
         sqlx::query(
             r"INSERT INTO app.countdowns(id, user_id, title, category, icon, target_date,
                                         repeat_yearly, recurrence, contact_id, contact_birthday)
-              VALUES($1, $2, 'День рождения', 'День рождения', 'cake', '1900-01-01', true, 'yearly', $3, true)
+              VALUES($1, $2, 'День рождения', 'birthday', 'cake', '1900-01-01', true, 'yearly', $3, true)
               ON CONFLICT(user_id, contact_id) WHERE contact_birthday DO NOTHING",
         )
         .bind(Uuid::new_v4())

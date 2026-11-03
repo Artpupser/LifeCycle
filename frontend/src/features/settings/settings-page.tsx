@@ -1,3 +1,4 @@
+import { OperatorSettings } from "@/systems/operators/settings";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { ThemeEditor } from "@/systems/themes/theme-editor";
 import { validTheme } from "@/systems/themes/themes";
@@ -37,7 +38,7 @@ export function SettingsPage() {
     finally { setPending(false); }
   }
 
-  return <main id="main" className="mx-auto w-full max-w-4xl px-5 py-10 sm:px-10">
+  return <main id="main" className="mx-auto w-full max-w-4xl px-5 pb-40 pt-10 sm:px-10">
     <div className="mb-8"><p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary"><SlidersHorizontal className="size-4" aria-hidden="true" />{t("Под ваш ритм")}</p><h1 className="text-3xl font-semibold tracking-tight">{t("Настройки")}</h1><p className="mt-3 text-sm leading-7 text-muted-foreground">{t("Предпочтения сохраняются в вашем аккаунте.")}</p></div>
     <form onSubmit={(event) => void submit(event)} className="space-y-6">
       <fieldset disabled={pending} className="space-y-6">
@@ -58,11 +59,12 @@ export function SettingsPage() {
           <FormField id="pomodoro_break_minutes" label={t("Отдых, минут")}><Input id="pomodoro_break_minutes" type="number" min={1} max={180} required value={Number.isNaN(draft.pomodoro_break_minutes) ? "" : draft.pomodoro_break_minutes} onChange={(event) => update("pomodoro_break_minutes", event.target.valueAsNumber)} /></FormField>
         </CardContent></Card>
       </fieldset>
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4">
+      <div className="fixed bottom-3 left-[calc(4rem+0.75rem)] right-3 z-30 md:left-[calc(15rem+1rem)] md:right-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-xl">
         <div className="text-sm" aria-live="polite">{error ? <span className="text-destructive" role="alert">{error}</span> : saved ? <span className="text-primary">{t("Настройки сохранены")}</span> : <span className="text-muted-foreground">{dirty ? t("Есть несохранённые изменения") : t("Все изменения сохранены")}</span>}</div>
         <Button type="submit" disabled={pending || uploading || !dirty || (draft.theme==="custom"&&!validTheme(draft.custom_theme!))}>{pending ? <LoaderCircle className="" aria-hidden="true" /> : <Save aria-hidden="true" />}{pending ? t("Сохраняем…") : t("Сохранить настройки")}</Button>
       </div>
     </form>
+    <OperatorSettings />
     <AiSettings />
   </main>;
 }

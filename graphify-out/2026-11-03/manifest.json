@@ -1583,40 +1583,16 @@
     "ast_hash": "2080af6d0220422b77e05c0d34521487",
     "semantic_hash": ""
   },
-  "frontend/test-results/frontend-systems-countdown-bab80-ount-time-including-seconds/mobile-events.png": {
-    "mtime": 1793695978.0816762,
-    "seen": 1793696116.180943,
-    "ast_hash": "2d6913e587952c74250d10df961d33ae",
-    "semantic_hash": ""
-  },
   "frontend/test-results/.last-run.json": {
-    "mtime": 1793696012.9165304,
-    "seen": 1793696116.1799097,
+    "mtime": 1793696262.747119,
+    "seen": 1793696322.401025,
     "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
     "semantic_hash": ""
   },
-  "frontend/test-results/shared-systems-background--41523-e-upload-and-survive-reload/private-images-and-background.png": {
-    "mtime": 1793696005.5065665,
-    "seen": 1793696116.1809456,
-    "ast_hash": "10e16f4ef4178117f4eacc7016fa1dc5",
-    "semantic_hash": ""
-  },
-  "frontend/test-results/shared-systems-boards-habi-fd776-he-full-visual-icon-catalog/shared-icon-editor.png": {
-    "mtime": 1793696012.771531,
-    "seen": 1793696116.1809468,
-    "ast_hash": "0d6d9605925db0735ccd070fd9c2f21d",
-    "semantic_hash": ""
-  },
-  "frontend/test-results/shared-systems-language-an-1e33f-preferences-reset-on-logout/english-ocean-notes.png": {
-    "mtime": 1793696001.0205872,
-    "seen": 1793696116.1809483,
-    "ast_hash": "e7f6dc34421bcd0a59798393dee47233",
-    "semantic_hash": ""
-  },
   "frontend/e2e/holidays-motion.spec.ts": {
-    "mtime": 1793696109.0271235,
-    "seen": 1793696116.177821,
-    "ast_hash": "de49365b5e1f114dab24b25eaf70d2aa",
+    "mtime": 1793696259.0750859,
+    "seen": 1793696322.3954642,
+    "ast_hash": "deb838356e7b45040232653755fd23f3",
     "semantic_hash": ""
   },
   "frontend/src/systems/animations/animation-provider.tsx": {
@@ -1656,15 +1632,15 @@
     "semantic_hash": ""
   },
   "frontend/src/systems/effects/events.test.ts": {
-    "mtime": 1793695368.8237948,
-    "seen": 1793696116.1793573,
-    "ast_hash": "ef21478839e59ef8a10437900117b649",
+    "mtime": 1793696371.7725794,
+    "seen": 1793696390.1851108,
+    "ast_hash": "2dbaa7e7203b7edae0aec0ad05e8c8ee",
     "semantic_hash": ""
   },
   "frontend/src/systems/effects/events.ts": {
-    "mtime": 1793695368.792796,
-    "seen": 1793696116.1793582,
-    "ast_hash": "c5a2b61bed2b74f43c2c83cd30caabe1",
+    "mtime": 1793696371.7415752,
+    "seen": 1793696390.1851134,
+    "ast_hash": "c89e375d954191de64ffeed4414fbbb3",
     "semantic_hash": ""
   },
   "frontend/src/systems/effects/particles.ts": {
@@ -1743,12 +1719,6 @@
     "mtime": 1793695959.6577222,
     "seen": 1793696116.1806698,
     "ast_hash": "1f761859405727080b5de2152b35156d",
-    "semantic_hash": ""
-  },
-  "frontend/test-results/holidays-motion-calendar-p-093bc--rare-worldwide-observances/calendar-holidays-mobile.png": {
-    "mtime": 1793695982.040663,
-    "seen": 1793696116.1809444,
-    "ast_hash": "b6cd7cb1d7427ac76d16a282a180983f",
     "semantic_hash": ""
   },
   "frontend/pnpm-lock.yaml": {

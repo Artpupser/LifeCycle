@@ -1,8 +1,9 @@
+import { formatLabels } from "@/systems/labels/values";
 import { useUploadActivity } from "@/systems/media/use-upload-activity";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { IconPicker } from "@/systems/icons/icon-picker";
 import { resolveIcon } from "@/systems/icons/catalog";
-import { LabelInput } from "@/features/planning/tag-chip";
+import { LabelInput } from "@/systems/labels/inputs";
 import { normalizeLabels } from "@/features/planning/types";
 import { useState, type FormEvent } from "react";
 import { Dialog } from "@/components/dialog";
@@ -21,7 +22,7 @@ import { habitChanged, type HabitInput } from "./types";
 export function HabitEditor({ initial, saved, close }: { initial: HabitInput & { id?: string }; saved: () => void; close: () => void }) {
   useLanguage();
   const [value, setValue] = useState({...initial,habit:{...initial.habit,icon:resolveIcon(initial.habit.icon,"tabler:seedling")}});
-  const [tags, setTags] = useState(initial.tags.join(", "));
+  const [tags, setTags] = useState(formatLabels(initial.tags));
   const {uploading, setUploading} = useUploadActivity();
   const action = useAction();
   const workouts = useResource<RecordData<Workout>[]>("/workouts");

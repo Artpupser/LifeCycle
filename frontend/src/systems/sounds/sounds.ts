@@ -15,3 +15,5 @@ export function previewSound(next:SoundPreferences) {
   try {set({muted:false,volume:(next.sound_volume??25)/100,theme:next.sound_theme??"soft"});play("success");} catch { /* Unsupported or locked audio stays silent. */ }
   previewTimer=setTimeout(apply,1000);
 }
+
+export function playTaskResult(status:string){if(status==="completed")playSound("success");else if(status==="rejected"||status==="todo")playSound("bubble");}

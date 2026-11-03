@@ -106,3 +106,14 @@ export function countdownParts(seconds: number) {
   const n=Math.floor(Math.abs(seconds));
   return {days:Math.floor(n/86400),clock:`${String(Math.floor(n/3600)%24).padStart(2,"0")}:${String(Math.floor(n/60)%60).padStart(2,"0")}:${String(n%60).padStart(2,"0")}`};
 }
+
+/** Birthday ages use civil dates and the same Feb-29 clamp as event recurrence. */
+export function birthdayAges(birth:string|null|undefined,next:string|null|undefined,timezone:string,now:number=Date.now()) {
+ if(!birth||!isCalendarDate(birth))return null;
+ const today=localDate(timezone,now);if(birth>today)return null;
+ const year=Number(today.slice(0,4)),born=Number(birth.slice(0,4));
+ const anniversary=`${year}-${birth.slice(5)}`;
+ const clamped=isCalendarDate(anniversary)?anniversary:`${year}-02-28`;
+ const current=year-born-(today<clamped?1:0);
+ return {current,next:Math.max(current,next?Number(next.slice(0,4))-born:current+1),today:today===clamped};
+}

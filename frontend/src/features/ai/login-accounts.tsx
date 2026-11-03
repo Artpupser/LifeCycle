@@ -1,3 +1,4 @@
+import { ExternalLink } from "@/systems/links/external-link";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
@@ -65,7 +66,7 @@ export function LoginAccounts({ config, onSaved, onModel, onApply }: { config: A
     </div>)}
     {accounts.resource.status === "error" && <p role="alert" className="text-sm text-destructive">{accounts.resource.message}</p>}
     {config.active_account_id && <div className="space-y-2"><Button size="sm" variant="outline" disabled={busy} onClick={() => void loadModels()}>{t("Загрузить модели ChatGPT")}</Button>{models.length > 0 && <Select aria-label={t("Доступные модели ChatGPT")} defaultValue="" onChange={(event) => onModel(event.target.value)}><option value="" disabled>{t("Выберите модель аккаунта")}</option>{models.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</Select>}{models.length > 0 && <div className="space-y-2"><p className="text-sm text-muted-foreground">{t("Сохраните выбранную модель перед отправкой сообщения.")}</p><Button size="sm" disabled={busy} onClick={onApply}>{t("Сохранить выбранную модель")}</Button></div>}</div>}
-    <a className="block text-sm text-primary underline" href="https://chatgpt.com/settings/usage" target="_blank" rel="noreferrer">{t("Лимиты и доступ приложений в ChatGPT")}</a>
+    <ExternalLink className="block text-sm text-primary underline" href="https://chatgpt.com/settings/usage" target="_blank" rel="noreferrer">{t("Лимиты и доступ приложений в ChatGPT")}</ExternalLink>
     {forgetting && <Dialog title={t("Удалить привязку ChatGPT?")} onClose={() => setForgetting(null)}><p className="mb-4 text-sm leading-6">{t("Аккаунт, токены и данные подключения будут удалены из LifeCycle. Будет выполнена попытка отзыва доступа у провайдера. Ваш аккаунт LifeCycle, чаты и тренировки сохранятся. Для повторного подключения используйте Continue with ChatGPT.")}</p><Button disabled={busy} onClick={() => void disconnect(forgetting, true)}>{t("Удалить привязку навсегда")}</Button></Dialog>}
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
   </div>;

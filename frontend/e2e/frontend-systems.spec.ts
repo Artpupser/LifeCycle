@@ -65,7 +65,7 @@ test("contact tag editor preserves legacy punctuation and validates limits befor
   });
   await page.goto("/contacts");
   await page.getByRole("button",{name:"Изменить контакт",exact:true}).click();
-  await expect(page.getByLabel("Категории контакта",{exact:true})).toHaveValue("Друзья, коллеги");
+  await expect(page.getByLabel("Категории контакта",{exact:true})).toHaveCount(0);
   const tags=page.getByLabel("Теги контакта",{exact:true});
   await tags.fill("x".repeat(65));
   await page.getByRole("button",{name:"Сохранить контакт",exact:true}).click();

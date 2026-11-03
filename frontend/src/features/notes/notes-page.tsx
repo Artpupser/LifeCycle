@@ -1,5 +1,5 @@
 import { t, useLanguage } from "@/systems/i18n/locale";
-import { TagChip } from "@/features/planning/tag-chip";
+import { TagChip } from "@/systems/labels/inputs";
 import {FolderPlus,NotebookPen,Pencil,Plus,Trash2,MoreHorizontal,X} from "@/components/icons";
 import {useState,type FormEvent} from "react";
 import {Dialog} from "@/components/dialog";

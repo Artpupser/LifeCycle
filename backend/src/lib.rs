@@ -16,18 +16,20 @@ pub mod domain;
 pub mod error;
 pub mod habits;
 mod health;
+mod history;
 mod intimacy;
+mod labels;
 mod mail;
 mod media;
 mod navigation;
 mod notes;
+mod operators;
 mod pomodoro;
 mod pomodoro_programs;
 pub mod profile;
 pub mod schedule;
 pub mod settings;
 pub mod state;
-mod task_tags;
 pub mod tasks;
 mod workout_plan;
 mod workout_preferences;
@@ -57,7 +59,9 @@ pub fn router(state: AppState) -> Router {
         .merge(navigation::routes())
         .merge(tasks::routes())
         .merge(boards::routes())
-        .merge(task_tags::routes())
+        .merge(labels::routes())
+        .merge(history::routes())
+        .merge(operators::routes())
         .merge(habits::routes())
         .merge(media::routes())
         .merge(countdowns::routes())

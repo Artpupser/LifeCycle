@@ -1,7 +1,7 @@
 # Graph Report - LifeCycle  (2026-11-03)
 
 ## Corpus Check
-- 307 files · ~185,265 words
+- 307 files · ~185,269 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 14 file(s) not represented in the graph (top: (none) 9, .css 2, .example 1)
 
@@ -538,16 +538,16 @@ Nodes (8): Conditions, Input, load(), Preferences, read(), routes(), training_co
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `AppState` connect `AppState` to `AppState`, `AppState`, `ai_login.rs`, `service.rs`, `pomodoro_programs.rs`, `verify_code`, `countdowns.rs`, `workout_sessions.rs`, `schedule.rs`, `intimacy.rs`, `habits.rs`, `ai_access.rs`, `AppState`, `CurrentUser`, `foundation.rs`, `pomodoro.rs`, `ApiJson`, `ai_actions.rs`, `CurrentUser`, `analytics.rs`, `workouts.rs`, `media.rs`, `profile.rs`, `ai_provider.rs`, `navigation.rs`, `deserialize`, `task_tags.rs`, `csrf.rs`, `workout_preferences.rs`?**
-  _High betweenness centrality (0.125) - this node is a cross-community bridge._
+  _High betweenness centrality (0.128) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `useLanguage()` (e.g. with `Переиспользование` and `getLanguage()`) actually correct?**
   _`useLanguage()` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `lifecycle-api`, `Exercise`, `Workout` to the rest of the system?**
   _35 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `AppState` be split into smaller, more focused modules?**
   _Cohesion score 0.12349726775956284 - nodes in this community are weakly interconnected._
-- **Why does `ApiJson` connect `ApiJson` to `AppState`, `AppState`, `ai_login.rs`, `pomodoro_programs.rs`, `verify_code`, `workout_sessions.rs`, `schedule.rs`, `intimacy.rs`, `habits.rs`, `ai_access.rs`, `AppState`, `CurrentUser`, `pomodoro.rs`, `ai_actions.rs`, `CurrentUser`, `analytics.rs`, `workouts.rs`, `profile.rs`, `navigation.rs`, `deserialize`, `task_tags.rs`, `workout_preferences.rs`?**
+- **Why does `CurrentUser` connect `AppState` to `AppState`, `AppState`, `ai_login.rs`, `pomodoro_programs.rs`, `verify_code`, `workout_sessions.rs`, `intimacy.rs`, `habits.rs`, `ai_access.rs`, `CurrentUser`, `pomodoro.rs`, `ApiJson`, `ai_actions.rs`, `CurrentUser`, `analytics.rs`, `workouts.rs`, `media.rs`, `profile.rs`, `navigation.rs`, `deserialize`, `task_tags.rs`, `AppState`, `workout_preferences.rs`?**
   _High betweenness centrality (0.027) - this node is a cross-community bridge._
 - **Should `t` be split into smaller, more focused modules?**
   _Cohesion score 0.07457627118644068 - nodes in this community are weakly interconnected._
-- **Why does `CurrentUser` connect `AppState` to `AppState`, `AppState`, `ai_login.rs`, `pomodoro_programs.rs`, `verify_code`, `workout_sessions.rs`, `intimacy.rs`, `habits.rs`, `ai_access.rs`, `CurrentUser`, `pomodoro.rs`, `ApiJson`, `ai_actions.rs`, `CurrentUser`, `analytics.rs`, `workouts.rs`, `media.rs`, `profile.rs`, `navigation.rs`, `deserialize`, `task_tags.rs`, `AppState`, `workout_preferences.rs`?**
+- **Why does `ApiJson` connect `ApiJson` to `AppState`, `AppState`, `ai_login.rs`, `pomodoro_programs.rs`, `verify_code`, `workout_sessions.rs`, `schedule.rs`, `intimacy.rs`, `habits.rs`, `ai_access.rs`, `AppState`, `CurrentUser`, `pomodoro.rs`, `ai_actions.rs`, `CurrentUser`, `analytics.rs`, `workouts.rs`, `profile.rs`, `navigation.rs`, `deserialize`, `task_tags.rs`, `workout_preferences.rs`?**
   _High betweenness centrality (0.026) - this node is a cross-community bridge._

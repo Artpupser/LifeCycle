@@ -1,4 +1,5 @@
-import { invalidateResources } from "@/systems/loading/cache";
+import { feedbackEvents } from "@/lib/feedback";
+import { invalidateResources,revalidateResource } from "@/systems/loading/cache";
 import { effectOrigin, mutationEffect, showEffect } from "@/systems/effects/events";
 import { t } from "@/systems/i18n/locale";
 type ApiErrorPayload = { error?: { code?: string } };
@@ -95,7 +96,9 @@ export async function api<T>(path: string, options: { method?: "GET" | "POST" | 
     throw new ApiError(response.status, payload.error?.code ?? "request_failed");
   }
   const result:T=response.status===204?undefined:await response.json();
-  if(options.method&&options.method!=="GET")invalidateResources();
+  if(options.method&&options.method!=="GET"&&path!=="/operators/lookup")invalidateResources();
+  if(options.method==="POST"&&/^\/tasks\/[^/]+\/occurrences\/[^/]+$/.test(path)){const status=(result as {status?:string}|null)?.status;if(status)feedbackEvents.dispatchEvent(new CustomEvent("task-result",{detail:{status}}));}
+  if(options.method&&options.method!=="GET"&&/^\/(labels|task-tags|notes|contacts|countdowns|workouts|exercises)(\/|$)/.test(path))revalidateResource("/labels");
   const effect=mutationEffect(path,options.method??"GET",options.body,result);
   if(effect)showEffect(effect,origin);
   return result;

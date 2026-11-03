@@ -6,7 +6,7 @@ export function useResource<T>(path:string|null){
  const subscribe=useCallback((listener:()=>void)=>subscribeResource(path,listener),[path]);
  const snapshot=useSyncExternalStore(subscribe,()=>resourceSnapshot(path),()=>resourceSnapshot(path));
  const request=useCallback((force=false)=>{if(path)void loadResource(path,()=>api<T>(path),errorMessage,force);},[path]);
- useEffect(()=>{request();const visible=()=>{if(document.visibilityState==="visible")request();};window.addEventListener("focus",visible);document.addEventListener("visibilitychange",visible);return()=>{window.removeEventListener("focus",visible);document.removeEventListener("visibilitychange",visible);};},[request]);
+ useEffect(()=>{request();const visible=()=>{if(document.visibilityState==="visible")request(true);};window.addEventListener("focus",visible);document.addEventListener("visibilitychange",visible);window.addEventListener("online",visible);return()=>{window.removeEventListener("focus",visible);document.removeEventListener("visibilitychange",visible);window.removeEventListener("online",visible);};},[request]);
  const refresh=useCallback(()=>request(true),[request]);
  const mutate=useCallback((updater:(data:T)=>T)=>{if(path)mutateResource(path,updater);},[path]);
  return {resource:snapshot.resource as Resource<T>,refresh,retry:refresh,mutate,refreshing:snapshot.refreshing,refreshError:snapshot.error};

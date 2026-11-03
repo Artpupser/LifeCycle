@@ -8,7 +8,7 @@ test("1.6 recurring events preserve Markdown, reach Today/calendar, and create e
   await page.goto("/countdowns");
   await page.getByRole("button", { name: "Новое событие", exact: true }).click();
   await page.getByLabel("Название события", { exact: true }).fill("Памятная дата 1.6");
-  await page.getByLabel("Категория события", { exact: true }).fill("Моя категория");
+  await page.getByLabel("Категория события", { exact: true }).selectOption("personal");
   await page.getByLabel("Повторение события", { exact: true }).selectOption("daily");
   await page.getByLabel("Описание события", { exact: true }).fill("**Событие Markdown**\n\n<script>alert(1)</script>");
   await page.getByRole("button", { name: "Сохранить событие", exact: true }).click();

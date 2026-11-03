@@ -88,6 +88,7 @@ mod tests {
     use super::*;
     fn row(date: &str, rule: &str) -> Row {
         Row {
+            tags: DbJson(vec![]),
             id: Uuid::new_v4(),
             title: "Event".into(),
             category: "Custom".into(),
@@ -110,6 +111,19 @@ mod tests {
     }
     fn now(value: &str) -> DateTime<Utc> {
         value.parse().unwrap()
+    }
+    #[test]
+    fn categories_accept_only_enum_or_canonical_registry_identifiers() {
+        assert_eq!(
+            super::domain::category("День рождения").unwrap(),
+            "birthday"
+        );
+        assert_eq!(
+            super::domain::category("custom:123E4567-E89B-42D3-A456-426614174000").unwrap(),
+            "custom:123e4567-e89b-42d3-a456-426614174000"
+        );
+        assert!(super::domain::category("Arbitrary free text").is_err());
+        assert!(super::domain::category("custom:missing").is_err());
     }
     #[test]
     fn recurrence_keeps_anchor_and_does_not_precede_original() {

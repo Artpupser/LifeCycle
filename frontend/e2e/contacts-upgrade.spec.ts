@@ -10,13 +10,13 @@ test("2.1 Contacts support editing, search, selective repeat import and mobile l
   await page.getByRole("button", { name: "Добавить телефон", exact: true }).click();
   await page.getByLabel("Телефон 1", { exact: true }).fill("+7 (900) 123-45-67");
   await page.getByLabel("Дата рождения контакта", { exact: true }).fill("2000-02-29");
-  await page.getByLabel("Профессия", { exact: true }).fill("Архитектор");
-  await page.getByLabel("Категории контакта", { exact: true }).fill("Друзья\nРабота");
+  await expect(page.getByLabel("Профессия", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("Категории контакта", { exact: true })).toHaveCount(0);
   await page.getByLabel("Теги контакта", { exact: true }).fill("Важные");
   await page.getByLabel("Описание контакта", { exact: true }).fill("**Личное описание**");
   await page.getByRole("button", { name: "Сохранить контакт", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Иванова Анна Петровна", exact: true })).toBeVisible();
-  await page.reload(); await page.getByLabel("Поиск контактов", { exact: true }).fill("Архитектор");
+  await page.reload(); await page.getByLabel("Поиск контактов", { exact: true }).fill("тег:Важные");
   const card = page.locator("article").filter({ has: page.getByRole("heading", { name: "Иванова Анна Петровна", exact: true }) });
   await expect(card).toBeVisible(); await card.getByText("Описание контакта", { exact: true }).click();
   await expect(card.locator("strong")).toHaveText("Личное описание");
@@ -126,7 +126,7 @@ test("1.6 legacy birthday becomes a contact-linked event without repeated entry 
 test("1.6 a timed daily countdown rolls forward while open", async ({ page, request }) => {
   await login(page, request);
   const future = new Date(Date.now() + 8000);
-  const response = await page.request.post("/api/countdowns", { headers: { Origin: new URL(page.url()).origin }, data: { title: "Переход повторения", category: "Проверка", icon: "calendar", target_date: new Date(future.getTime() - 86400000).toISOString().slice(0, 10), target_time: future.toISOString().slice(11, 19), timezone: "UTC", recurrence: "daily" } });
+  const response = await page.request.post("/api/countdowns", { headers: { Origin: new URL(page.url()).origin }, data: { title: "Переход повторения", category: "other", icon: "calendar", target_date: new Date(future.getTime() - 86400000).toISOString().slice(0, 10), target_time: future.toISOString().slice(11, 19), timezone: "UTC", recurrence: "daily" } });
   expect(response.status()).toBe(201);
   await page.goto("/countdowns");
   const card = page.locator("article").filter({ has: page.getByRole("heading", { name: "Переход повторения", exact: true }) });

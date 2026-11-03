@@ -1,3 +1,4 @@
+import { ExternalLink } from "@/systems/links/external-link";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { Eye, Pencil } from "@/components/icons";
 import { useEffect, useRef, useState } from "react";
@@ -16,7 +17,7 @@ function safeMarkdownUrl(url: string, image = false) {
 
 export function Markdown({ value, allowImages = true }: { value: string; allowImages?: boolean }) {
   useLanguage();
-  return <div className="markdown min-w-0 break-words text-sm leading-7"><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml urlTransform={(url, key) => key === "src" && !allowImages ? "" : safeMarkdownUrl(url, key === "src")} components={{ a: ({ href, children }) => href ? <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-4">{children}</a> : <span>{children}</span>, img: ({ src, alt }) => src ? <UserImage src={src} alt={alt ?? ""} className="my-4 max-h-96 max-w-full rounded-xl object-contain"/> : <span className="text-muted-foreground">{alt || t("Изображение недоступно")}</span> }}>{value}</ReactMarkdown></div>;
+  return <div className="markdown min-w-0 break-words text-sm leading-7"><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml urlTransform={(url, key) => key === "src" && !allowImages ? "" : safeMarkdownUrl(url, key === "src")} components={{ a: ({ href, children }) => href ? (/^(https?:|mailto:)/i.test(href)?<ExternalLink href={href} className="text-primary underline underline-offset-4">{children}</ExternalLink>:<a href={href} className="text-primary underline underline-offset-4">{children}</a>) : <span>{children}</span>, img: ({ src, alt }) => src ? <UserImage src={src} alt={alt ?? ""} className="my-4 max-h-96 max-w-full rounded-xl object-contain"/> : <span className="text-muted-foreground">{alt || t("Изображение недоступно")}</span> }}>{value}</ReactMarkdown></div>;
 }
 
 export function MarkdownEditor({ id, value, onChange, onUploading, allowImages = true, maxLength = 200_000 }: { id: string; value: string; onChange: (value: string) => void; onUploading?: (uploading: boolean) => void; allowImages?: boolean; maxLength?: number }) {

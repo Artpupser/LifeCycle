@@ -534,7 +534,7 @@ async fn history(
     tasks::lock_tasks(&mut tx, u.id).await?;
     lock(&mut tx, u.id).await?;
     sync(&mut tx, u.id).await?;
-    let mut items:Vec<Session>=sqlx::query_as("SELECT * FROM app.pomodoro_sessions WHERE user_id=$1 AND status IN ('completed','cancelled') ORDER BY ended_at DESC,id DESC LIMIT 51 OFFSET $2").bind(u.id).bind(q.offset).fetch_all(&mut *tx).await?;
+    let mut items:Vec<Session>=sqlx::query_as("SELECT * FROM app.pomodoro_sessions WHERE user_id=$1 AND status IN ('completed','cancelled') AND NOT EXISTS(SELECT 1 FROM app.history_removals h WHERE h.user_id=$1 AND h.kind='pomodoro' AND h.item_key=app.pomodoro_sessions.id::text) ORDER BY ended_at DESC,id DESC LIMIT 51 OFFSET $2").bind(u.id).bind(q.offset).fetch_all(&mut *tx).await?;
     let next_offset = if items.len() > 50 {
         items.truncate(50);
         Some(q.offset + 50)

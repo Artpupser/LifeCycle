@@ -1,3 +1,4 @@
+import { LabelProvider } from "@/systems/labels/provider";
 import { configureAnimations } from "@/systems/animations/policy";
 import { configureEffects } from "@/systems/effects/events";
 import { themes, themeStyle, readableText } from "@/systems/themes/themes";
@@ -28,5 +29,5 @@ export function PreferencesProvider({ initial, children }: { initial: Settings; 
     return () => { media.removeEventListener("change", apply); delete root.dataset.theme; Object.keys(themeStyle(themes.light)).forEach(key=>root.style.removeProperty(key)); root.style.removeProperty("color-scheme"); };
   }, [settings.theme,settings.custom_theme]);
   useEffect(()=>{void setLanguage(settings.language).catch(()=>notify(t("Не удалось загрузить язык. Обновите страницу и повторите выбор."),"error"));},[settings.language]);
-  return <PreferencesContext value={{ settings, updateSettings }}><SoundProvider preferences={settings}>{children}</SoundProvider></PreferencesContext>;
+  return <PreferencesContext value={{ settings, updateSettings }}><LabelProvider><SoundProvider preferences={settings}>{children}</SoundProvider></LabelProvider></PreferencesContext>;
 }

@@ -30,3 +30,9 @@ export function Pulse({children,className,role}:{children?:ReactNode;className?:
   const movement=useMovement();
   return <motion.span role={role} className={className} animate={{opacity:movement?[.5,1,.5]:1}} transition={movement?{duration:1.4,repeat:Infinity}:{duration:0}}>{children}</motion.span>;
 }
+
+type BarProps=Pick<ComponentProps<"rect">,"x"|"y"|"width"|"height"|"rx"|"fill"|"opacity"|"style"|"role"|"aria-label"|"tabIndex"|"onPointerDown"|"onPointerMove"|"onPointerUp"|"onPointerCancel"|"onKeyDown"|"children">;
+export function AnimatedGanttBar({x,width,...props}:BarProps){
+ const movement=useMovement();
+ return <motion.rect {...props} x={0} initial={false} animate={{attrX:Number(x),width:Number(width)}} transition={{duration:movement?.1:0,ease:"easeOut"}}/>;
+}

@@ -1,10 +1,16 @@
+import { formatLabels } from "@/systems/labels/values";
+import {useLabelCatalog} from "@/systems/labels/context";
+import { normalizeLabels } from "@/systems/labels/values";
+import { EventCategorySelect } from "@/systems/labels/category-select";
+import { eventCategory,categoryName,categoryTerms } from "@/systems/labels/categories";
+import { TagChip } from "@/systems/labels/inputs";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { AppIcon } from "@/systems/icons/app-icon";
 import { IconPicker } from "@/systems/icons/icon-picker";
 import { resolveIcon } from "@/systems/icons/catalog";
-import { LabelInput } from "@/features/planning/tag-chip";
+import { LabelInput } from "@/systems/labels/inputs";
 import { FilterSearch } from "@/components/filter-search";
-import { parseFilterQuery, matchesFilter, categoryFilter, filterLiteral, type FilterSpec } from "@/lib/filter-query";
+import { parseFilterQuery, matchesFilter, categoryFilter, tagFilter, filterLiteral, type FilterSpec } from "@/lib/filter-query";
 import { CalendarClock, Pencil, Plus, Trash2 } from "@/components/icons";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
@@ -19,20 +25,21 @@ import { Input, Select } from "@/components/ui/input";
 import { usePreferences } from "@/features/settings/preferences-context";
 import { useResource } from "@/hooks/use-resource";
 import { api, errorMessage } from "@/lib/api";
-import { countdownParts, clockFields, durationClock, instantLabel, dateLabel, localDate } from "@/lib/dates";
+import { birthdayAges, countdownParts, clockFields, durationClock, instantLabel, dateLabel, localDate } from "@/lib/dates";
 import { closeActionMenu } from "@/lib/menu";
 import { MoreHorizontal } from "@/components/icons";
 import { confirmAction } from "@/lib/feedback";
 import { GreetingDialog } from "./greeting-dialog";
 import { recurrenceLabels, type Countdown, type CountdownInput, type EventOccurrence } from "./types";
 
-function CountdownEditor({ initial, categories, close, saved }: { initial: CountdownInput & { id?: string; updated_at?: string; contact_birthday?: boolean; original_at?: string | null }; categories: string[]; close: () => void; saved: () => void }) {
+function CountdownEditor({ initial, close, saved }: { initial: CountdownInput & { id?: string; updated_at?: string; contact_birthday?: boolean; original_at?: string | null }; close: () => void; saved: () => void }) {
   useLanguage();
   const { settings } = usePreferences();
   const contacts = useResource<Contact[]>("/contacts");
   const [initialClock] = useState(() => initial.target_time && initial.original_at ? clockFields(initial.original_at, settings.timezone) : { target_date: initial.target_date, target_time: initial.target_time });
   const [seed, setSeed] = useState<ContactData | null>(null);
-  const [value, setValue] = useState({ ...initial, ...initialClock,icon:resolveIcon(initial.icon,"tabler:calendar") }); const [busy, setBusy] = useState(false); const [uploading, setUploading] = useState(false); const [error, setError] = useState<string | null>(null);
+  const [tags, setTags] = useState(() => formatLabels(initial.tags ?? []));
+  const [value, setValue] = useState({ ...initial, ...initialClock,tags:initial.tags??[],category:eventCategory(initial.category),icon:resolveIcon(initial.icon,"tabler:calendar") }); const [busy, setBusy] = useState(false); const [uploading, setUploading] = useState(false); const [error, setError] = useState<string | null>(null);
   async function submit(event: FormEvent) {
     event.preventDefault(); if (busy || uploading) return; setBusy(true); setError(null);
     const { title, category, icon, recurrence, description, contact_id, contact_birthday } = value;
@@ -40,12 +47,13 @@ function CountdownEditor({ initial, categories, close, saved }: { initial: Count
     const target_date = clockUnchanged ? initial.target_date : value.target_date;
     const target_time = clockUnchanged ? initial.target_time : value.target_time;
     const timezone = clockUnchanged ? initial.timezone : settings.timezone;
-    try { await api(initial.id ? `/countdowns/${initial.id}` : "/countdowns", { method: initial.id ? "PUT" : "POST", body: { title: value.contact_birthday ? t("День рождения") : title.trim(), category: category.trim() || t("Событие"), icon, target_date: target_date || "1900-01-01", target_time, timezone, recurrence, description, contact_id: contact_id || null, contact_birthday: Boolean(contact_birthday), ...(initial.updated_at ? { expected_updated_at: initial.updated_at } : {}) } }); saved(); }
+    try { await api(initial.id ? `/countdowns/${initial.id}` : "/countdowns", { method: initial.id ? "PUT" : "POST", body: { title: value.contact_birthday ? t("День рождения") : title.trim(), category, tags:normalizeLabels(tags), icon, target_date: target_date || "1900-01-01", target_time, timezone, recurrence, description, contact_id: contact_id || null, contact_birthday: Boolean(contact_birthday), ...(initial.updated_at ? { expected_updated_at: initial.updated_at } : {}) } }); saved(); }
     catch (failure) { setError(errorMessage(failure)); } finally { setBusy(false); }
   }
   return <><Dialog title={initial.id ? t("Редактировать событие") : t("Новое событие")} onClose={() => { if (!busy && !uploading) close(); }}><form className="space-y-5" onSubmit={event => void submit(event)}><fieldset className="space-y-5" disabled={busy}>
     <FormField id="countdown-title" label={t("Название события")}><Input disabled={value.contact_birthday} id="countdown-title" required autoFocus maxLength={200} value={value.title} onChange={e => setValue({ ...value, title: e.target.value })} /></FormField>
-    <FormField id="countdown-category" label={t("Категория события")} hint={t("Выберите прежнюю категорию или создайте свою: введите любое название.")}><LabelInput id="countdown-category" single value={value.category} change={category=>setValue({...value,category})} suggestions={categories}/></FormField>
+    <FormField id="countdown-category" label={t("Категория события")}><EventCategorySelect id="countdown-category" value={value.category} change={category=>setValue({...value,category})}/></FormField>
+    <FormField id="countdown-tags" label={t("Теги события")}><LabelInput id="countdown-tags" value={tags} change={setTags}/></FormField>
     <div className="grid gap-4 sm:grid-cols-2"><FormField id="countdown-date" label={t("Дата события")}><Input disabled={value.contact_birthday} id="countdown-date" type="date" min={initialClock.target_date < "1900-01-01" ? initialClock.target_date : "1900-01-01"} max={initialClock.target_date > "9998-12-31" ? initialClock.target_date : "9998-12-31"} required value={value.target_date} onChange={e => setValue({ ...value, target_date: e.target.value })} /></FormField><FormField id="countdown-time" label={t("Время события")} hint={t("Необязательно. Без времени — на весь день.")}><Input disabled={value.contact_birthday} id="countdown-time" type="time" step={1} value={value.target_time ?? ""} onChange={e => setValue({ ...value, target_time: e.target.value || null })} /></FormField></div>
     <FormField id="event-contact" label={t("Связанный контакт")} hint={t("Данные контакта заполняются в контактной книжке.")}><Select id="event-contact" disabled={Boolean(initial.contact_birthday) || contacts.resource.status !== "ready"} value={value.contact_id ?? ""} onChange={e => setValue({ ...value, contact_id: e.target.value || null, contact_birthday: e.target.value ? value.contact_birthday : false })}><option value="" disabled={Boolean(initial.contact_id)}>{t("Без связи")}</option>{contacts.resource.status === "ready" && contacts.resource.data.map(c => <option key={c.id} value={c.id}>{contactName(c.data)}</option>)}</Select></FormField>
     {contacts.resource.status === "error" && <ErrorState message={contacts.resource.message} retry={contacts.retry} />}
@@ -62,11 +70,14 @@ function Remaining({ countdown, now, eventAt, timezone }: { countdown: Countdown
   const remaining = (Date.parse(eventAt ?? countdown.next_at) - now) / 1000;
   const isAllDayToday = !countdown.target_time && countdown.next_date === localDate(timezone, now);
   const parts=countdownParts(remaining);
-  return <div className="space-y-2 py-3 tabular-nums"><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{isAllDayToday ? t("Сегодня · весь день") : remaining >= 0 ? t("До события") : t("С момента события прошло")}</p>{!isAllDayToday&&<div className="flex flex-wrap items-end gap-x-3 gap-y-2"><p className="text-5xl font-semibold tracking-tight text-foreground">{parts.days}<span className="ml-2 text-sm font-normal text-muted-foreground">{t("дн.")}</span></p><p className="pb-1 font-mono text-lg text-primary">{parts.clock}</p></div>}{countdown.contact_birthday&&countdown.full_years!==null&&<p className="text-sm text-muted-foreground">{t("Возраст: ")}{countdown.full_years}</p>}</div>;
+  const birthday=countdown.contact_birthday||eventCategory(countdown.category)==="birthday"||resolveIcon(countdown.icon)==="tabler:cake";
+  const age=birthday?birthdayAges(countdown.target_date,countdown.next_date,timezone,now):null;
+  return <div className="space-y-2 py-3 tabular-nums"><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{isAllDayToday ? t("Сегодня · весь день") : remaining >= 0 ? t("До события") : t("С момента события прошло")}</p>{!isAllDayToday&&<div className="flex flex-wrap items-end gap-x-3 gap-y-2"><p className="text-5xl font-semibold tracking-tight text-foreground">{parts.days}<span className="ml-2 text-sm font-normal text-muted-foreground">{t("дн.")}</span></p><p className="pb-1 font-mono text-lg text-primary">{parts.clock}</p></div>}{age&&<div className="flex flex-wrap gap-x-5 gap-y-2 text-sm"><p>{t("Сейчас: {age} лет",{age:age.current})}</p><p className="text-primary">{age.today?t("Сегодня исполняется {age}",{age:age.current}):t("Будет: {age} лет",{age:age.next})}</p></div>}</div>;
 
 }
 export function CountdownsPage() {
   useLanguage();
+  const labelCatalog=useLabelCatalog();
   const { settings } = usePreferences(); const [now, setNow] = useState(Date.now);
   const [params] = useSearchParams(); const contactFilter = params.get("contact") ?? "";
   const today = localDate(settings.timezone, now);
@@ -75,7 +86,7 @@ export function CountdownsPage() {
   const refreshEvents = resource.refresh; const refreshToday = todayResource.refresh;
   const [editor, setEditor] = useState<(CountdownInput & { id?: string; updated_at?: string; contact_birthday?: boolean }) | null>(null);
   const [greeting, setGreeting] = useState<Countdown | null>(null); const [query, setQuery] = useState(() => contactFilter ? `contact:${filterLiteral(contactFilter)} ` : "");
-  const specs: FilterSpec[] = [categoryFilter, {key:"contact", aliases:["контакт"], label:t("Контакт (имя или ID)"), example:'контакт:"Анна"'}, {key:"period", aliases:["период"],label:t("Период"),example:"период:сегодня",values:["сегодня","прошедшие","today","past"]}, {key:"repeat",aliases:["повтор"],label:t("Повторение"),example:"повтор:yearly",values:Object.keys(recurrenceLabels)}];
+  const specs: FilterSpec[] = [categoryFilter,tagFilter, {key:"contact", aliases:["контакт"], label:t("Контакт (имя или ID)"), example:'контакт:"Анна"'}, {key:"period", aliases:["период"],label:t("Период"),example:"период:сегодня",values:["сегодня","прошедшие","today","past"]}, {key:"repeat",aliases:["повтор"],label:t("Повторение"),example:"повтор:yearly",values:Object.keys(recurrenceLabels)}];
   const filters = parseFilterQuery(query, specs);
   const needsToday = filters.terms.some(term=>term.key==="period" && ["сегодня","today"].includes(term.value.toLocaleLowerCase("ru-RU")));
   const todayOnly = filters.terms.some(term=>term.key==="period" && !term.negative && ["сегодня","today"].includes(term.value.toLocaleLowerCase("ru-RU")));
@@ -92,8 +103,7 @@ export function CountdownsPage() {
     const timer = window.setTimeout(() => { refreshEvents(); refreshToday(); }, Math.max(250, Math.min(60000, nextTransition - Date.now() + 250)));
     return () => window.clearTimeout(timer);
   }, [nextTransition, refreshEvents, refreshToday]);
-  const categories = [...new Set(events.map(c => c.category))];
-  const shown = events.filter(c => matchesFilter(filters, `${c.title} ${c.description} ${c.contact_name ?? ""}`, {category:c.category, contact:[c.contact_id ?? "",c.contact_name ?? ""], repeat:c.recurrence, period:[...(todayIds.has(c.id)?["today","сегодня"]:[]), ...(c.recurrence==="once" && c.next_at && Date.parse(c.next_at)<now?["past","прошедшие"]:[])]})).sort((a,b)=>(a.next_at??"9999").localeCompare(b.next_at??"9999"));
+  const shown = events.filter(c => matchesFilter(filters, `${c.title} ${c.description} ${c.contact_name ?? ""}`, {category:categoryTerms(c.category,labelCatalog),tag:c.tags??[], contact:[c.contact_id ?? "",c.contact_name ?? ""], repeat:c.recurrence, period:[...(todayIds.has(c.id)?["today","сегодня"]:[]), ...(c.recurrence==="once" && c.next_at && Date.parse(c.next_at)<now?["past","прошедшие"]:[])]})).sort((a,b)=>(a.next_at??"9999").localeCompare(b.next_at??"9999"));
   async function remove(c: Countdown) {
     if (!await confirmAction(c.contact_birthday ? t("Удалить день рождения из отсчётов? Автосоздание для этого контакта отключится. Контакт сохранится.") : t("Удалить событие безвозвратно? Контакт сохранится."))) return;
     setBusy(true); setError(null);
@@ -104,7 +114,7 @@ export function CountdownsPage() {
     setBusy(true); setError(null);
     try { await api(`/countdowns/${c.id}/unlink`, { method: "POST", body: { expected_updated_at: c.updated_at } }); refresh(); } catch (failure) { setError(errorMessage(failure)); } finally { setBusy(false); }
   }
-  return <main id="main" className="mx-auto max-w-6xl space-y-7 px-5 py-10 sm:px-10"><header className="flex flex-wrap items-start justify-between gap-4"><div><p className="mb-2 text-sm text-primary">{t("Важные даты")}</p><h1 className="text-3xl font-semibold">{t("Обратный отсчёт")}</h1><p className="mt-3 text-sm text-muted-foreground">{t("Самое важное — вовремя.")}</p></div><Button onClick={() => setEditor({ title: "", category: t("Событие"), icon: "calendar", target_date: today, target_time: null, timezone: settings.timezone, recurrence: "once", description: "", contact_id: filters.terms.find(term=>term.key==="contact" && !term.negative && events.some(c=>c.contact_id===term.value))?.value || null, details: { full_name: "", phone: "", occupation: "", relationship: "", notes: "" }, display: { clock: "both", show_years: true, show_repetitions: true } })}><Plus aria-hidden="true" />{t("Новое событие")}</Button></header>
+  return <main id="main" className="mx-auto max-w-6xl space-y-7 px-5 py-10 sm:px-10"><header className="flex flex-wrap items-start justify-between gap-4"><div><p className="mb-2 text-sm text-primary">{t("Важные даты")}</p><h1 className="text-3xl font-semibold">{t("Обратный отсчёт")}</h1><p className="mt-3 text-sm text-muted-foreground">{t("Самое важное — вовремя.")}</p></div><Button onClick={() => setEditor({ title: "", category: "other", icon: "calendar", target_date: today, target_time: null, timezone: settings.timezone, recurrence: "once", description: "", contact_id: filters.terms.find(term=>term.key==="contact" && !term.negative && events.some(c=>c.contact_id===term.value))?.value || null, details: { full_name: "", phone: "", occupation: "", relationship: "", notes: "" }, display: { clock: "both", show_years: true, show_repetitions: true } })}><Plus aria-hidden="true" />{t("Новое событие")}</Button></header>
     <div className="flex flex-wrap gap-2"><Link to="/contacts" className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 text-sm">{t("Контактная книжка")}</Link><Button size="icon" variant="outline" aria-label={t("Обновить события")} title={t("Обновить события")} onClick={refresh}><AppIcon icon="tabler:refresh"/></Button></div>
     <FilterSearch label={t("Поиск событий")} value={query} change={setQuery} specs={specs} />
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
@@ -113,7 +123,8 @@ export function CountdownsPage() {
       const eventAt = occurrence?.event_at ?? countdown.next_at;
       const shownClock = countdown.target_time && eventAt ? clockFields(eventAt, settings.timezone) : null;
       const displayDate = shownClock?.target_date ?? occurrence?.date ?? countdown.next_date;
-      return <article key={countdown.id} className="counter-card flex min-w-0 flex-col rounded-2xl border border-border bg-card p-5 sm:p-6"><div className="mb-5 flex items-start gap-3"><span className="rounded-2xl bg-primary/10 p-3 text-primary"><AppIcon icon={countdown.icon} className="size-7"/></span><div className="min-w-0"><p className="break-words text-xs text-muted-foreground">{countdown.category}</p><h2 className="mt-1 break-words text-lg font-semibold">{countdown.title}</h2>{todayIds.has(countdown.id) && <p className="mt-1 text-xs text-primary">{t("Сегодня")}</p>}</div></div>
+      return <article key={countdown.id} className="counter-card flex min-w-0 flex-col rounded-2xl border border-border bg-card p-5 sm:p-6"><div className="mb-5 flex items-start gap-3"><span className="rounded-2xl bg-primary/10 p-3 text-primary"><AppIcon icon={countdown.icon} className="size-7"/></span><div className="min-w-0"><p className="break-words text-xs text-muted-foreground">{categoryName(countdown.category,labelCatalog)}</p><h2 className="mt-1 break-words text-lg font-semibold">{countdown.title}</h2>{todayIds.has(countdown.id) && <p className="mt-1 text-xs text-primary">{t("Сегодня")}</p>}</div></div>
+        {!!countdown.tags?.length&&<div className="flex flex-wrap gap-1">{countdown.tags.map(name=><TagChip key={name} name={name}/>)}</div>}
         <Remaining countdown={countdown} now={now} timezone={settings.timezone} eventAt={occurrence?.event_at} />
         {displayDate && <p className="mt-4 text-sm">{dateLabel(displayDate, { day: "numeric", month: "long", year: "numeric" })}{shownClock && ` · ${instantLabel(eventAt!, settings.timezone, settings.time_format, true)}`}</p>}
         <p className="mt-1 text-xs text-muted-foreground">{t(recurrenceLabels[countdown.recurrence])}</p>
@@ -122,6 +133,6 @@ export function CountdownsPage() {
 
       </article>;
     })}</div>}
-    {editor && <CountdownEditor initial={editor} categories={categories} close={() => setEditor(null)} saved={() => { setEditor(null); refresh(); }} />}{greeting && <GreetingDialog close={() => setGreeting(null)} localRecipient={greeting.details.full_name} />}
+    {editor && <CountdownEditor initial={editor} close={() => setEditor(null)} saved={() => { setEditor(null); refresh(); }} />}{greeting && <GreetingDialog close={() => setGreeting(null)} localRecipient={greeting.details.full_name} />}
   </main>;
 }
