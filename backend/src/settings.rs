@@ -17,6 +17,8 @@ pub struct Settings {
     pub background_image: Option<uuid::Uuid>,
     pub background_dim: u8,
     pub sounds_enabled: bool,
+    pub animations_enabled: bool,
+    pub effects_enabled: bool,
     pub sound_ui: bool,
     pub sound_notifications: bool,
     pub sound_volume: u8,
@@ -100,6 +102,8 @@ impl Default for Settings {
             background_image: None,
             background_dim: 85,
             sounds_enabled: false,
+            animations_enabled: true,
+            effects_enabled: true,
             sound_ui: true,
             sound_notifications: true,
             sound_volume: 25,
@@ -227,6 +231,8 @@ mod tests {
     fn supports_languages_themes_and_sound_limits_with_legacy_defaults() {
         let mut settings: Settings = serde_json::from_str(r#"{"timezone":"UTC"}"#).unwrap();
         assert!(!settings.sounds_enabled);
+        assert!(settings.animations_enabled);
+        assert!(settings.effects_enabled);
         assert_eq!(settings.background_dim, 85);
         settings.language = "en".into();
         settings.theme = "ocean".into();

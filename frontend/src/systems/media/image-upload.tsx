@@ -19,5 +19,5 @@ export function ImageUpload({label=t("Изображение"),onUploaded,onUplo
     catch(failure){if(!controller.signal.aborted)setError(errorMessage(failure));}
     finally{if(!controller.signal.aborted){setBusy(false);handlers.current.onUploading?.(false);}request.current=null;if(input.current)input.current.value="";}
   }
-  return <div className="space-y-2"><Button size="sm" variant="outline" disabled={disabled||busy} onClick={()=>input.current?.click()}>{busy?<LoaderCircle className="animate-spin"/>:<ImagePlus/>}{t(label)}</Button><input ref={input} type="file" className="sr-only" accept={imageAccept} aria-label={t("Загрузить изображение")} disabled={disabled||busy} onChange={event=>{const file=event.target.files?.[0];if(file)void upload(file);}}/>{error&&<p role="alert" className="text-sm text-destructive">{error}</p>}</div>;
+  return <div className="space-y-2"><Button size="sm" variant="outline" disabled={disabled||busy} onClick={()=>input.current?.click()}>{busy?<LoaderCircle className=""/>:<ImagePlus/>}{t(label)}</Button><input ref={input} type="file" className="sr-only" accept={imageAccept} aria-label={t("Загрузить изображение")} disabled={disabled||busy} onChange={event=>{const file=event.target.files?.[0];if(file)void upload(file);}}/>{error&&<p role="alert" className="text-sm text-destructive">{error}</p>}</div>;
 }

@@ -1,0 +1,10 @@
+/* Simple state colours share timing here; geometry and gestures use Motion. */
+:where(button,a,summary,input,textarea,select,article) {
+  transition: background-color 160ms ease-out, color 160ms ease-out, border-color 160ms ease-out, box-shadow 160ms ease-out;
+}
+html[data-animations="off"] *, html[data-animations="off"] *::before, html[data-animations="off"] *::after {
+  transition-duration: 0s !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; scroll-behavior: auto !important; }
+}

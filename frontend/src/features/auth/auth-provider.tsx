@@ -1,3 +1,4 @@
+import { clearResourceCache } from "@/systems/loading/cache";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { AuthContext, type User } from "./auth-context";
@@ -21,7 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((data) => { if (!signal.aborted) { setUser(data.user); setError(null); } })
       .catch((failure: unknown) => {
         if (!signal.aborted) {
-          setUser(null);
+          clearResourceCache(); setUser(null);
           setError(failure instanceof ApiError && failure.status === 401 ? null : errorMessage(failure));
         }
       })
@@ -40,20 +41,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       channel.current.onmessage = (event: MessageEvent<unknown>) => {
         if (event.data !== "changed") return;
         authRequest.current?.abort();
-        setUser(null); setError(null); setLoading(true); setRevision((value) => value + 1);
+        clearResourceCache(); setUser(null); setError(null); setLoading(true); setRevision((value) => value + 1);
       };
     }
-    const expired = () => { authRequest.current?.abort(); setUser(null); channel.current?.postMessage("changed"); };
+    const expired = () => { authRequest.current?.abort(); clearResourceCache(); setUser(null); channel.current?.postMessage("changed"); };
     window.addEventListener("lifecycle:session-expired", expired);
     return () => { window.removeEventListener("lifecycle:session-expired", expired); channel.current?.close(); channel.current = null; };
   }, []);
 
-  const signIn = useCallback((next: User) => { authRequest.current?.abort(); setUser(next); setError(null); channel.current?.postMessage("changed"); }, []);
+  const signIn = useCallback((next: User) => { authRequest.current?.abort(); clearResourceCache(); setUser(next); setError(null); channel.current?.postMessage("changed"); }, []);
   const signOut = useCallback(async () => {
     authRequest.current?.abort();
     try { await api<void>("/auth/logout", { method: "POST" }); }
     catch (failure) { if (!(failure instanceof ApiError && failure.status === 401)) throw failure; }
-    authRequest.current?.abort(); setUser(null);
+    authRequest.current?.abort(); clearResourceCache(); setUser(null);
     channel.current?.postMessage("changed");
   }, []);
   const reload = useCallback(() => { setLoading(true); setError(null); setRevision((value) => value + 1); }, []);

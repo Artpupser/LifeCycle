@@ -9,6 +9,8 @@ export type Settings = {
   background_image?: string | null;
   background_dim?: number;
   sounds_enabled?: boolean;
+  animations_enabled?: boolean;
+  effects_enabled?: boolean;
   sound_ui?: boolean;
   sound_notifications?: boolean;
   sound_volume?: number;

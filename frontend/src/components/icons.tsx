@@ -1,3 +1,4 @@
+import { Spinner } from "@/systems/animations/surfaces";
 import { AppIcon, type AppIconProps } from "@/systems/icons/app-icon";
 export { AppIcon } from "@/systems/icons/app-icon";
 type SystemIconProps = Omit<AppIconProps,"icon">;
@@ -37,7 +38,7 @@ export function Heart(props: SystemIconProps) { return <AppIcon {...props} icon=
 export function ImagePlus(props: SystemIconProps) { return <AppIcon {...props} icon="tabler:photo-plus"/>; }
 export function Info(props: SystemIconProps) { return <AppIcon {...props} icon="tabler:info-circle"/>; }
 export function LayoutGrid(props: SystemIconProps) { return <AppIcon {...props} icon="tabler:layout-grid"/>; }
-export function LoaderCircle(props: SystemIconProps) { return <AppIcon {...props} icon="tabler:loader-2"/>; }
+export function LoaderCircle(props: SystemIconProps) { return <Spinner><AppIcon {...props} icon="tabler:loader-2"/></Spinner>; }
 export function LogOut(props: SystemIconProps) { return <AppIcon {...props} icon="tabler:logout"/>; }
 export function Mail(props: SystemIconProps) { return <AppIcon {...props} icon="tabler:mail"/>; }
 export function Maximize2(props: SystemIconProps) { return <AppIcon {...props} icon="tabler:arrows-maximize"/>; }

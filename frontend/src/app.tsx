@@ -1,9 +1,14 @@
+import { pageComponent } from "@/systems/loading/routes";
+import { PreloadProvider } from "@/systems/loading/preload-provider";
+import { AnimatedNavigation } from "@/systems/animations/surfaces";
+import { navigationItems } from "@/systems/icons/navigation";
+import { EffectProvider } from "@/systems/effects/effect-provider";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { SidebarNavigation } from "@/components/sidebar-navigation";
 import { FeedbackProvider } from "@/components/feedback-provider";
 import { HabitReminders } from "@/features/habits/reminders";
-import { Heart, Activity, CalendarDays, CalendarClock, BookUser, ClipboardList, LogOut, NotebookPen, Settings2, Timer, UserRound, Menu, X } from "@/components/icons";
-import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import { LogOut, Menu, X } from "@/components/icons";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from "react-router";
 import { AppIcon } from "@/systems/icons/app-icon";
 import { ThemeBackground } from "@/systems/themes/theme-background";
@@ -16,24 +21,24 @@ import type { Settings } from "@/features/settings/types";
 import { useResource } from "@/hooks/use-resource";
 import { errorMessage } from "@/lib/api";
 
-const AiPage = lazy(() => import("@/features/ai/ai-page").then(module => ({default:module.AiPage})));
-const AnalyticsPage = lazy(() => import("@/features/analytics/analytics-page").then(module => ({default:module.AnalyticsPage})));
-const IntimacyPage = lazy(() => import("@/features/intimacy/intimacy-page").then(module => ({default:module.IntimacyPage})));
-const HabitsPage = lazy(() => import("@/features/habits/habits-page").then(module => ({default:module.HabitsPage})));
-const WorkoutsPage = lazy(() => import("@/features/workouts/workouts-page").then(module => ({default:module.WorkoutsPage})));
-const WorkoutSessionPage = lazy(() => import("@/features/workouts/workout-session-page").then(module => ({default:module.WorkoutSessionPage})));
-const LoginPage = lazy(() => import("@/features/auth/login-page").then(module => ({default:module.LoginPage})));
-const CountdownsPage = lazy(() => import("@/features/countdowns/countdowns-page").then(module => ({default:module.CountdownsPage})));
-const ContactsPage = lazy(() => import("@/features/contacts/contacts-page").then(module => ({default:module.ContactsPage})));
-const NotesPage = lazy(() => import("@/features/notes/notes-page").then(module => ({default:module.NotesPage})));
-const PomodoroPage = lazy(() => import("@/features/pomodoro/pomodoro-page").then(module => ({default:module.PomodoroPage})));
-const BoardsPage = lazy(() => import("@/features/planning/boards-page").then(module => ({default:module.BoardsPage})));
-const TaskTagsPage = lazy(() => import("@/features/planning/task-tags-page").then(module => ({default:module.TaskTagsPage})));
-const TodayPage = lazy(() => import("@/features/planning/today-page").then(module => ({default:module.TodayPage})));
-const CalendarPage = lazy(() => import("@/features/planning/calendar-page").then(module => ({default:module.CalendarPage})));
-const HealthPage = lazy(() => import("@/features/health/health-page").then(module => ({default:module.HealthPage})));
-const ProfilePage = lazy(() => import("@/features/profile/profile-page").then(module => ({default:module.ProfilePage})));
-const SettingsPage = lazy(() => import("@/features/settings/settings-page").then(module => ({default:module.SettingsPage})));
+const AiPage = pageComponent("/ai");
+const AnalyticsPage = pageComponent("/analytics");
+const IntimacyPage = pageComponent("/sex");
+const HabitsPage = pageComponent("/habits");
+const WorkoutsPage = pageComponent("/workouts");
+const WorkoutSessionPage = pageComponent("/workouts/session");
+const LoginPage = pageComponent("/login");
+const CountdownsPage = pageComponent("/countdowns");
+const ContactsPage = pageComponent("/contacts");
+const NotesPage = pageComponent("/notes");
+const PomodoroPage = pageComponent("/pomodoro");
+const BoardsPage = pageComponent("/tasks");
+const TaskTagsPage = pageComponent("/task-tags");
+const TodayPage = pageComponent("/today");
+const CalendarPage = pageComponent("/calendar");
+const HealthPage = pageComponent("/status");
+const ProfilePage = pageComponent("/profile");
+const SettingsPage = pageComponent("/settings");
 
 function Shell({ children }: { children: ReactNode }) {
   useLanguage();
@@ -55,18 +60,18 @@ function Shell({ children }: { children: ReactNode }) {
     finally { setPending(false); }
   }
 
-  const navigation = user ? [{ to: "/today", label: t("Сегодня"), icon: CalendarDays }, { to: "/habits", label: t("Привычки"), icon: Activity }, { to: "/workouts", label: t("Тренировки"), icon: Activity }, { to: "/sex", label: t("Интимный журнал"), icon: Heart }, { to: "/tasks", label: t("Задачи"), icon: ClipboardList }, { to: "/calendar", label: t("Календарь"), icon: CalendarDays }, { to: "/notes", label: t("Заметки"), icon: NotebookPen }, { to: "/countdowns", label: t("Отсчёты"), icon: CalendarClock }, { to: "/contacts", label: t("Контакты"), icon: BookUser }, { to: "/pomodoro", label: "Pomodoro", icon: Timer }, { to: "/analytics", label: t("Аналитика"), icon: Activity }, { to: "/ai", label: t("AI-помощник"), icon: Activity }, { to: "/profile", label: t("Профиль"), icon: UserRound }, { to: "/settings", label: t("Настройки"), icon: Settings2 }, { to: "/status", label: t("Подключение"), icon: Activity }] : [{ to: "/login", label: t("Войти"), icon: UserRound }, { to: "/status", label: t("Подключение"), icon: Activity }];
+  const navigation = navigationItems(Boolean(user));
 
   return <div className="app-shell relative isolate h-svh overflow-hidden bg-background text-foreground">
     <ThemeBackground/>
     <a href="#main" className="sr-only z-50 rounded-lg bg-primary px-4 py-3 text-primary-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4">{t("Перейти к содержимому")}</a>
     {expanded && <button className="fixed inset-0 z-30 bg-black/40 md:hidden" aria-label={t("Закрыть меню")} onClick={() => setExpanded(false)} />}
-    <aside className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-border bg-card transition-[width] ${expanded ? "w-60" : "w-16 md:w-60"}`}>
+    <AnimatedNavigation className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-border bg-card ${expanded ? "w-60" : "w-16 md:w-60"}`}>
       <div className="flex h-20 shrink-0 items-center justify-center gap-2 px-3 md:justify-start md:px-5"><Link to={user ? "/today" : "/login"} className="flex min-w-0 items-center gap-3 rounded-lg" aria-label={t("LifeCycle — главная")} onClick={() => setExpanded(false)}><AppIcon icon="lifecycle:mark" className="size-9 shrink-0"/><span className={`${expanded ? "block" : "hidden md:block"} text-xl font-semibold`}>LifeCycle<span className="text-primary">.</span></span></Link></div>
       <Button variant="ghost" size="icon" className="mx-auto mb-3 md:hidden" aria-label={expanded ? t("Свернуть навигацию") : t("Развернуть навигацию")} onClick={() => setExpanded(!expanded)}>{expanded ? <X /> : <Menu />}</Button>
       <SidebarNavigation key={user?.id??"guest"} items={navigation} authenticated={Boolean(user)} expanded={expanded} close={()=>setExpanded(false)} onConfigure={()=>{if(window.innerWidth<768)setExpanded(true);}} />
       <div className="shrink-0 space-y-3 border-t border-border p-2 md:p-4">{user && <><p className={`${expanded ? "block" : "hidden md:block"} truncate px-2 text-xs text-muted-foreground`} title={user.email}>{user.email}</p><Button variant="ghost" className="w-full justify-start px-3" aria-label={t("Выйти")} onClick={() => void logout()} disabled={pending}><LogOut className="size-5 shrink-0" aria-hidden="true" /><span className={expanded ? "" : "sr-only md:not-sr-only"}>{pending ? t("Выходим…") : t("Выйти")}</span></Button></>}{error && <p role="alert" className="break-words text-xs text-destructive">{error}</p>}</div>
-    </aside>
+    </AnimatedNavigation>
     <div className="relative ml-16 flex h-svh min-w-0 flex-col md:ml-60"><div className="app-content min-h-0 min-w-0 flex-1 overflow-y-auto">{children}</div></div>
   </div>;
 
@@ -121,9 +126,9 @@ function AppContent() {
 }
 
 function ApplicationFeedback(){
-  useLanguage();const {user}=useAuth();return <FeedbackProvider key={user?.id??"guest"}><AppContent/></FeedbackProvider>;}
+  useLanguage();const {user}=useAuth();return <FeedbackProvider key={user?.id??"guest"}><EffectProvider><AppContent/></EffectProvider></FeedbackProvider>;}
 
 export function App() {
   useLanguage();
-  return <BrowserRouter><AuthProvider><ApplicationFeedback/></AuthProvider></BrowserRouter>;
+  return <BrowserRouter><AuthProvider><PreloadProvider><ApplicationFeedback/></PreloadProvider></AuthProvider></BrowserRouter>;
 }

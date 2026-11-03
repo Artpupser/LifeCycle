@@ -104,7 +104,7 @@ function ProfileEditor({ initial }: { initial: Profile }) {
     <div className="sticky bottom-3 z-10 rounded-2xl border border-border bg-card/95 p-4 shadow-xl backdrop-blur-sm">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="text-sm" aria-live="polite">{error ? <span className="text-destructive" role="alert">{error}</span> : success ? <span className="text-primary">{t("Профиль сохранён")}</span> : <span className="text-muted-foreground">{dirty ? t("Есть несохранённые изменения") : t("Все изменения сохранены")}</span>}</div>
-        <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={pending || !dirty} onClick={() => { setDraft(saved); setError(null); setSuccess(false); }}>{t("Отменить")}</Button><Button type="submit" disabled={pending || !dirty}>{pending ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <Save aria-hidden="true" />}{pending ? t("Сохраняем…") : t("Сохранить профиль")}</Button></div>
+        <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={pending || !dirty} onClick={() => { setDraft(saved); setError(null); setSuccess(false); }}>{t("Отменить")}</Button><Button type="submit" disabled={pending || !dirty}>{pending ? <LoaderCircle className="" aria-hidden="true" /> : <Save aria-hidden="true" />}{pending ? t("Сохраняем…") : t("Сохранить профиль")}</Button></div>
       </div>
     </div>
   </form>;

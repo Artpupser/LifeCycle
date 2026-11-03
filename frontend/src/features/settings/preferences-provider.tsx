@@ -1,3 +1,5 @@
+import { configureAnimations } from "@/systems/animations/policy";
+import { configureEffects } from "@/systems/effects/events";
 import { themes, themeStyle, readableText } from "@/systems/themes/themes";
 import { notify } from "@/lib/feedback";
 import { t } from "@/systems/i18n/locale";
@@ -11,6 +13,7 @@ export function PreferencesProvider({ initial, children }: { initial: Settings; 
   const [saved, setSaved] = useState<{ source: Settings; value: Settings } | null>(null);
   const settings = saved?.source === initial ? saved.value : initial;
   const updateSettings = (value: Settings) => setSaved({ source: initial, value });
+  useEffect(()=>{configureAnimations(settings.animations_enabled!==false);configureEffects(settings.effects_enabled!==false);return()=>{configureAnimations(true);configureEffects(false);};},[settings.animations_enabled,settings.effects_enabled]);
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const root=document.documentElement;

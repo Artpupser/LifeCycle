@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 export function LoadingState() {
   useLanguage();
-  return <div className="flex min-h-56 items-center justify-center gap-3 text-sm text-muted-foreground" role="status"><LoaderCircle className="size-5 animate-spin" aria-hidden="true" /> {t(" Загружаем данные…")}</div>;
+  return <div className="flex min-h-56 items-center justify-center gap-3 text-sm text-muted-foreground" role="status"><LoaderCircle className="size-5" aria-hidden="true" /> {t(" Загружаем данные…")}</div>;
 }
 
 export function ErrorState({ message, retry }: { message: string; retry: () => void }) {

@@ -81,14 +81,6 @@ button:not(:disabled) { cursor: pointer; }
 .markdown hr { border-color: var(--border); }
 .markdown input[type="checkbox"] { margin-right: 0.4rem; accent-color: var(--primary); }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
 /* Every section uses the space beside the navigation rail. */
 .app-content > main, .app-content > aside { width: 100%; max-width: none; margin-inline: 0; }
 .app-content > main { padding: 1.5rem clamp(1rem, 2vw, 2rem); }

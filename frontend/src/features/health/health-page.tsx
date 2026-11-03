@@ -64,7 +64,7 @@ export function HealthPage() {
           <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">{t("LifeCycle связывает ваши планы в единый ритм. Здесь можно проверить подключение приложения.")}</p>
         </div>
         <Button variant="outline" onClick={() => void check()} disabled={loading}>
-          <RefreshCw className={loading ? "animate-spin" : undefined} aria-hidden="true" />
+          <RefreshCw className={loading ? "" : undefined} aria-hidden="true" />
           {loading ? t("Проверяем…") : t("Проверить снова")}
         </Button>
       </div>
@@ -73,7 +73,7 @@ export function HealthPage() {
         <Card className="overflow-hidden">
           <CardHeader className="gap-4 border-b border-border p-6 sm:flex-row sm:items-center sm:gap-5 sm:p-8">
             <div className={`flex size-14 shrink-0 items-center justify-center rounded-2xl ${ready ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
-              <HeadingIcon className={loading ? "size-7 animate-spin" : "size-7"} aria-hidden="true" />
+              <HeadingIcon className={loading ? "size-7" : "size-7"} aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1" aria-live="polite" aria-atomic="true">
               <CardTitle id="connection-title" className="text-xl">{t(heading)}</CardTitle>

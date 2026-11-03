@@ -8,13 +8,18 @@ Use only the existing centralized system for each area below. Never implement th
 - **Date & time:** one unified date/time system. Always display and parse relative to the user's settings (timezone, format). No direct `new Date()`, `toLocaleString`, or manual date formatting in components.
 - **Notifications & confirmations:** one unified system. No `alert`, `confirm`, or custom one-off modals.
 - **Tags & categories:** one unified tag management system.
-- **Markdown:** `src/components/markdown.tsx` owns rendering, editing and link policy. Reuse it in every Markdown field.
-- **User images:** `src/systems/media/` owns validation, upload, authenticated URLs and display. No separate upload handlers or raw image rendering in features.
-- **Icons & logos:** `src/systems/icons/` and `src/components/icons.tsx` use Iconify with the local catalog, including country flags. Reuse `AppIcon` and `IconPicker`; never import another icon library or fetch icons from a third party at runtime.
-- **Interface languages:** `src/systems/i18n/` owns RU/EN messages, interpolation and locale. Use `t` for authored interface copy and `useLanguage` for reactive components; never translate user content.
-- **Themes:** `src/systems/themes/` owns palettes, contrast, CSS tokens and backgrounds; account settings persist choices.
-- **Sounds:** `src/systems/sounds/` is the only Foley integration. Respect master mute, separate UI/notification switches and volume.
-- **Phone & country:** `src/systems/phone/` owns country names, calling codes, phone parsing and the shared country/phone inputs. Flags come from the icon catalog.
+- **Markdown:** one shared editor and renderer. No custom markdown editors or renderers.
+- **Images:** one private upload, validation and display system. No ad hoc `<input type="file">` or direct image rendering.
+- **Icons & logos:** Iconify with the shared visual picker system.
+- **Country flags:** a dedicated pack inside the shared icon catalog. No separate flag assets or libraries.
+- **Languages:** Russian and English. No hardcoded user-visible strings; add keys for both languages.
+- **Themes:** ready palettes, editor, custom background. Use theme tokens only; no hardcoded colors.
+- **Sounds:** Foley system with volume, separate channels and full mute. No direct `Audio` or `<audio>` playback; always respect user sound settings.
+- **Phones & countries:** one search-with-flags, dial code and number formatting system. No custom phone inputs or formatting.
+- **Holidays:** `src/systems/holidays/` owns holiday objects, country associations, country-specific civil dates, sources, worker loading, search and reusable lists. Calendar and future holiday pages must use it. Keep international observances distinct from national days off; profile residence country is the default context.
+- **Animations:** `src/systems/animations/` is the only Motion integration and owns presets, gestures, surfaces, loading indicators, scrolling and simple CSS transitions. Reuse it, respect system reduced motion and the account switch. `motion-ai` is a development tool.
+- **Visual effects / particles:** `src/systems/effects/` is the only tsParticles integration. Emit effects after confirmed success, through the shared mutation/feedback flow. Keep one bounded, non-interactive layer; stop it on reduction, disabling, backgrounding and unmount.
+- **Sidebar icons:** route-to-icon assignments live in `src/systems/icons/navigation.ts`. Every destination has a different semantic Iconify icon from the existing catalog.
 
 ## New centralized systems
 

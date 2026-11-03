@@ -1,0 +1,8 @@
+# Holiday sources
+
+- National holiday rules and translations: [date-holidays](https://github.com/commenthol/date-holidays), version pinned by `pnpm-lock.yaml`, by commenthol and contributors. Code is ISC; holiday data is [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). The app adapts the data into holiday objects with country/date associations, merges an explicit set of shared identities and presents localized names. Attribution is also available from each holiday card.
+- International observances: [United Nations calendar](https://www.un.org/en/observances/list-days-weeks). Each entry links to its source. This curated set supplements the national source with less familiar observances, including Braille, bees, asteroids, soil and World Toilet Day.
+
+Country codes come from the holiday source; names and flags reuse the existing country/icon systems. International observances have `scope: international` and an empty country list: they are global reference dates, without an invented list of countries that celebrate them or a claim of paid leave.
+
+Coverage: national-level rules for 207 countries/territories in the installed source, including public, bank, optional, school and observance types. Regional exceptions are not loaded. Computation is bounded to 1970–2080 because some underlying calendars have a limited range. Rules are reference data, not a statutory work calendar; lunar dates, recent announcements and regional exceptions can differ. Source updates arrive through dependency updates. RU names use the source translation when available, then the English source name. No translation service or country API is called.

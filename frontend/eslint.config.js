@@ -48,4 +48,21 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files:["src/**/*.{ts,tsx}"],
+    ignores:["**/*.test.ts"],
+    plugins:{"central-systems":{rules:{imports:{
+      meta:{type:"problem",schema:[]},
+      create(context){
+        const check=node=>{
+          const name=node.source?.value;
+          if(typeof name!=="string")return;
+          const owner=name==="motion"||name.startsWith("motion/")||name==="framer-motion"?"animations":name==="tsparticles"||name.startsWith("@tsparticles/")?"effects":name==="date-holidays"||name.startsWith("date-holidays/")?"holidays":null;
+          if(owner&&!context.filename.replaceAll("\\","/").includes(`/src/systems/${owner}/`))context.report({node,message:`Use the centralized ${owner} system.`});
+        };
+        return {ImportDeclaration:check,ImportExpression:check};
+      },
+    }}}},
+    rules:{"central-systems/imports":"error"},
+  },
 );

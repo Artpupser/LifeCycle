@@ -1,3 +1,5 @@
+import { invalidateResources } from "@/systems/loading/cache";
+import { effectOrigin, mutationEffect, showEffect } from "@/systems/effects/events";
 import { t } from "@/systems/i18n/locale";
 type ApiErrorPayload = { error?: { code?: string } };
 
@@ -77,6 +79,7 @@ export function errorMessage(error: unknown) {
 }
 
 export async function api<T>(path: string, options: { method?: "GET" | "POST" | "PUT" | "DELETE"; body?: unknown; signal?: AbortSignal } = {}): Promise<T> {
+  const origin=effectOrigin();
   const timeout = AbortSignal.timeout(15_000);
   const response = await fetch(`/api${path}`, {
     method: options.method ?? "GET",
@@ -91,6 +94,9 @@ export async function api<T>(path: string, options: { method?: "GET" | "POST" | 
     if (response.status === 401 && !path.startsWith("/auth/")) window.dispatchEvent(new Event("lifecycle:session-expired"));
     throw new ApiError(response.status, payload.error?.code ?? "request_failed");
   }
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+  const result:T=response.status===204?undefined:await response.json();
+  if(options.method&&options.method!=="GET")invalidateResources();
+  const effect=mutationEffect(path,options.method??"GET",options.body,result);
+  if(effect)showEffect(effect,origin);
+  return result;
 }
