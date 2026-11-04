@@ -12,6 +12,7 @@ Knowledge graph lives in `graphify-out/`. Use it when `graphify-out/graph.json` 
 ## Progress
 Record progress in the `project/project_progress` file
 - Keep the information as concise and brief as possible; there's no need to go into detail on every point. 
+- Be sure to include a brief description of what has changed, separated by a semicolon, using the Git commit formatting style. 
 
 ## Testing
 - Add new tests only if you truly believe it is necessary.
