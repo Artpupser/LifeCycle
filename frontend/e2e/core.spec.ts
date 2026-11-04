@@ -1,4 +1,4 @@
-import {chooseAction} from "./upgrade-helpers";
+import {chooseAction,selectTags} from "./upgrade-helpers";
 import { confirmUi, quickNote } from "./upgrade-helpers";
 import { expect, test, type Page, type APIRequestContext } from "@playwright/test";
 
@@ -30,8 +30,9 @@ test("notes persist Markdown and private uploaded images across editing and fold
   await quickNote(page,"Заметка из браузера");await page.getByRole("button",{name:"Заметка из браузера",exact:true}).click();
   const editor=page.getByRole("region",{name:"Редактор заметки",exact:true});
   await page.getByRole("tab",{name:"Характеристики",exact:true}).click();
-  await page.getByLabel("Папка",{exact:true}).selectOption({label:"Идеи браузера"});await page.getByLabel("Теги заметки",{exact:true}).fill("browser, markdown");
+  await page.getByLabel("Папка",{exact:true}).selectOption({label:"Идеи браузера"});
   await page.getByRole("tab",{name:"Содержание",exact:true}).click();
+  await selectTags(page,"Теги заметки",["browser","markdown"]);
   await page.getByLabel("Содержание",{exact:true}).fill('# Проверка Markdown\n\n**Сохранённый текст**\n\n<script>window.markdownInjected = true</script>\n\n[Опасная ссылка](javascript:alert(1))\n\n![Внешняя картинка](https://example.org/tracking.png)');
   await page.getByLabel("Загрузить изображение",{exact:true}).setInputFiles({name:"private.png",mimeType:"image/png",buffer:Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNQMHAAAAEEAJGibWOuAAAAAElFTkSuQmCC","base64")});
   await expect(page.getByLabel("Содержание",{exact:true})).toHaveValue(/!\[private.png\]\(\/api\/media\/[a-f0-9-]+\)/);

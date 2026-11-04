@@ -1,4 +1,4 @@
-import {chooseAction} from "./upgrade-helpers";
+import {chooseAction,selectTags} from "./upgrade-helpers";
 import { expect, test } from "@playwright/test";
 import { confirmUi, login } from "./upgrade-helpers";
 test("2.1 Contacts support editing, search, selective repeat import and mobile layout", async ({ page, request }, info) => {
@@ -13,7 +13,7 @@ test("2.1 Contacts support editing, search, selective repeat import and mobile l
   await page.getByLabel("Дата рождения контакта", { exact: true }).fill("2000-02-29");
   await expect(page.getByLabel("Профессия", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Категории контакта", { exact: true })).toHaveCount(0);
-  await page.getByLabel("Теги контакта", { exact: true }).fill("Важные");
+  await selectTags(page,"Теги контакта",["Важные"]);
   await page.getByLabel("Описание контакта", { exact: true }).fill("**Личное описание**");
   await page.getByRole("button", { name: "Сохранить контакт", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Иванова Анна Петровна", exact: true })).toBeVisible();

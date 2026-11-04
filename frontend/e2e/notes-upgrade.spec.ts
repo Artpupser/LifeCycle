@@ -1,4 +1,4 @@
-import {chooseAction} from "./upgrade-helpers";
+import {chooseAction,selectTags} from "./upgrade-helpers";
 import {expect,test} from "@playwright/test";
 import {login,confirmUi,quickNote} from "./upgrade-helpers";
 
@@ -10,11 +10,11 @@ test("right note editor, quick creation, filter language and atomic selection ac
  await page.getByRole("button",{name:"Первая идея",exact:true}).click();const editor=page.getByRole("region",{name:"Редактор заметки",exact:true});
  const listBox=(await page.getByRole("region",{name:"Список заметок",exact:true}).boundingBox())!;const editorBox=(await editor.boundingBox())!;expect(editorBox.x).toBeGreaterThan(listBox.x);expect(editorBox.width).toBeGreaterThan(650);
  await page.getByLabel("Содержание",{exact:true}).fill("# Идеи\n\n**Сохранённый Markdown**");
- await page.getByRole("tab",{name:"Характеристики",exact:true}).click();await page.getByLabel("Теги заметки",{exact:true}).fill("работа");await page.getByRole("button",{name:"Сохранить заметку",exact:true}).click();
+ await selectTags(page,"Теги заметки",["работа"]);await page.getByRole("button",{name:"Сохранить заметку",exact:true}).click();
  await expect(editor.getByText("Сохранено",{exact:true})).toBeVisible();await page.getByRole("button",{name:"Закрыть редактор заметки",exact:true}).click();
  await page.getByLabel("Поиск заметок",{exact:true}).fill('тег:работа ai:нет');await expect(page.locator("article")).toHaveCount(1);await page.getByLabel("Поиск заметок",{exact:true}).fill("");
  for(const title of ["Первая идея","Вторая идея"])await page.getByLabel(`Выбрать заметку ${title}`,{exact:true}).check();
- await chooseAction(page,"Добавить теги");await page.getByLabel("Теги через запятую",{exact:true}).fill("общий");await page.getByRole("button",{name:"Применить к выбранным",exact:true}).click();await expect(page.getByRole("dialog")).toHaveCount(0);
+ await chooseAction(page,"Добавить теги");await selectTags(page,"Теги",["общий"]);await page.getByRole("button",{name:"Применить к выбранным",exact:true}).click();await expect(page.getByRole("dialog")).toHaveCount(0);
  await page.getByLabel("Поиск заметок",{exact:true}).fill('тег:общий');await expect(page.locator("article")).toHaveCount(2);
  await page.getByLabel("Действия с выбором",{exact:true}).click();await chooseAction(page,"Выбрать показанные (до 200)");
  await chooseAction(page,"Разрешить AI");

@@ -29,7 +29,7 @@ function HabitHistory({ id, close }: { id: string; close: () => void }) {
   useLanguage();
   const { settings } = usePreferences();
   const history = useHistory<TaskOccurrence[]>({kind:"habit",id});
-  return <Dialog title={t("История привычки")} onClose={close}>{history.resource.status === "loading" ? <LoadingState /> : history.resource.status === "error" ? <ErrorState message={history.resource.message} retry={history.retry} /> : history.resource.data.length ? <HistoryEntries items={history.resource.data} itemKey={item=>`${id}:${item.date}`} kind="habit" removed={history.retry} render={item=><OccurrenceList occurrences={[item]} timezone={settings.timezone} changed={history.retry}/>}/> : <p className="text-sm text-muted-foreground">{t("Сохранённых отметок пока нет.")}</p>}</Dialog>;
+  return <Dialog title={t("История привычки")} onClose={close}>{history.resource.status === "loading" ? <LoadingState /> : history.resource.status === "error" ? <ErrorState message={history.resource.message} retry={history.retry} /> : history.resource.data.length ? <HistoryEntries items={history.resource.data} itemKey={item=>`${id}:${item.date}`} kind="habit" removed={history.retry} render={item=><OccurrenceList occurrences={[item]} timezone={settings.timezone} changed={history.retry} embedded/>}/> : <p className="text-sm text-muted-foreground">{t("Сохранённых отметок пока нет.")}</p>}</Dialog>;
 }
 function HabitDetail({ habit, close }: { habit: Habit; close: () => void }) {
   useLanguage();
@@ -56,7 +56,7 @@ export function HabitsPage() {
   const action = useAction();
   const visibleHabits=habits.resource.status==="ready"?habits.resource.data.filter(habit=>matchesFilter({...filters,terms:filters.terms.filter(term=>!term.key.startsWith("stats_"))},`${habit.title} ${habit.description}`,{tag:habit.tags,repeat:[habit.schedule.recurrence,({once:"один раз",daily:"ежедневно",weekly:"неделя",interval:"интервал"})[habit.schedule.recurrence]],from:habit.schedule.start_date,to:habit.schedule.start_date})):[];
   const selectedHabit = habits.resource.status === "ready" ? habits.resource.data.find((habit) => habit.id === selected) : undefined;
-  function refresh() { habits.retry(); stats.retry(); }
+  function refresh() { habits.retry(); stats.retry(); day.retry(); }
   const day=useResource<import("@/features/planning/types").DayPlan>(`/today?date=${localDate(settings.timezone)}`);
   function create() { setEditor({ title: "", description: "", tags: [], color: "#2A9D8F", schedule: { ...defaultSchedule(settings.timezone), recurrence: "daily",time:null,duration_minutes:1 }, habit: { icon: "🌱",  } }); }
   async function remove(id: string) {

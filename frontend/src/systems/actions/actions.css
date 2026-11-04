@@ -1,0 +1,7 @@
+/* Every object uses the same corner placement and reserves its title row. */
+[data-action-menu-root] { position: relative; min-height: 3rem; }
+[data-action-menu-root] > :is(div, header, h1, h2, h3, p, button):first-child,
+[data-action-menu-root].flex > div:first-of-type { padding-inline-end: 3rem; }
+span[data-action-menu-root] { display: inline-flex; min-width: 3rem; }
+[data-action-menu-anchor="corner"] { position: absolute; inset-block-start: .75rem; inset-inline-end: .75rem; margin: 0 !important; z-index: 1; }
+[data-action-menu-root=""]:is([data-action-subject="folder"], [data-action-subject="label"]) [data-action-menu-anchor="corner"] { inset-block-start: .375rem; inset-inline-end: .375rem; }

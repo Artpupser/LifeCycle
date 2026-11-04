@@ -1,0 +1,20 @@
+//! Functional areas of LifeCycle. Cross-module calls use their public facades.
+pub(crate) mod ai;
+pub(crate) mod analytics;
+pub mod auth;
+pub(crate) mod boards;
+pub(crate) mod contacts;
+pub(crate) mod countdowns;
+pub mod habits;
+pub(crate) mod history;
+pub(crate) mod intimacy;
+pub(crate) mod labels;
+pub(crate) mod media;
+pub(crate) mod navigation;
+pub(crate) mod notes;
+pub(crate) mod operators;
+pub(crate) mod pomodoro;
+pub mod profile;
+pub mod settings;
+pub mod tasks;
+pub mod workouts;

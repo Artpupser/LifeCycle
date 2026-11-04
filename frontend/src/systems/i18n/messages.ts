@@ -1,5 +1,12 @@
 /** English interface catalog. Keys are Russian source messages; user content is never translated. */
 export const english: Record<string, string> = {
+  "Добавить метку": "Add label",
+  "Найти или создать метку": "Find or create a label",
+  "Метки": "Labels",
+  "Изменить метку {name}": "Edit label {name}",
+  "Добавить метку {name}": "Add label {name}",
+  "Снять метку": "Remove label",
+  "Стоимость: сумма и валюта. Можно назначать несколько раз одному объекту.": "Cost: amount and currency. Can be assigned to an object multiple times.",
   "Неотрицательная сумма с точностью до двух знаков после запятой.": "A non-negative amount with up to two decimal places.",
   "Управляет доступом AI к заметкам, тренировкам и упражнениям в рамках разрешений раздела.": "Controls AI access to notes, workouts and exercises within section permissions.",
   "Функциональные метки": "Functional labels",

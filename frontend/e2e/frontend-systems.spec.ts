@@ -1,4 +1,4 @@
-import {chooseAction} from "./upgrade-helpers";
+import {chooseAction,selectTags} from "./upgrade-helpers";
 import {expect, test, type Page} from "@playwright/test";
 import type {Settings} from "../src/features/settings/types";
 import {emptyContact, type Contact} from "../src/features/contacts/types";
@@ -64,6 +64,7 @@ test("contact tag editor preserves legacy punctuation and validates limits befor
     if(route.request().method()==="PUT"){saved={...original,...route.request().postDataJSON()};await route.fulfill({json:saved});}
     else await route.fulfill({json:[saved??original]});
   });
+  await page.route("**/api/labels",route=>route.fulfill({json:[{id:"work",kind:"tag",name:"Работа",color:"#2563EB",revision:1},{id:"home",kind:"tag",name:"Дом",color:"#2563EB",revision:1}]}));
   await page.goto("/contacts");
   await chooseAction(page,"Изменить контакт");
   await expect(page.getByLabel("Категории контакта",{exact:true})).toHaveCount(0);
@@ -72,7 +73,10 @@ test("contact tag editor preserves legacy punctuation and validates limits befor
   await page.getByRole("button",{name:"Сохранить контакт",exact:true}).click();
   expect(saved).toBeUndefined();
   await expect(tags).toHaveAttribute("aria-invalid","true");
-  await tags.fill(" Работа \nработа\nДом");
+  await tags.fill(" работа ");await tags.press("Enter");
+  await expect(page.getByRole("checkbox",{name:"Работа",exact:true})).toBeChecked();
+  await expect(page.getByRole("checkbox",{name:/^работа$/i})).toHaveCount(1);
+  await selectTags(page,"Теги контакта",["Дом"]);
   await page.getByRole("button",{name:"Сохранить контакт",exact:true}).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(saved?.data.tags).toEqual(["Работа","Дом"]);

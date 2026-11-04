@@ -34,6 +34,11 @@ test("habit checkbox, Markdown marks and historical snapshots integrate with Tod
   await expect(page.getByRole("button",{name:"Добавить подпривычку",exact:true})).toHaveCount(0);
   await page.getByRole("button", { name: "Сохранить привычку", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  const habitCard=page.locator("article").filter({has:page.getByRole("heading",{name:"Утренний ритм",exact:true})}).first();
+  await expect(habitCard.locator('button[data-context-ignore]')).toHaveCount(1);
+  await habitCard.locator('button[data-context-ignore]').click();
+  for(const name of ["Отметка и заметка","Изменить привычку","История привычки","Метки"])await expect(page.getByRole("menuitem",{name,exact:true})).toBeVisible();
+  await page.keyboard.press("Escape");
   await page.getByRole("link", { name: "Сегодня", exact: true }).click();
   const occurrence = page.locator("article").filter({ has: page.getByRole("heading", { name: "Утренний ритм", exact: true }) });
   await expect(occurrence).toBeVisible();

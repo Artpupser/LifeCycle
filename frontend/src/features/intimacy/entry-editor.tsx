@@ -22,7 +22,7 @@ export function AnswerInput({ id, label, value, change }: { id: string; label: s
 function Lines({ id, label, value, change }: { id: string; label: string; value: string[]; change: (value: string[]) => void }) {
   useLanguage();
   const [text, setText] = useState(value.join("\n"));
-  return <FormField id={id} label={label}><LabelInput id={id} multiline value={text} change={next=>{setText(next);change(normalizeLabels(next,"lines"));}}/></FormField>;
+  return <FormField id={id} label={label}><LabelInput id={id} multiline freeform value={text} change={next=>{setText(next);change(normalizeLabels(next,"lines"));}}/></FormField>;
 }
 export function EntryEditor({ initial, record, close, saved, conflict }: { initial: EntryData; record?: Entry; close: () => void; saved: () => void; conflict: () => void }) {
   useLanguage();

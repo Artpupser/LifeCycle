@@ -60,7 +60,7 @@ test("mobile workout builder persists exercises, progression and Today completio
   await page.getByRole("button", { name: "Сохранить привычку", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("link", { name: "Сегодня", exact: true }).click();
-  await page.getByRole("button", { name: "Открыть тренировку", exact: true }).click();
+  await chooseAction(page,"Открыть тренировку");
   await expect(page.getByRole("heading", { name: "Приседания браузера", exact: true })).toBeVisible();
   await expect(page.getByLabel("Фактические повторения", { exact: true })).toHaveValue("15");
   await expect(page.getByRole("heading", { name: "Техника приседания", exact: true })).toBeVisible();

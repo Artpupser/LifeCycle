@@ -1,4 +1,4 @@
-import {chooseAction} from "./upgrade-helpers";
+import {chooseAction,selectTags} from "./upgrade-helpers";
 import {expect,test,type Page} from "@playwright/test";
 import {emptyContact} from "../src/features/contacts/types";
 import type {Settings} from "../src/features/settings/types";
@@ -27,7 +27,7 @@ async function setup(page:Page){
   else if(path==="/api/profile")data={residence_country:"RU"};
   else if(path==="/api/countdowns")data=[state.event];
   else if(path===`/api/countdowns/${eventId}`){state.event={...state.event,...req.postDataJSON()};data=state.event;}
-  else if(path==="/api/labels"){if(method==="POST")state.labels.push({id:categoryId,...req.postDataJSON(),revision:1});data=state.labels;}
+  else if(path==="/api/labels"){if(method==="POST"){const created={id:categoryId,...req.postDataJSON(),revision:1};state.labels.push(created);data=created;}else data=state.labels;}
   else if(path===`/api/labels/${tagId}`){const body=req.postDataJSON(),old=state.labels[0].name;state.labels[0]={...state.labels[0],...body,revision:2};state.event.tags=state.event.tags?.map(name=>name===old?body.name:name);state.contact.data.tags=state.contact.data.tags.map(name=>name===old?body.name:name);data=state.labels[0];}
   else if(path==="/api/contacts"){state.contactReads++;data=[state.contact];}
   else if(path==="/api/contacts/contact"){state.contact={...state.contact,...req.postDataJSON(),revision:2};data=state.contact;}
@@ -50,9 +50,11 @@ test("independent birthday shows both ages and saves enum categories and multipl
  const card=page.locator("article");await expect(card).toContainText("Сейчас: 25 лет");await expect(card).toContainText("Будет: 26 лет");
  await chooseAction(page,"Изменить",card);
  const category=page.getByLabel("Категория события",{exact:true});await expect(category).toHaveJSProperty("tagName","SELECT");await category.selectOption("personal");
- const tags=page.getByLabel("Теги события",{exact:true});await tags.fill("");await tags.pressSequentially("Дом, Семья");await expect(tags).toHaveValue("Дом, Семья");
+ await page.getByRole("checkbox",{name:"Старый",exact:true}).uncheck();
+ await selectTags(page,"Теги события",["Дом, Семья"]);
+ await expect(page.getByRole("checkbox",{name:"Дом, Семья",exact:true})).toHaveCount(1);
  await page.getByRole("button",{name:"Сохранить событие",exact:true}).click();await expect(page.getByRole("dialog")).toHaveCount(0);
- expect(state.event.category).toBe("personal");expect(state.event.tags).toEqual(["Дом","Семья"]);
+ expect(state.event.category).toBe("personal");expect(state.event.tags).toEqual(["Дом, Семья"]);
  await page.screenshot({path:info.outputPath("birthday-and-tags-mobile.png"),fullPage:true});expect(errors).toEqual([]);
 });
 
@@ -64,7 +66,7 @@ test("global labels rename across features and create reusable category choices"
  await expect(page.locator('li[data-action-subject="label"]').filter({hasText:"Путешествие"})).toBeVisible();
  await page.getByRole("navigation",{name:"Главная навигация",exact:true}).locator('a[href="/countdowns"]').click();
  await chooseAction(page,"Изменить",page.locator("article"));
- await expect(page.getByLabel("Теги события",{exact:true})).toHaveValue("Общий");
+ await expect(page.getByRole("checkbox",{name:"Общий",exact:true})).toBeChecked();
  await page.getByLabel("Категория события",{exact:true}).selectOption(`custom:${categoryId}`);await page.getByRole("button",{name:"Сохранить событие",exact:true}).click();
  await expect(page.locator("article")).toContainText("Путешествие");expect(errors).toEqual([]);
 });

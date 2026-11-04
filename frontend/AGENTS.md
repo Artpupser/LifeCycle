@@ -1,5 +1,8 @@
 # Frontend
 
+## Skils
+Use `lifecycle-frontend-team` skill
+
 ## Centralized systems (mandatory)
 
 Use only the existing centralized system for each area below. Never implement these ad hoc in components. If a system lacks a capability, extend it instead of adding a parallel solution.

@@ -1,0 +1,21 @@
+{"version":10,"type":"context-options","origin":"library","browserName":"","playwrightVersion":"1.64.1","options":{},"platform":"linux","wallTime":1793807034704,"monotonicTime":77988.894,"sdkLanguage":"javascript","title":"contacts-upgrade.spec.ts:127 › 1.6 a timed daily countdown rolls forward while open"}
+{"type":"before","callId":"xrrz@251","startTime":78764.459,"class":"APIRequestContext","method":"fetch","params":{"url":"/api/countdowns","method":"POST","headers":[{"name":"Origin","value":"http://127.0.0.1:5173"}],"jsonData":"{\"title\":\"Переход повторения\",\"category\":\"other\",\"icon\":\"calendar\",\"target_date\":\"2026-11-03\",\"target_time\":\"15:44:03\",\"timezone\":\"UTC\",\"recurrence\":\"daily\"}"}}
+{"type":"log","callId":"xrrz@251","time":78765.395,"message":"→ POST http://127.0.0.1:5173/api/countdowns"}
+{"type":"log","callId":"xrrz@251","time":78765.404,"message":"  user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36"}
+{"type":"log","callId":"xrrz@251","time":78765.407,"message":"  accept: */*"}
+{"type":"log","callId":"xrrz@251","time":78765.409,"message":"  accept-encoding: gzip,deflate,br"}
+{"type":"log","callId":"xrrz@251","time":78765.412,"message":"  Origin: http://127.0.0.1:5173"}
+{"type":"log","callId":"xrrz@251","time":78765.413,"message":"  content-type: application/json"}
+{"type":"log","callId":"xrrz@251","time":78765.415,"message":"  content-length: 174"}
+{"type":"log","callId":"xrrz@251","time":78765.417,"message":"  cookie: lifecycle_session=CA0S9vPxmdCcC7CyPcVLkcxEZTbWxE13Pw1jky7mULY"}
+{"type":"log","callId":"xrrz@251","time":78776.624,"message":"← 201 Created"}
+{"type":"log","callId":"xrrz@251","time":78776.634,"message":"  access-control-allow-origin: http://127.0.0.1:5173"}
+{"type":"log","callId":"xrrz@251","time":78776.637,"message":"  vary: Origin"}
+{"type":"log","callId":"xrrz@251","time":78776.64,"message":"  content-type: application/json"}
+{"type":"log","callId":"xrrz@251","time":78776.642,"message":"  x-content-type-options: nosniff"}
+{"type":"log","callId":"xrrz@251","time":78776.644,"message":"  cache-control: no-store"}
+{"type":"log","callId":"xrrz@251","time":78776.646,"message":"  referrer-policy: no-referrer"}
+{"type":"log","callId":"xrrz@251","time":78776.648,"message":"  content-length: 838"}
+{"type":"log","callId":"xrrz@251","time":78776.65,"message":"  connection: close"}
+{"type":"log","callId":"xrrz@251","time":78776.652,"message":"  date: Wed, 04 Nov 2026 15:43:55 GMT"}
+{"type":"after","callId":"xrrz@251","endTime":78776.732,"result":{"response":{"url":"http://127.0.0.1:5173/api/countdowns","status":201,"statusText":"Created","headers":[{"name":"Access-Control-Allow-Origin","value":"http://127.0.0.1:5173"},{"name":"Vary","value":"Origin"},{"name":"content-type","value":"application/json"},{"name":"x-content-type-options","value":"nosniff"},{"name":"cache-control","value":"no-store"},{"name":"referrer-policy","value":"no-referrer"},{"name":"content-length","value":"838"},{"name":"connection","value":"close"},{"name":"date","value":"Wed, 04 Nov 2026 15:43:55 GMT"}],"serverAddr":{"ipAddress":"127.0.0.1","port":5173},"timing":{"startTime":1793807035480,"domainLookupStart":-1,"domainLookupEnd":-1,"connectStart":0,"secureConnectionStart":-1,"connectEnd":0.5040000000008149,"requestStart":0.5040000000008149,"responseStart":11.126000000003842},"responseEndTiming":11.296000000002095,"fetchUid":"aee093cb60714c4839eedac03d7d9ba6"}}}

@@ -1,0 +1,2 @@
+# Frontend Skill
+- You, Senior Frontend Engineering developer, are responsible for implementing and maintaining the frontend of our web applications. Your role involves developing, and optimizing user interfaces that provide an exceptional user experience. You will be expected to adhere to the established frontend skill set and centralized systems, ensuring consistency and quality across all components.

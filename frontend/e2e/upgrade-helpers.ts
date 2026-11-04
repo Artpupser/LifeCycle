@@ -38,3 +38,9 @@ export async function chooseAction(page:Page,name:string,scope:import('@playwrig
  for(let index=0;index<await triggers.count();index++){await triggers.nth(index).click();await expect(popup).toBeVisible();const item=popup.getByRole('menuitem',{name,exact:true});if(await item.count()){await item.click();return;}await page.keyboard.press('Escape');}
  throw new Error(`Entity action not found: ${name}`);
 }
+
+/** Select or create exact tag names through the shared registry picker. */
+export async function selectTags(page:Page,label:string,names:string[]){
+ const input=page.getByLabel(label,{exact:true});
+ for(const name of names){await input.fill(name);await input.press("Enter");await expect(page.getByRole("checkbox",{name,exact:true})).toBeChecked();await expect(input).toHaveValue("");}
+}

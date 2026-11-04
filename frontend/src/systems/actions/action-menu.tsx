@@ -1,3 +1,4 @@
+import "./actions.css";
 import {Children,Fragment,isValidElement,useLayoutEffect,useEffect,useRef,useState,type ReactNode,type MouseEvent} from "react";
 import {useNavigate} from "react-router";
 import {createPortal} from "react-dom";
@@ -5,7 +6,7 @@ import {AnimatedSurface} from "@/systems/animations/surfaces";
 import {AppIcon} from "@/systems/icons/app-icon";
 import {t,useLanguage} from "@/systems/i18n/locale";
 import type {LabelSubject} from "@/systems/labels/context";
-import {FunctionalLabelEditor} from "@/systems/labels/functional";
+import {SubjectLabelEditor} from "@/systems/labels/functional";
 import {ActionsContext,useActionMenu,type ContextAction,type Menu} from "./context";
 
 const subjects="article,[data-action-subject],[data-drag-item],[data-note-id]";
@@ -18,7 +19,7 @@ function subjectActions(target:Element){
  for(let node:Element|null=target;node;node=node.parentElement){
   const groups=scopes.get(node)??aliases.get(node.getAttribute("data-action-key")??"");
   const active=groups?[...groups].filter(([anchor])=>anchor.closest("dialog")===dialog):[];
-  if(active.length)return {actions:active.flatMap(([,read])=>read()).map((action,index)=>({...action,id:`scope-${index}`})),anchor:active[0][0]};
+  if(active.length)return {actions:active.flatMap(([,read])=>read()).map((action,index)=>({...action,id:`scope-${index}`})),anchor:(active.find(([anchor])=>anchor.getAttribute("data-action-menu-anchor")!=="contribution")??active[0])[0]};
   if(node===dialog)break;
  }
  return null;
@@ -38,22 +39,23 @@ function declaredActions(children:ReactNode,navigate:(path:string)=>void):Contex
   return [{id:String(index),label:props["aria-label"]??textOf(props.children),disabled:props.disabled,danger:props.className?.includes("text-destructive"),run:props.onClick??(()=>navigate(to!))}];
  });
 }
-export function ObjectActions({children,actions=[],label,subject}:{children?:ReactNode;actions?:ContextAction[];label?:string;subject?:LabelSubject}){
+export function ObjectActions({children,actions=[],label,subject,contribute=false}:{children?:ReactNode;actions?:ContextAction[];label?:string;subject?:LabelSubject;contribute?:boolean}){
  useLanguage();
  const [editing,setEditing]=useState(false);
  const navigate=useNavigate();const anchor=useRef<HTMLSpanElement>(null);
  const key=subject?`${subject.kind}:${subject.id}`:null;
- const all=[...actions,...declaredActions(children,navigate),...(subject?[{id:"functional-labels",label:t("Функциональные метки"),icon:"tabler:tags",run:()=>setEditing(true)}]:[])].map((action,index)=>({...action,id:`${index}:${action.id}`}));
+ const all=[...actions,...declaredActions(children,navigate),...(subject?[{id:"labels",label:t("Метки"),icon:"tabler:tags",run:()=>setEditing(true)}]:[])].map((action,index)=>({...action,id:`${index}:${action.id}`}));
  const latest=useRef(all);useLayoutEffect(()=>{latest.current=all;});
  useLayoutEffect(()=>{
   const node=anchor.current!;const root=node.closest(subjects)??node;
+  if(root!==node){root.setAttribute("data-action-menu-root","");node.setAttribute("data-action-menu-anchor",contribute?"contribution":"corner");}
   const group=scopes.get(root)??new Map<HTMLElement,ReadActions>();
   group.set(node,()=>latest.current);scopes.set(root,group);
   const shared=key?(aliases.get(key)??new Map<HTMLElement,ReadActions>()):null;
   if(key&&shared){shared.set(node,()=>latest.current);aliases.set(key,shared);}
-  return()=>{group.delete(node);shared?.delete(node);if(key&&shared?.size===0)aliases.delete(key);};
- },[key]);
- return <span ref={anchor} className="inline-flex flex-wrap items-center gap-2"><ActionMenuButton label={label} actions={all}/>{editing&&subject&&<FunctionalLabelEditor subject={subject} close={()=>setEditing(false)}/>}</span>;
+  return()=>{group.delete(node);if(!group.size)root.removeAttribute("data-action-menu-root");shared?.delete(node);if(key&&shared?.size===0)aliases.delete(key);};
+ },[key,contribute]);
+ return <span ref={anchor} className={contribute?"contents":"inline-flex items-center"}>{!contribute&&<ActionMenuButton label={label} actions={all} readActions={()=>subjectActions(anchor.current!)?.actions??latest.current}/>}{editing&&subject&&<SubjectLabelEditor subject={subject} close={()=>setEditing(false)}/>}</span>;
 }
 export function ActionMenuProvider({children}:{children:ReactNode}){
  useLanguage();const [menu,setMenu]=useState<Menu|null>(null);const ref=useRef<HTMLDivElement>(null);
@@ -90,7 +92,7 @@ export function ActionMenuProvider({children}:{children:ReactNode}){
  }
  return <ActionsContext value={open}>{children}{menu&&createPortal(<div ref={ref} role="menu" aria-label={t("Действия")} onKeyDown={keys} className="fixed z-[100] max-h-[min(75svh,36rem)] w-64 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-xl border border-border bg-card p-1 text-foreground shadow-xl" style={{left:menu.x,top:menu.y}}><AnimatedSurface>{menu.actions.map(action=><button key={action.id} type="button" role="menuitem" disabled={action.disabled} onClick={()=>{setMenu(null);menu.returnTo?.focus({preventScroll:true});action.run();}} className={`flex min-h-10 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted focus:bg-muted focus:outline-none disabled:opacity-40 ${action.danger?'text-destructive':''}`}>{action.icon&&<AppIcon icon={action.icon}/>}<span>{action.label}</span></button>)}</AnimatedSurface></div>,menu.returnTo?.closest("dialog")??document.body)}</ActionsContext>;
 }
-export function ActionMenuButton({actions,label}:{actions:ContextAction[];label?:string}){
+export function ActionMenuButton({actions,label,readActions}:{actions:ContextAction[];label?:string;readActions?:()=>ContextAction[]}){
  useLanguage();const open=useActionMenu();
- return <button data-context-ignore type="button" aria-haspopup="menu" className="rounded-lg border border-border p-2 hover:bg-muted" aria-label={label??t("Действия")} onClick={(event:MouseEvent<HTMLButtonElement>)=>{const box=event.currentTarget.getBoundingClientRect();open(actions,box.left,box.bottom,event.currentTarget);}}><AppIcon icon="tabler:dots"/></button>;
+ return <button data-context-ignore type="button" aria-haspopup="menu" className="rounded-lg border border-border bg-card p-2 hover:bg-muted" aria-label={label??t("Действия")} onClick={(event:MouseEvent<HTMLButtonElement>)=>{const box=event.currentTarget.getBoundingClientRect();open(readActions?.()??actions,box.left,box.bottom,event.currentTarget);}}><AppIcon icon="tabler:dots"/></button>;
 }
