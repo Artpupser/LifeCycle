@@ -16,10 +16,13 @@ use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use sqlx::PgConnection;
 use uuid::Uuid;
+mod functions;
 #[derive(Clone, Serialize, Deserialize)]
 struct Data {
     name: String,
     color: String,
+    #[serde(default)]
+    icon: Option<String>,
 }
 #[derive(Serialize)]
 struct Label {
@@ -27,12 +30,15 @@ struct Label {
     name: String,
     color: String,
     kind: String,
+    icon: Option<String>,
+    function_key: Option<String>,
     revision: i64,
 }
 #[derive(sqlx::FromRow)]
 struct Row {
     id: Uuid,
     kind: String,
+    function_key: Option<String>,
     encrypted_data: Vec<u8>,
     revision: i64,
 }
@@ -49,6 +55,8 @@ struct Input {
     #[serde(default = "tag_kind")]
     kind: String,
     revision: Option<i64>,
+    #[serde(default)]
+    icon: Option<String>,
 }
 fn tag_kind() -> String {
     "tag".into()
@@ -83,6 +91,8 @@ fn decode(s: &AppState, user: Uuid, row: Row) -> Result<Label, ApiError> {
         name: data.name,
         color: data.color,
         kind: row.kind,
+        icon: data.icon,
+        function_key: row.function_key,
         revision: row.revision,
     })
 }
@@ -114,6 +124,7 @@ async fn register_kind(
         let data = Data {
             name: name.trim().into(),
             color: domain::default_color(),
+            icon: None,
         };
         if data.name.is_empty() {
             continue;
@@ -124,11 +135,12 @@ async fn register_kind(
     Ok(())
 }
 async fn all(s: &AppState, db: &mut PgConnection, user: Uuid) -> Result<Vec<Label>, ApiError> {
-    let rows: Vec<Row> =
-        sqlx::query_as("SELECT id,kind,encrypted_data,revision FROM app.labels WHERE user_id=$1")
-            .bind(user)
-            .fetch_all(db)
-            .await?;
+    let rows: Vec<Row> = sqlx::query_as(
+        "SELECT id,kind,function_key,encrypted_data,revision FROM app.labels WHERE user_id=$1",
+    )
+    .bind(user)
+    .fetch_all(db)
+    .await?;
     rows.into_iter().map(|row| decode(s, user, row)).collect()
 }
 async fn sync(s: &AppState, db: &mut PgConnection, user: Uuid) -> Result<(), ApiError> {
@@ -149,6 +161,7 @@ async fn sync(s: &AppState, db: &mut PgConnection, user: Uuid) -> Result<(), Api
         let data = Data {
             name: name.clone(),
             color,
+            icon: None,
         };
         sqlx::query("INSERT INTO app.labels(id,user_id,kind,name_key,encrypted_data) VALUES($1,$2,'tag',$3,$4) ON CONFLICT(user_id,kind,name_key) DO UPDATE SET encrypted_data=EXCLUDED.encrypted_data").bind(id).bind(user).bind(key(s,user,"tag",&name)).bind(encode(s,user,id,&data)?).execute(&mut *db).await?;
     }
@@ -166,6 +179,7 @@ async fn sync(s: &AppState, db: &mut PgConnection, user: Uuid) -> Result<(), Api
 }
 pub fn routes() -> Router<AppState> {
     Router::new()
+        .merge(functions::routes())
         .route("/api/labels", get(list).post(create))
         .route(
             "/api/labels/{id}",
@@ -186,6 +200,7 @@ async fn list(
     tasks::lock_tasks(&mut tx, u.id).await?;
     contacts::lock(&mut tx, u.id).await?;
     sync(&s, &mut tx, u.id).await?;
+    functions::seed(&s, &mut tx, u.id).await?;
     let mut labels = all(&s, &mut tx, u.id).await?;
     if let Some(kind) = f.kind {
         labels.retain(|l| l.kind == kind);
@@ -201,7 +216,8 @@ async fn create(
 ) -> Result<(StatusCode, Json<Label>), ApiError> {
     domain::text(&v.name, 1, 64)?;
     domain::color(&v.color)?;
-    if !["tag", "category"].contains(&v.kind.as_str()) {
+    validate_icon(v.icon.as_deref())?;
+    if !["tag", "category", "toy", "emotion", "setting"].contains(&v.kind.as_str()) {
         return Err(ApiError::validation("Unsupported label kind"));
     }
     let mut tx = s.database.begin().await?;
@@ -228,6 +244,7 @@ async fn create(
         &Data {
             name: v.name.trim().into(),
             color: v.color.clone(),
+            icon: v.icon.clone(),
         },
     )?)
     .execute(&mut *tx)
@@ -240,6 +257,8 @@ async fn create(
             name: v.name.trim().into(),
             color: v.color,
             kind: v.kind,
+            icon: v.icon,
+            function_key: None,
             revision: 0,
         }),
     ))
@@ -251,6 +270,17 @@ async fn propagate(
     label: &Label,
     replacement: Option<&str>,
 ) -> Result<(), ApiError> {
+    if ["toy", "emotion", "setting"].contains(&label.kind.as_str()) {
+        return crate::intimacy::rename_collection(
+            s,
+            db,
+            user,
+            &label.kind,
+            &label.name,
+            replacement,
+        )
+        .await;
+    }
     if label.kind == "category" && replacement.is_none() {
         sqlx::query("UPDATE app.countdowns SET category='other',updated_at=clock_timestamp() WHERE user_id=$1 AND category=$2").bind(user).bind(format!("custom:{}",label.id)).execute(&mut *db).await?;
     }
@@ -300,6 +330,7 @@ async fn update(
 ) -> Result<Json<Label>, ApiError> {
     domain::text(&v.name, 1, 64)?;
     domain::color(&v.color)?;
+    validate_icon(v.icon.as_deref())?;
     let mut tx = s.database.begin().await?;
     tasks::lock_tasks(&mut tx, u.id).await?;
     contacts::lock(&mut tx, u.id).await?;
@@ -317,15 +348,18 @@ async fn update(
     }) {
         return Err(domain::conflict("Label already exists"));
     }
-    if old.name != v.name.trim() {
+    let icon = v.icon.clone().or_else(|| old.icon.clone());
+    if old.kind != "functional" && old.name != v.name.trim() {
         propagate(&s, &mut tx, u.id, old, Some(v.name.trim())).await?;
     }
-    sqlx::query("UPDATE app.labels SET encrypted_data=$3,name_key=$4,revision=revision+1 WHERE user_id=$1 AND id=$2").bind(u.id).bind(id).bind(encode(&s,u.id,id,&Data{name:v.name.trim().into(),color:v.color.clone()})?).bind(key(&s,u.id,&old.kind,&v.name)).execute(&mut *tx).await?;
+    sqlx::query("UPDATE app.labels SET encrypted_data=$3,name_key=$4,revision=revision+1 WHERE user_id=$1 AND id=$2").bind(u.id).bind(id).bind(encode(&s,u.id,id,&Data{name:v.name.trim().into(),color:v.color.clone(),icon:icon.clone()})?).bind(key(&s,u.id,&old.kind,&v.name)).execute(&mut *tx).await?;
     let result = Label {
         id,
         name: v.name.trim().into(),
         color: v.color,
         kind: old.kind.clone(),
+        icon,
+        function_key: old.function_key.clone(),
         revision: old.revision + 1,
     };
     tx.commit().await?;
@@ -349,6 +383,9 @@ async fn remove(
     if old.revision != v.revision {
         return Err(domain::conflict("Label changed"));
     }
+    if old.function_key.is_some() {
+        return Err(ApiError::validation("System capability cannot be deleted"));
+    }
     propagate(&s, &mut tx, u.id, old, None).await?;
     sqlx::query("DELETE FROM app.labels WHERE user_id=$1 AND id=$2")
         .bind(u.id)
@@ -371,4 +408,40 @@ async fn list_tags(
         }),
     )
     .await
+}
+
+fn validate_icon(icon: Option<&str>) -> Result<(), ApiError> {
+    if let Some(icon) = icon
+        && (icon.len() > 128
+            || icon.split(':').count() != 2
+            || icon.split(':').any(str::is_empty)
+            || !icon
+                .bytes()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || b":-_".contains(&c)))
+    {
+        return Err(ApiError::validation("Invalid icon identifier"));
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn legacy_labels_keep_defaults_and_icon_names_cannot_be_markup_or_urls() {
+        let label: Data = serde_json::from_str(r##"{"name":"Legacy","color":"#123456"}"##).unwrap();
+        assert!(label.icon.is_none());
+        for icon in ["tabler:coin", "twemoji:grinning-face", "tabler:zodiac-leo"] {
+            assert!(validate_icon(Some(icon)).is_ok());
+        }
+        for icon in [
+            "https://example.test/icon.svg",
+            "<svg>",
+            "tabler:",
+            ":coin",
+            "a:b:c",
+        ] {
+            assert!(validate_icon(Some(icon)).is_err());
+        }
+    }
 }

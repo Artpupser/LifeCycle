@@ -1,3 +1,4 @@
+import {ActionMenuProvider} from "@/systems/actions/action-menu";
 import { pageComponent } from "@/systems/loading/routes";
 import { PreloadProvider } from "@/systems/loading/preload-provider";
 import { AnimatedNavigation } from "@/systems/animations/surfaces";
@@ -6,7 +7,6 @@ import { EffectProvider } from "@/systems/effects/effect-provider";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { SidebarNavigation } from "@/components/sidebar-navigation";
 import { FeedbackProvider } from "@/components/feedback-provider";
-import { HabitReminders } from "@/features/habits/reminders";
 import { LogOut, Menu, X } from "@/components/icons";
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from "react-router";
@@ -21,6 +21,7 @@ import type { Settings } from "@/features/settings/types";
 import { useResource } from "@/hooks/use-resource";
 import { errorMessage } from "@/lib/api";
 
+const HistoryPage=pageComponent("/history");
 const AiPage = pageComponent("/ai");
 const AnalyticsPage = pageComponent("/analytics");
 const IntimacyPage = pageComponent("/sex");
@@ -92,13 +93,14 @@ function AuthenticatedApp() {
   useLanguage();
   const { resource, retry } = useResource<Settings>("/settings");
   if (resource.status !== "ready") return <Shell><Suspense fallback={<LoadingState />}><Routes><Route path="/status" element={<HealthPage />} /><Route path="*" element={<main id="main" className="mx-auto max-w-4xl px-5 py-10 sm:px-10">{resource.status === "loading" ? <LoadingState /> : <ErrorState message={resource.message} retry={retry} />}</main>} /></Routes></Suspense></Shell>;
-  return <PreferencesProvider initial={resource.data}><Shell><HabitReminders /><Suspense fallback={<LoadingState />}><Routes>
+  return <PreferencesProvider initial={resource.data}><Shell><Suspense fallback={<LoadingState />}><Routes>
     <Route path="/" element={<Navigate to="/today" replace />} />
     <Route path="/login" element={<Navigate to="/today" replace />} />
     <Route path="/today" element={<TodayPage />} />
     <Route path="/tasks" element={<BoardsPage />} />
     <Route path="/boards" element={<LegacyBoards />} />
     <Route path="/task-tags" element={<Navigate to="/labels" replace />} />
+    <Route path="/history" element={<HistoryPage/>} />
     <Route path="/labels" element={<TaskTagsPage />} />
     <Route path="/habits" element={<HabitsPage />} />
     <Route path="/sex" element={<IntimacyPage />} />
@@ -123,11 +125,11 @@ function AppContent() {
   const { user, loading, error, reload } = useAuth();
   if (loading || error) return <Shell><Suspense fallback={<LoadingState />}><Routes><Route path="/status" element={<HealthPage />} /><Route path="*" element={<main id="main" className="mx-auto max-w-4xl px-5 py-10 sm:px-10">{loading ? <LoadingState /> : <ErrorState message={error!} retry={reload} />}</main>} /></Routes></Suspense></Shell>;
   if (user) return <AuthenticatedApp key={user.id} />;
-  return <Shell><Suspense fallback={<LoadingState />}><Routes><Route path="/status" element={<HealthPage />} /><Route path="/login" element={<LoginPage />} /><Route path="/" element={<Navigate to="/login" replace />} /><Route path="/ai" element={<Navigate to="/login" replace />} /><Route path="/analytics" element={<Navigate to="/login" replace />} /><Route path="/profile" element={<Navigate to="/login" replace />} /><Route path="/settings" element={<Navigate to="/login" replace />} /><Route path="/today" element={<Navigate to="/login" replace />} /><Route path="/tasks" element={<Navigate to="/login" replace />} /><Route path="/boards" element={<Navigate to="/login" replace />} /><Route path="/task-tags" element={<Navigate to="/login" replace />} /><Route path="/labels" element={<Navigate to="/login" replace />} /><Route path="/habits" element={<Navigate to="/login" replace />} /><Route path="/sex" element={<Navigate to="/login" replace />} /><Route path="/workouts/*" element={<Navigate to="/login" replace />} /><Route path="/calendar" element={<Navigate to="/login" replace />} /><Route path="/notes" element={<Navigate to="/login" replace />} /><Route path="/countdowns" element={<Navigate to="/login" replace />} /><Route path="/contacts" element={<Navigate to="/login" replace />} /><Route path="/pomodoro" element={<Navigate to="/login" replace />} /><Route path="*" element={<NotFound />} /></Routes></Suspense></Shell>;
+  return <Shell><Suspense fallback={<LoadingState />}><Routes><Route path="/status" element={<HealthPage />} /><Route path="/login" element={<LoginPage />} /><Route path="/" element={<Navigate to="/login" replace />} /><Route path="/ai" element={<Navigate to="/login" replace />} /><Route path="/analytics" element={<Navigate to="/login" replace />} /><Route path="/profile" element={<Navigate to="/login" replace />} /><Route path="/settings" element={<Navigate to="/login" replace />} /><Route path="/today" element={<Navigate to="/login" replace />} /><Route path="/tasks" element={<Navigate to="/login" replace />} /><Route path="/boards" element={<Navigate to="/login" replace />} /><Route path="/task-tags" element={<Navigate to="/login" replace />} /><Route path="/history" element={<Navigate to="/login" replace />} /><Route path="/labels" element={<Navigate to="/login" replace />} /><Route path="/habits" element={<Navigate to="/login" replace />} /><Route path="/sex" element={<Navigate to="/login" replace />} /><Route path="/workouts/*" element={<Navigate to="/login" replace />} /><Route path="/calendar" element={<Navigate to="/login" replace />} /><Route path="/notes" element={<Navigate to="/login" replace />} /><Route path="/countdowns" element={<Navigate to="/login" replace />} /><Route path="/contacts" element={<Navigate to="/login" replace />} /><Route path="/pomodoro" element={<Navigate to="/login" replace />} /><Route path="*" element={<NotFound />} /></Routes></Suspense></Shell>;
 }
 
 function ApplicationFeedback(){
-  useLanguage();const {user}=useAuth();return <FeedbackProvider key={user?.id??"guest"}><EffectProvider><AppContent/></EffectProvider></FeedbackProvider>;}
+  useLanguage();const {user}=useAuth();return <FeedbackProvider key={user?.id??"guest"}><EffectProvider><ActionMenuProvider><AppContent/></ActionMenuProvider></EffectProvider></FeedbackProvider>;}
 
 export function App() {
   useLanguage();

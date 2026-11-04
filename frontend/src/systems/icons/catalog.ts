@@ -1,9 +1,10 @@
+import {operatorMarks} from "./operators";
 import type { IconifyIcon } from "@iconify/react/offline";
 import ui from "./ui-data.json";
 import manifest from "./manifest.json";
 import brandSvg from "@/assets/logo.svg?raw";
 
-export type IconPack = "tabler" | "circle-flags" | "simple-icons" | "lifecycle";
+export type IconPack = "tabler" | "circle-flags" | "simple-icons" | "twemoji" | "lifecycle";
 export type IconEntry = { id: string; name: string; pack: IconPack };
 const data = new Map<string, IconifyIcon>();
 const subscribers = new Set<() => void>();
@@ -13,11 +14,13 @@ function register(pack: IconPack, icons: Record<string, IconifyIcon>, width = 24
   version++; subscribers.forEach(listener => listener());
 }
 register("tabler", ui.icons, ui.width, ui.height);
+register("lifecycle",operatorMarks);
 const brandBody=brandSvg.replace(/^.*?<svg[^>]*>/s, "").replace(/<\/svg>\s*$/, "");
 const brandFill=brandSvg.match(/<svg[^>]*\bfill="([^"]*)"/)?.[1]??"currentColor";
 register("lifecycle", {mark:{width:48,height:48,body:`<g fill="${brandFill}">${brandBody}</g>`}});
 export const iconCatalog: IconEntry[] = [
   {id:"lifecycle:mark",name:"LifeCycle",pack:"lifecycle"},
+  ...Object.keys(operatorMarks).map(name=>({id:`lifecycle:${name}`,name,pack:"lifecycle" as const})),
   ...Object.entries(manifest).flatMap(([pack,names])=>names.map(name=>({id:`${pack}:${name}`, name:name.replace(/-/g," "), pack:pack as IconPack}))),
 ];
 const available = new Set(iconCatalog.map(icon => icon.id));
@@ -28,8 +31,8 @@ export const catalogVersion = () => version;
 export const subscribeIcons = (listener: () => void) => { subscribers.add(listener); return () => { subscribers.delete(listener); }; };
 const loading = new Map<string,Promise<void>>();
 export function loadIconPack(pack: string): Promise<void> {
-  if (!["circle-flags","simple-icons"].includes(pack)) return Promise.resolve();
+  if (!["circle-flags","simple-icons","twemoji"].includes(pack)) return Promise.resolve();
   const pending = loading.get(pack); if (pending) return pending;
-  const request = (pack === "circle-flags" ? import("./flag-data.json") : import("./brand-data.json")).then(module => { register(pack as IconPack, module.default.icons, module.default.width, module.default.height); });
+  const request = (pack === "circle-flags" ? import("./flag-data.json") : pack==="twemoji"? import("./emoji-data.json") : import("./brand-data.json")).then(module => { register(pack as IconPack, module.default.icons, module.default.width, module.default.height); });
   loading.set(pack,request); request.catch(()=>loading.delete(pack)); return request;
 }

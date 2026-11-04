@@ -65,6 +65,8 @@ impl CountdownInput {
         }
         if self.display.as_ref().is_some_and(|display| {
             !["both", "remaining", "elapsed"].contains(&display.clock.as_str())
+                || !["days", "seconds", "minutes", "weeks", "months"]
+                    .contains(&display.unit.as_str())
         }) {
             return Err(ApiError::validation("Unsupported countdown display"));
         }

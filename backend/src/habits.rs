@@ -19,56 +19,26 @@ use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct SubHabit {
-    pub id: Uuid,
-    pub title: String,
-    #[serde(default)]
-    pub description: String,
-}
-#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct HabitConfig {
     pub icon: String,
-    pub sub_habits: Vec<SubHabit>,
-    pub reminder_enabled: bool,
-    pub reminder_minutes_before: Option<u32>,
     pub workout_id: Option<Uuid>,
 }
 impl Default for HabitConfig {
     fn default() -> Self {
         Self {
-            icon: "🌱".into(),
-            sub_habits: vec![],
-            reminder_enabled: false,
-            reminder_minutes_before: None,
+            icon: "tabler:seedling".into(),
             workout_id: None,
         }
     }
 }
 impl HabitConfig {
     fn validate(&self, schedule: &Schedule) -> Result<(), ApiError> {
-        if self.workout_id.is_some() && !self.sub_habits.is_empty() {
-            return Err(ApiError::validation(
-                "A workout habit cannot have sub-habits",
-            ));
-        }
         domain::text(&self.icon, 1, 128)?;
-        if self.sub_habits.len() > 50 || self.reminder_minutes_before.is_some_and(|v| v > 1440) {
+        if schedule.recurrence == "once" || schedule.time.is_some() {
             return Err(ApiError::validation(
-                "At most 50 sub-habits and 1440 reminder minutes are supported",
+                "Habits require a repeating all-day schedule",
             ));
-        }
-        if self.reminder_enabled && schedule.time.is_none() {
-            return Err(ApiError::validation("Reminders require a scheduled time"));
-        }
-        let mut ids = BTreeSet::new();
-        for sub in &self.sub_habits {
-            domain::text(&sub.title, 1, 200)?;
-            domain::text(&sub.description, 0, 20000)?;
-            if sub.id.is_nil() || !ids.insert(sub.id) {
-                return Err(ApiError::validation("Sub-habit identifiers must be unique"));
-            }
         }
         Ok(())
     }
@@ -100,7 +70,6 @@ pub enum HabitStatus {
 #[serde(default, deny_unknown_fields)]
 pub struct HabitMark {
     pub status: HabitStatus,
-    pub completed_sub_habits: Vec<Uuid>,
     pub note: String,
     pub marked_at: Option<DateTime<Utc>>,
 }
@@ -108,8 +77,6 @@ pub struct HabitMark {
 #[serde(deny_unknown_fields)]
 struct MarkInput {
     status: HabitStatus,
-    #[serde(default)]
-    completed_sub_habits: Vec<Uuid>,
     #[serde(default)]
     note: String,
 }
@@ -137,8 +104,6 @@ pub fn routes() -> Router<AppState> {
             get(history).delete(delete_history),
         )
         .route("/api/habits/{id}/statistics", get(single_statistics))
-        .route("/api/reminders", get(reminders))
-        .route("/api/reminders/{id}/{date}/dismiss", post(dismiss))
 }
 async fn list(
     State(s): State<AppState>,
@@ -347,11 +312,7 @@ async fn delete_history(
         .bind(id)
         .execute(&mut *tx)
         .await?;
-    sqlx::query("DELETE FROM app.habit_reminder_receipts WHERE user_id=$1 AND task_id=$2")
-        .bind(u.id)
-        .bind(id)
-        .execute(&mut *tx)
-        .await?;
+
     sqlx::query("DELETE FROM app.habit_versions WHERE user_id=$1 AND task_id=$2")
         .bind(u.id)
         .bind(id)
@@ -375,43 +336,17 @@ fn validate_range(from: NaiveDate, to: NaiveDate) -> Result<(), ApiError> {
     }
     Ok(())
 }
-fn task_status(mark: &HabitMark, config: &HabitConfig) -> &'static str {
+fn task_status(mark: &HabitMark, _config: &HabitConfig) -> &'static str {
     match mark.status {
-        HabitStatus::Cancelled | HabitStatus::Skipped => "rejected",
         HabitStatus::Completed => "completed",
-        HabitStatus::Pending
-            if !mark.completed_sub_habits.is_empty() && !config.sub_habits.is_empty() =>
-        {
-            "in_progress"
-        }
-        _ => "todo",
+        HabitStatus::Skipped | HabitStatus::Cancelled => "rejected",
+        HabitStatus::Pending => "todo",
     }
 }
-fn normalize_mark(v: MarkInput, config: &HabitConfig) -> Result<HabitMark, ApiError> {
+fn normalize_mark(v: MarkInput, _config: &HabitConfig) -> Result<HabitMark, ApiError> {
     domain::text(&v.note, 0, 200000)?;
-    let ids: BTreeSet<_> = v.completed_sub_habits.iter().copied().collect();
-    if ids.len() != v.completed_sub_habits.len()
-        || ids
-            .iter()
-            .any(|id| !config.sub_habits.iter().any(|sub| sub.id == *id))
-    {
-        return Err(ApiError::validation(
-            "Completed sub-habits must be unique members of this occurrence",
-        ));
-    }
-    let mut status = v.status;
-    if !config.sub_habits.is_empty()
-        && matches!(status, HabitStatus::Pending | HabitStatus::Completed)
-    {
-        status = if ids.len() == config.sub_habits.len() {
-            HabitStatus::Completed
-        } else {
-            HabitStatus::Pending
-        };
-    }
     Ok(HabitMark {
-        status,
-        completed_sub_habits: ids.into_iter().collect(),
+        status: v.status,
         note: v.note,
         marked_at: None,
     })
@@ -460,7 +395,15 @@ async fn mark_in_transaction(
     };
     sqlx::query("INSERT INTO app.task_occurrences(user_id,task_id,occurrence_date,status,snapshot) VALUES($1,$2,$3,$4,$5) ON CONFLICT(user_id,task_id,occurrence_date) DO UPDATE SET status=EXCLUDED.status,snapshot=EXCLUDED.snapshot,updated_at=now()")
         .bind(user).bind(id).bind(date).bind(&occurrence.status).bind(DbJson(&occurrence)).execute(&mut *tx).await?;
-    domain::event(tx,user,"habit_marked","habit",id,serde_json::json!({"date":date,"status":occurrence.habit_mark.as_ref().map(|m|&m.status),"completed_sub_habits":occurrence.habit_mark.as_ref().map(|m|m.completed_sub_habits.len())})).await?;
+    domain::event(
+        tx,
+        user,
+        "habit_marked",
+        "habit",
+        id,
+        serde_json::json!({"date":date,"status":occurrence.habit_mark.as_ref().map(|m|&m.status)}),
+    )
+    .await?;
     Ok(TaskOccurrenceResponse {
         occurrence,
         editable: true,
@@ -518,7 +461,7 @@ pub async fn workout_occurrence(
     if task
         .habit
         .as_ref()
-        .is_none_or(|h| h.workout_id != Some(workout) || !h.sub_habits.is_empty())
+        .is_none_or(|h| h.workout_id != Some(workout))
     {
         return Err(domain::conflict(
             "This occurrence is not linked to the selected workout",
@@ -567,7 +510,6 @@ pub async fn complete_workout(
         original.date,
         MarkInput {
             status: HabitStatus::Completed,
-            completed_sub_habits: vec![],
             note: mark.note,
         },
     )
@@ -700,8 +642,6 @@ pub struct HabitStatistics {
     pub(crate) cancelled: u32,
     pub(crate) missed: u32,
     pub(crate) pending: u32,
-    pub(crate) completed_sub_habits: u32,
-    pub(crate) total_sub_habits: u32,
     pub(crate) completion_rate: f64,
     pub(crate) current_streak: u32,
     pub(crate) best_streak: u32,
@@ -736,11 +676,8 @@ pub(crate) fn summarize(
         if occurrence.date > today {
             continue;
         }
-        let config = occurrence.task.habit.as_ref().unwrap();
         let mark = occurrence.habit_mark.clone().unwrap_or_default();
         result.expected += 1;
-        result.completed_sub_habits += mark.completed_sub_habits.len() as u32;
-        result.total_sub_habits += config.sub_habits.len() as u32;
         match mark.status {
             HabitStatus::Cancelled => {
                 result.cancelled += 1;
@@ -842,86 +779,6 @@ async fn single_statistics(
     .await?;
     Ok(Json(stat))
 }
-#[derive(Serialize)]
-struct Reminder {
-    task_id: Uuid,
-    date: NaiveDate,
-    title: String,
-    starts_at: DateTime<Utc>,
-    due_at: DateTime<Utc>,
-}
-async fn reminders(
-    State(s): State<AppState>,
-    u: CurrentUser,
-) -> Result<Json<Vec<Reminder>>, ApiError> {
-    let settings = domain::settings(&s, u.id).await?;
-    if !settings.reminders_enabled {
-        return Ok(Json(vec![]));
-    }
-    let now = Utc::now();
-    let rows = occurrences(
-        &s,
-        u.id,
-        now.date_naive() - Duration::days(2),
-        now.date_naive() + Duration::days(2),
-        "UTC",
-    )
-    .await?;
-    let receipts:BTreeSet<(Uuid,NaiveDate)>=sqlx::query_as("SELECT task_id,occurrence_date FROM app.habit_reminder_receipts WHERE user_id=$1 AND occurrence_date BETWEEN $2 AND $3")
-        .bind(u.id).bind(now.date_naive()-Duration::days(4)).bind(now.date_naive()+Duration::days(4)).fetch_all(&s.database).await?.into_iter().collect();
-    let mut output = vec![];
-    let current: BTreeMap<Uuid, DbJson<HabitConfig>> =
-        sqlx::query_as("SELECT id,habit FROM app.tasks WHERE user_id=$1 AND source_kind='habit'")
-            .bind(u.id)
-            .fetch_all(&s.database)
-            .await?
-            .into_iter()
-            .collect();
-    for row in rows {
-        let o = row.occurrence;
-        let Some(config) = current.get(&o.task.id) else {
-            continue;
-        };
-        if !config.reminder_enabled
-            || receipts.contains(&(o.task.id, o.date))
-            || !["todo", "in_progress"].contains(&o.status.as_str())
-        {
-            continue;
-        }
-        let Some(start) = o.starts_at else { continue };
-        let due = start
-            - Duration::minutes(i64::from(
-                config
-                    .reminder_minutes_before
-                    .unwrap_or(settings.reminder_minutes_before),
-            ));
-        if due <= now && due > now - Duration::hours(24) {
-            output.push(Reminder {
-                task_id: o.task.id,
-                date: o.date,
-                title: o.task.title,
-                starts_at: start,
-                due_at: due,
-            });
-        }
-    }
-    output.sort_by_key(|r| r.due_at);
-    Ok(Json(output))
-}
-async fn dismiss(
-    State(s): State<AppState>,
-    u: CurrentUser,
-    Path((id, date)): Path<(Uuid, NaiveDate)>,
-) -> Result<StatusCode, ApiError> {
-    owned(&s, u.id, id).await?;
-    let rows = reminders(State(s.clone()), u.clone()).await?.0;
-    if rows.iter().any(|r| r.task_id == id && r.date == date) {
-        sqlx::query("INSERT INTO app.habit_reminder_receipts(user_id,task_id,occurrence_date) VALUES($1,$2,$3) ON CONFLICT DO NOTHING")
-            .bind(u.id).bind(id).bind(date).execute(&s.database).await?;
-    }
-    Ok(StatusCode::NO_CONTENT)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -929,7 +786,7 @@ mod tests {
         serde_json::from_value(serde_json::json!({
             "id":Uuid::new_v4(),"title":"Read","description":"","status":"todo","tags":[],"color":"#123456","priority":"normal","parent_id":null,"due_at":null,
             "schedule":{"start_date":"2026-01-01","time":null,"timezone":"UTC","duration_minutes":30,"recurrence":"daily","interval_days":1,"weekdays":[],"end_date":null},
-            "source_kind":"habit","source_id":null,"created_at":"2026-01-01T00:00:00Z","updated_at":"2026-01-01T00:00:00Z","habit":{"icon":"🌱","sub_habits":[],"reminder_enabled":false,"reminder_minutes_before":null}
+            "source_kind":"habit","source_id":null,"created_at":"2026-01-01T00:00:00Z","updated_at":"2026-01-01T00:00:00Z","habit":{"icon":"🌱"}
         })).unwrap()
     }
     fn row(task: &Task, date: &str, status: HabitStatus) -> TaskOccurrenceResponse {
@@ -948,73 +805,20 @@ mod tests {
         }
     }
     #[test]
-    fn parent_completion_is_the_sum_of_its_children() {
-        let ids = [Uuid::new_v4(), Uuid::new_v4()];
-        let config = HabitConfig {
-            sub_habits: ids
-                .iter()
-                .map(|id| SubHabit {
-                    id: *id,
-                    title: "Step".into(),
-                    description: String::new(),
-                })
-                .collect(),
-            ..Default::default()
-        };
-        let partial = normalize_mark(
+    fn completion_is_explicit_and_old_subhabit_input_is_rejected() {
+        let config = HabitConfig::default();
+        let mark = normalize_mark(
             MarkInput {
                 status: HabitStatus::Completed,
-                completed_sub_habits: vec![ids[0]],
                 note: String::new(),
             },
             &config,
         )
         .unwrap();
-        assert_eq!(partial.status, HabitStatus::Pending);
-        assert_eq!(task_status(&partial, &config), "in_progress");
-        let complete = normalize_mark(
-            MarkInput {
-                status: HabitStatus::Pending,
-                completed_sub_habits: ids.to_vec(),
-                note: String::new(),
-            },
-            &config,
-        )
-        .unwrap();
-        assert_eq!(complete.status, HabitStatus::Completed);
-        assert_eq!(task_status(&complete, &config), "completed");
-    }
-    #[test]
-    fn foreign_or_duplicate_children_are_rejected() {
-        let config = HabitConfig::default();
+        assert_eq!(task_status(&mark, &config), "completed");
         assert!(
-            normalize_mark(
-                MarkInput {
-                    status: HabitStatus::Pending,
-                    completed_sub_habits: vec![Uuid::new_v4()],
-                    note: String::new()
-                },
-                &config
-            )
-            .is_err()
-        );
-        let id = Uuid::new_v4();
-        let config = HabitConfig {
-            sub_habits: vec![SubHabit {
-                id,
-                title: "step".into(),
-                description: String::new(),
-            }],
-            ..Default::default()
-        };
-        assert!(
-            normalize_mark(
-                MarkInput {
-                    status: HabitStatus::Completed,
-                    completed_sub_habits: vec![id, id],
-                    note: String::new()
-                },
-                &config
+            serde_json::from_value::<MarkInput>(
+                serde_json::json!({"status":"completed","completed_sub_habits":[]})
             )
             .is_err()
         );
@@ -1068,18 +872,11 @@ mod tests {
         );
     }
     #[test]
-    fn reminders_require_time_and_queries_are_bounded() {
-        let task = fixture();
-        let config = HabitConfig {
-            reminder_enabled: true,
-            ..Default::default()
-        };
-        assert!(config.validate(task.schedule.as_ref().unwrap()).is_err());
-        assert!(
-            validate_range("2026-01-01".parse().unwrap(), "2027-01-02".parse().unwrap()).is_err()
-        );
-        assert!(
-            validate_range("2026-01-02".parse().unwrap(), "2026-01-01".parse().unwrap()).is_err()
-        );
+    fn habits_are_repeating_all_day_events() {
+        let mut schedule = fixture().schedule.unwrap();
+        schedule.time = None;
+        assert!(HabitConfig::default().validate(&schedule).is_ok());
+        schedule.recurrence = "once".into();
+        assert!(HabitConfig::default().validate(&schedule).is_err());
     }
 }

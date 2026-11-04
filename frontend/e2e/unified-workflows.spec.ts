@@ -1,3 +1,4 @@
+import {chooseAction} from "./upgrade-helpers";
 import {expect,test,type Page} from "@playwright/test";
 import {emptyContact} from "../src/features/contacts/types";
 import type {Settings} from "../src/features/settings/types";
@@ -10,7 +11,7 @@ const tagId="123e4567-e89b-42d3-a456-426614174002";
 const sessionId="123e4567-e89b-42d3-a456-426614174003";
 const categoryId="123e4567-e89b-42d3-a456-426614174004";
 const paths=["/today","/habits","/workouts","/sex","/tasks","/calendar","/notes","/countdowns","/contacts","/pomodoro","/labels","/analytics","/ai","/profile","/settings","/status"];
-const defaults:Settings={timezone:"Europe/Moscow",time_format:"24h",language:"ru",theme:"light",reminders_enabled:false,reminder_minutes_before:10,week_starts_on:"monday",pomodoro_work_minutes:25,pomodoro_break_minutes:5,animations_enabled:true,effects_enabled:false};
+const defaults:Settings={timezone:"Europe/Moscow",time_format:"24h",language:"ru",theme:"light",week_starts_on:"monday",pomodoro_work_minutes:25,pomodoro_break_minutes:5,animations_enabled:true,effects_enabled:false};
 const birthday:Countdown={id:eventId,title:"Личный день рождения",category:"birthday",icon:"tabler:cake",tags:["Старый"],target_date:"2000-11-04",target_time:null,timezone:"Europe/Moscow",recurrence:"yearly",description:"",contact_id:null,details:{full_name:"",phone:"",occupation:"",relationship:"",notes:""},display:{clock:"both",show_years:true,show_repetitions:true},repeat_yearly:true,next_date:"2026-11-04",next_at:"2026-11-03T21:00:00Z",original_at:"2000-11-03T21:00:00Z",days_remaining:1,full_years:26,repetitions:26,updated_at:stamp,contact_name:null,contact_birthday:false,suspended:false,computed_at:stamp};
 test.use({viewport:{width:390,height:844},timezoneId:"America/Los_Angeles"});
 async function setup(page:Page){
@@ -47,7 +48,7 @@ test.afterEach(async({page},info)=>{if(info.status!=="passed")return;expect(awai
 test("independent birthday shows both ages and saves enum categories and multiple shared tags",async({page},info)=>{
  const {state,errors}=await setup(page);await page.goto("/countdowns");
  const card=page.locator("article");await expect(card).toContainText("Сейчас: 25 лет");await expect(card).toContainText("Будет: 26 лет");
- await card.getByRole("button",{name:"Изменить",exact:true}).click();
+ await chooseAction(page,"Изменить",card);
  const category=page.getByLabel("Категория события",{exact:true});await expect(category).toHaveJSProperty("tagName","SELECT");await category.selectOption("personal");
  const tags=page.getByLabel("Теги события",{exact:true});await tags.fill("");await tags.pressSequentially("Дом, Семья");await expect(tags).toHaveValue("Дом, Семья");
  await page.getByRole("button",{name:"Сохранить событие",exact:true}).click();await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -57,12 +58,12 @@ test("independent birthday shows both ages and saves enum categories and multipl
 
 test("global labels rename across features and create reusable category choices",async({page})=>{
  const {state,errors}=await setup(page);await page.goto("/labels");
- await page.getByLabel("Название метки Старый",{exact:true}).fill("Общий");await page.getByRole("button",{name:"Сохранить метку",exact:true}).click();
- await expect.poll(()=>state.contact.data.tags).toEqual(["Общий"]);await expect.poll(()=>state.event.tags).toEqual(["Общий"]);
+ await chooseAction(page,"Редактировать",page.locator('li[data-action-subject="label"]').filter({hasText:"Старый"}));await page.getByLabel("Название метки Старый",{exact:true}).fill("Общий");await page.getByRole("button",{name:"Сохранить метку",exact:true}).click();
+ await expect.poll(()=>state.contact.data.tags).toEqual(["Общий"]);await expect.poll(()=>state.event.tags).toEqual(["Общий"]);await expect(page.getByRole("dialog")).toHaveCount(0);
  await page.getByLabel("Новая метка",{exact:true}).fill("Путешествие");await page.getByLabel("Вид метки",{exact:true}).selectOption("category");await page.getByRole("button",{name:"Создать метку",exact:true}).click();
- await expect(page.getByLabel("Название метки Путешествие",{exact:true})).toBeVisible();
+ await expect(page.locator('li[data-action-subject="label"]').filter({hasText:"Путешествие"})).toBeVisible();
  await page.getByRole("navigation",{name:"Главная навигация",exact:true}).locator('a[href="/countdowns"]').click();
- await page.locator("article").getByRole("button",{name:"Изменить",exact:true}).click();
+ await chooseAction(page,"Изменить",page.locator("article"));
  await expect(page.getByLabel("Теги события",{exact:true})).toHaveValue("Общий");
  await page.getByLabel("Категория события",{exact:true}).selectOption(`custom:${categoryId}`);await page.getByRole("button",{name:"Сохранить событие",exact:true}).click();
  await expect(page.locator("article")).toContainText("Путешествие");expect(errors).toEqual([]);
@@ -80,19 +81,19 @@ test("contact links have icons, legacy fields stay preserved, operator is dedupl
  const {state,errors}=await setup(page);await page.goto("/contacts");const card=page.locator("article");
  await expect(card).toContainText("t2 · Проверено онлайн");expect(state.operatorRequests).toBe(1);
  for(const href of ["tel:+79161234567","sms:+79161234567","https://wa.me/79161234567","https://t.me/+79161234567","viber://chat?number=%2B79161234567"]){const link=card.locator(`a[href="${href}"]`);await expect(link).toBeVisible();await expect(link.locator("svg[data-icon]")).toHaveCount(1);}
- await card.getByRole("button",{name:"Изменить контакт",exact:true}).click();await expect(page.getByLabel("Профессия",{exact:true})).toHaveCount(0);await expect(page.getByLabel("Категории контакта",{exact:true})).toHaveCount(0);
+ await chooseAction(page,"Изменить контакт",card);await expect(page.getByLabel("Профессия",{exact:true})).toHaveCount(0);await expect(page.getByLabel("Категории контакта",{exact:true})).toHaveCount(0);
  await expect.poll(()=>state.operatorRequests).toBe(1);await page.getByRole("button",{name:"Сохранить контакт",exact:true}).click();await expect(page.getByRole("dialog")).toHaveCount(0);
  expect(state.contact.data.profession).toBe("Архитектор");expect(state.contact.data.categories).toEqual(["Друзья, коллеги"]);
- await context.setOffline(true);await card.getByRole("button",{name:"Изменить контакт",exact:true}).click();await page.getByLabel("Телефон 1",{exact:true}).fill("+79261234567");
+ await context.setOffline(true);await chooseAction(page,"Изменить контакт",card);await page.getByLabel("Телефон 1",{exact:true}).fill("+79261234567");
  await expect(page.getByRole("dialog")).toContainText("МегаФон · Архивный диапазон; перенос номера не учтён");expect(state.operatorRequests).toBe(1);
  await context.setOffline(false);await expect(page.getByRole("dialog")).toContainText("t2 · Проверено онлайн");expect(state.operatorRequests).toBe(2);expect(errors).toEqual([]);
 });
 
 test("Pomodoro uses shared history removal with a persistent confirmation",async({page})=>{
  const {state,errors}=await setup(page);await page.goto("/pomodoro");const history=page.getByRole("region",{name:"История Pomodoro",exact:true});
- await history.getByRole("button",{name:"Убрать из истории",exact:true}).click();const confirmation=page.getByRole("alertdialog");
+ await chooseAction(page,"Убрать из истории",history);const confirmation=page.getByRole("alertdialog");
  await expect(confirmation).toContainText("Результаты, статистика и уже применённые изменения сохранятся.");await page.keyboard.press("Escape");expect(state.historyRemoved).toBe(false);
- await history.getByRole("button",{name:"Убрать из истории",exact:true}).click();await confirmation.getByRole("button",{name:"Убрать запись",exact:true}).click();
+ await chooseAction(page,"Убрать из истории",history);await confirmation.getByRole("button",{name:"Убрать запись",exact:true}).click();
  await expect(history.getByRole("button",{name:"Убрать из истории",exact:true})).toHaveCount(0);expect(state.historyRemoved).toBe(true);await page.reload();await expect(history).toContainText("Завершённые и остановленные интервалы появятся здесь.");expect(errors).toEqual([]);
 });
 

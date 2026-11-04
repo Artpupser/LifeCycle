@@ -1,3 +1,4 @@
+import {AppIcon} from "@/systems/icons/app-icon";
 import { useLabelCatalog } from "./context";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { useState, type ChangeEvent } from "react";
@@ -12,11 +13,12 @@ function readableTagText(color: string) {
   return .2126 * channel(0) + .7152 * channel(2) + .0722 * channel(4) > .179 ? "#111827" : "#ffffff";
 }
 
-export function TagChip({ name, color }: { name: string; color?: string }) {
+export function TagChip({ name, color, icon, kind="tag",displayName }: { displayName?:string;name: string; color?: string; icon?:string|null;kind?:string }) {
   useLanguage();
   const catalog=useLabelCatalog();
-  color??=catalog.find(item=>(item.kind??"tag")==="tag"&&item.name.toLowerCase()===name.toLowerCase())?.color;
-  return <span className="inline-flex max-w-full items-center rounded-md px-2 py-0.5 text-xs font-medium" style={color?{ backgroundColor: color, color: readableTagText(color) }:{backgroundColor:"var(--muted)",color:"var(--foreground)"}}><span className="truncate">{name}</span></span>;
+  const label=catalog.find(item=>(item.kind??"tag")===kind&&item.name.toLowerCase()===name.toLowerCase());
+  color??=label?.color;icon??=label?.icon;
+  return <span className="inline-flex max-w-full items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium" style={color?{ backgroundColor: color, color: readableTagText(color) }:{backgroundColor:"var(--muted)",color:"var(--foreground)"}}>{icon&&<AppIcon icon={icon} className="size-3.5"/>}<span className="truncate">{displayName??name}</span></span>;
 }
 
 type LabelInputProps = {

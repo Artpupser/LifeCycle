@@ -1,8 +1,10 @@
+import {SubjectLabels} from "@/systems/labels/functional";
+import {ObjectActions} from "@/systems/actions/action-menu";
+import {taskDateActions} from "./quick-date-values";
 import { AnimatedArticle } from "@/systems/animations/surfaces";
 import { t, useLanguage } from "@/systems/i18n/locale";
-import { closeActionMenu } from "@/lib/menu";
 import { useState, type ReactNode } from "react";
-import { Clock3, MoreHorizontal, Pencil, Trash2, X, RotateCcw, CircleSlash, AlertTriangle } from "@/components/icons";
+import { Clock3, Trash2, X, RotateCcw, CircleSlash, AlertTriangle } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/markdown";
 import { TagChip } from "@/systems/labels/inputs";
@@ -29,10 +31,10 @@ export function TaskCard({ task, occurrence, tags, now, timezone, busy, toggle, 
   const priority=priorityColors[task.priority];
   const timing = taskTiming(task, now, timezone);
   return <AnimatedArticle data-drag-item="task" data-drag-key={`task-${task.id}`} draggable={draggable} onDragStart={dragStart} onDragOver={dragOver} onDrop={drop} data-task-result={overdue?"overdue":completed?"finished":"active"} style={priority?{borderLeft:`4px solid ${priority}`,backgroundColor:`color-mix(in srgb, ${priority} 8%, var(--card))`}:undefined} className={`group min-w-0 space-y-3 rounded-xl border bg-card p-4 shadow-sm hover:shadow-md ${completed ? "border-border/60 opacity-70" : "border-border"}`}>
-    <div className="flex items-start gap-3"><TaskCheckbox task={task} occurrence={occurrence} busy={busy} toggle={toggle} /><button className={`min-w-0 flex-1 break-words text-left text-sm font-medium leading-6 hover:text-primary ${completed ? "text-muted-foreground line-through" : ""}`} onClick={edit}>{task.title}</button><details data-menu onClick={closeActionMenu} className="relative shrink-0"><summary aria-label={t("Действия задачи {v0}", {v0: task.title})} className="cursor-pointer list-none rounded-lg p-1 text-muted-foreground hover:bg-muted"><MoreHorizontal className="size-4" /></summary><div className="absolute right-0 top-7 z-20 min-w-40 rounded-xl border border-border bg-card p-1 shadow-xl"><Button className="w-full justify-start" size="sm" variant="ghost" onClick={edit}><Pencil />{t("Редактировать")}</Button>{cancel && <Button className="w-full justify-start" size="sm" variant="ghost" disabled={busy} onClick={cancel}>{result==="rejected"?<RotateCcw/>:<CircleSlash/>}{result==="rejected"?t("Вернуть в работу"):t("Отменить задачу")}</Button>}{menuActions}<Button className="w-full justify-start text-destructive" size="sm" variant="ghost" disabled={busy} onClick={remove}><Trash2 />{t("Удалить задачу")}</Button></div></details></div>
+    <div className="flex items-start gap-3"><TaskCheckbox task={task} occurrence={occurrence} busy={busy} toggle={toggle} /><button className={`min-w-0 flex-1 break-words text-left text-sm font-medium leading-6 hover:text-primary ${completed ? "text-muted-foreground line-through" : ""}`} onClick={edit}>{task.title}</button><ObjectActions subject={{kind:"tasks",id:task.id}} actions={taskDateActions(task,timezone,busy,edit)} label={t("Действия задачи {v0}", {v0:task.title})}>{cancel && <Button className="w-full justify-start" size="sm" variant="ghost" disabled={busy} onClick={cancel}>{result==="rejected"?<RotateCcw/>:<CircleSlash/>}{result==="rejected"?t("Вернуть в работу"):t("Отменить задачу")}</Button>}{menuActions}<Button className="w-full justify-start text-destructive" size="sm" variant="ghost" disabled={busy} onClick={remove}><Trash2 />{t("Удалить задачу")}</Button></ObjectActions></div>
     {overdue && <p className="inline-flex items-center gap-1 rounded-md bg-red-500/10 px-2 py-1 text-xs font-semibold text-destructive"><AlertTriangle className="size-3"/>{t("Просрочена")}</p>}{result==="rejected" && <p className="text-xs text-muted-foreground">{t("Отменена")}</p>}
     {task.description && <div className="max-h-14 overflow-hidden text-xs text-muted-foreground"><Markdown value={task.description} /></div>}
-    {task.tags.length > 0 && <div className="flex flex-wrap gap-1.5">{task.tags.map((name) => <TagChip key={name} name={name} color={tags.find((tag) => tag.name === name)?.color} />)}</div>}
+    <SubjectLabels subject={{kind:"tasks",id:task.id}}>{task.tags.map((name) => <TagChip key={name} name={name} color={tags.find((tag) => tag.name === name)?.color} />)}</SubjectLabels>
     {(timing || recurring || location) && <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">{timing && <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 ${timing.today ? "bg-primary/10 font-medium text-primary" : "bg-muted"}`}><Clock3 className="size-3" />{timing.text}</span>}{recurring && <span>{t("↻ Повторяется")}</span>}{location && <span className="truncate">{location}</span>}</div>}
     {children && <div className="border-t border-border/60 pt-3">{children}</div>}
   </AnimatedArticle>;

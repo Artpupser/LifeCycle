@@ -3,7 +3,7 @@ import {configureEffects,effectEvents,mutationEffect,showEffect} from "./events"
 afterEach(()=>configureEffects(true));
 it("distinguishes saved completion, creation, deletion and a reversed result",()=>{
  expect(mutationEffect("/tasks/t/occurrences/2026-11-03","POST",{status:"completed"},{})).toBe("complete");
- expect(mutationEffect("/habits/h/marks/2026-11-03","POST",{completed_sub_habits:["x"]},{habit_mark:{status:"completed"}})).toBe("complete");
+ expect(mutationEffect("/habits/h/marks/2026-11-03","POST",{status:"completed"},{habit_mark:{status:"completed"}})).toBe("complete");
  expect(mutationEffect("/tasks/t","PUT",{status:"todo"},{status:"todo"})).toBeNull();
  expect(mutationEffect("/habits/h/marks/2026-11-03","POST",{status:"completed"},{status:"pending"})).toBe("notice");
  expect(mutationEffect("/notes","POST",{},{})).toBe("create");

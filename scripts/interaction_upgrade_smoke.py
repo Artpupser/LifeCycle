@@ -34,7 +34,7 @@ def run(args):
     owner.request('POST', f"/api/tasks/{task_id}/occurrences/{rule['start_date']}", {'status': 'rejected'})
     require(owner.request('GET', '/api/tasks/' + task_id)[0]['status'] == 'rejected', 'Cancellation not persisted')
     require(any(v['task']['id'] == task_id and v['status'] == 'rejected' for v in owner.request('GET', f'/api/today?date={today}')[0]['tasks']), 'Cancelled multiday snapshot lost')
-    habit_body = {'title': 'Draft ' + marker, 'schedule': {**rule, 'start_date': str(today), 'time': None, 'duration_minutes': 15, 'recurrence': 'daily'}, 'habit': {'icon': '🌱', 'sub_habits': [], 'reminder_enabled': False, 'reminder_minutes_before': None}}
+    habit_body = {'title': 'Draft ' + marker, 'schedule': {**rule, 'start_date': str(today), 'time': None, 'duration_minutes': 15, 'recurrence': 'daily'}, 'habit': {'icon': '🌱', }}
     draft = owner.request('POST', '/api/habits', habit_body, expected=201)[0]
     owner.request('DELETE', '/api/habits/' + draft['id'], expected=204)
     require(not owner.request('GET', f'/api/habits/statistics?from={today}&to={today}')[0], 'Discarded habit left empty analytics')

@@ -71,7 +71,7 @@ def run(args):
     invalid['rounds'][0]['exercises'] *= 2
     first.request('POST', '/api/workouts', invalid, expected=400)
 
-    habit_body = {'title': 'Тренировка Today ' + marker, 'description': '**Связка**', 'tags': [], 'color': '#226677', 'schedule': {'start_date': str(today), 'time': None, 'timezone': 'UTC', 'duration_minutes': 30, 'recurrence': 'weekly', 'interval_days': 1, 'weekdays': [today.isoweekday()], 'end_date': None}, 'habit': {'icon': '🏋', 'workout_id': wid, 'sub_habits': [], 'reminder_enabled': False}}
+    habit_body = {'title': 'Тренировка Today ' + marker, 'description': '**Связка**', 'tags': [], 'color': '#226677', 'schedule': {'start_date': str(today), 'time': None, 'timezone': 'UTC', 'duration_minutes': 30, 'recurrence': 'weekly', 'interval_days': 1, 'weekdays': [today.isoweekday()], 'end_date': None}, 'habit': {'icon': '🏋', 'workout_id': wid, }}
     habit, _ = first.request('POST', '/api/habits', habit_body, expected=201)
     hid = habit['id']
     second.request('POST', '/api/habits', habit_body, expected=404)
@@ -173,9 +173,9 @@ def run(args):
     deleted = command(first, deleted, 'next', actual_repetitions=25)
     require(deleted['status'] == 'completed' and not deleted['habit_completed'], 'Deleting a linked habit blocked snapshot completion')
     tokyo_body = copy.deepcopy(habit_body)
-    tokyo_body['schedule'].update(timezone='Asia/Tokyo', time='00:30')
+    tokyo_body['schedule'].update(timezone='Asia/Tokyo', time=None)
     tokyo, _ = first.request('POST', '/api/habits', tokyo_body, expected=201)
-    shifted = find_occurrence(occurrences(first, today-timedelta(days=1)), tokyo['id'])
+    shifted = find_occurrence(occurrences(first, today), tokyo['id'])
     tokyo_session, _ = first.request('POST', '/api/workout-sessions', dict(start, habit_id=tokyo['id'], date=shifted['date']))
     require(tokyo_session['snapshot']['date'] == str(today), 'Workout used profile calendar day instead of the habit occurrence key')
     command(first, tokyo_session, 'cancel')

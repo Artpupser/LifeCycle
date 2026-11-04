@@ -2,7 +2,7 @@ import {expect,it} from "vitest";
 import {iconCatalog,iconData,loadIconPack,resolveIcon} from "./catalog";
 import {countries,countryFlag} from "@/systems/phone/countries";
 it("offers UI, decorative, brand and country icons from a single local catalog",async()=>{
- await Promise.all([loadIconPack("circle-flags"),loadIconPack("simple-icons")]);
+ await Promise.all([loadIconPack("circle-flags"),loadIconPack("simple-icons"),loadIconPack("twemoji")]);
  expect(new Set(iconCatalog.map(icon=>icon.id)).size).toBe(iconCatalog.length);
  for(const icon of iconCatalog)expect(iconData(icon.id)?.body,icon.id).toBeTruthy();
  for(const country of countries)expect(iconData(countryFlag(country)),country).toBeTruthy();

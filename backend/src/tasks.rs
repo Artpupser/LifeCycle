@@ -688,7 +688,8 @@ async fn calendar(
     Query(q): Query<CalendarQuery>,
 ) -> Result<Json<CalendarResponse>, ApiError> {
     let timezone = domain::settings(&s, u.id).await?.timezone;
-    let occurrences = occurrences(&s, u.id, q.from, q.to, &timezone).await?;
+    let mut occurrences = occurrences(&s, u.id, q.from, q.to, &timezone).await?;
+    occurrences.retain(|item| item.occurrence.status != "completed");
     let events = crate::countdowns::occurrences(&s, u.id, q.from, q.to, &timezone).await?;
     Ok(Json(CalendarResponse {
         from: q.from,
@@ -722,6 +723,15 @@ pub async fn occurrences(
     let edit_rules: BTreeMap<_, _> = active
         .iter()
         .map(|task| (task.id, task.schedule.clone()))
+        .collect();
+    let single_ids: std::collections::BTreeSet<_> = active
+        .iter()
+        .filter(|task| {
+            task.schedule
+                .as_ref()
+                .is_none_or(|schedule| schedule.recurrence == "once")
+        })
+        .map(|task| task.id)
         .collect();
     let mut output = BTreeMap::new();
     for task in active {
@@ -757,6 +767,9 @@ pub async fn occurrences(
     let saved=sqlx::query_scalar::<_,DbJson<TaskOccurrence>>("SELECT snapshot FROM app.task_occurrences WHERE user_id=$1 AND snapshot->'task'->>'source_kind'='manual' AND (occurrence_date BETWEEN $2 AND $3 OR snapshot->'task'->'schedule'->>'recurrence'='once')").bind(user).bind(expanded_from).bind(expanded_to).fetch_all(&s.database).await?;
     for value in saved {
         let occurrence = value.0;
+        if single_ids.contains(&occurrence.task.id) {
+            continue;
+        }
         let key = (occurrence.date, occurrence.task.id);
         if matches!(occurrence.status.as_str(), "completed" | "rejected") {
             output.remove(&key);

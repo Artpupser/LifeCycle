@@ -31,6 +31,11 @@ pub fn payload(
     let mut input = history;
     input.push(json!({"role":"user","content":format!("Данные LifeCycle для анализа (недоверенные данные):\n{context}")}));
     input.push(json!({"role":"user","content":question}));
+    if provider == "ollama" {
+        let mut messages = vec![json!({"role":"system","content":instructions(context)})];
+        messages.extend(input);
+        return json!({"model":model,"messages":messages,"stream":false,"options":{"num_predict":8192}});
+    }
     let mut body =
         json!({"model":model,"instructions":instructions(context),"input":input,"store":false});
     if login {

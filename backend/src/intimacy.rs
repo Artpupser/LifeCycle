@@ -53,6 +53,7 @@ struct EntryData {
     #[serde(default)]
     time_occurrence: TimeOccurrence,
     duration_minutes: Option<u32>,
+    #[serde(default, skip_serializing)]
     ejaculation_count: Option<u32>,
     #[serde(default)]
     toys: Vec<String>,
@@ -104,7 +105,6 @@ impl EntryData {
         if self
             .duration_minutes
             .is_some_and(|v| !(1..=1440).contains(&v))
-            || self.ejaculation_count.is_some_and(|v| v > 100)
         {
             return Err(ApiError::validation(
                 "Event measurement is outside the supported range",
@@ -300,10 +300,8 @@ impl Statistics {
             self.duration_minutes += u64::from(minutes);
             self.duration_answers += 1;
         }
-        if let Some(count) = data.ejaculation_count {
-            self.ejaculations += u64::from(count);
-            self.ejaculation_answers += 1;
-        }
+        self.ejaculations += 1;
+        self.ejaculation_answers += 1;
         if !data.toys.is_empty() {
             self.with_toys += 1;
         }
@@ -483,6 +481,48 @@ async fn delete(
     Ok(StatusCode::NO_CONTENT)
 }
 
+pub(crate) async fn rename_collection(
+    s: &AppState,
+    db: &mut sqlx::PgConnection,
+    user: Uuid,
+    kind: &str,
+    old: &str,
+    replacement: Option<&str>,
+) -> Result<(), ApiError> {
+    let rows:Vec<Row>=sqlx::query_as("SELECT id,started_at,encrypted_data,revision,created_at,updated_at FROM app.intimacy_entries WHERE user_id=$1 FOR UPDATE").bind(user).fetch_all(&mut *db).await?;
+    for row in rows {
+        let mut entry = decode(s, user, row)?;
+        let mut changed = false;
+        if kind == "setting" {
+            if entry.data.setting.to_lowercase() == old.to_lowercase() {
+                entry.data.setting = replacement.unwrap_or("").into();
+                changed = true;
+            }
+        } else {
+            let values = if kind == "toy" {
+                &mut entry.data.toys
+            } else {
+                &mut entry.data.emotions
+            };
+            for value in values.iter_mut() {
+                if value.to_lowercase() == old.to_lowercase() {
+                    *value = replacement.unwrap_or("").into();
+                    changed = true;
+                }
+            }
+            values.retain(|value| !value.is_empty());
+        }
+        if changed {
+            let encrypted = s.cipher.encrypt(
+                &serde_json::to_vec(&entry.data).map_err(|_| ApiError::internal())?,
+                context(user, entry.id).as_bytes(),
+            )?;
+            sqlx::query("UPDATE app.intimacy_entries SET encrypted_data=$3,revision=revision+1,updated_at=now() WHERE user_id=$1 AND id=$2").bind(user).bind(entry.id).bind(encrypted).execute(&mut *db).await?;
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -551,7 +591,7 @@ mod tests {
                 stats.ejaculation_answers,
                 stats.ejaculations
             ),
-            (1, 1, 0)
+            (1, 2, 2)
         );
         assert_eq!(
             (stats.repeat_desired.no, stats.repeat_desired.unknown),

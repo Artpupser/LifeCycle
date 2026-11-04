@@ -23,8 +23,6 @@ pub struct Settings {
     pub sound_notifications: bool,
     pub sound_volume: u8,
     pub sound_theme: String,
-    pub reminders_enabled: bool,
-    pub reminder_minutes_before: u32,
     pub week_starts_on: String,
     pub pomodoro_work_minutes: u32,
     pub pomodoro_break_minutes: u32,
@@ -108,8 +106,6 @@ impl Default for Settings {
             sound_notifications: true,
             sound_volume: 25,
             sound_theme: "soft".into(),
-            reminders_enabled: false,
-            reminder_minutes_before: 10,
             week_starts_on: "monday".to_owned(),
             pomodoro_work_minutes: 25,
             pomodoro_break_minutes: 5,
@@ -153,12 +149,11 @@ impl Settings {
         if !["monday", "sunday"].contains(&self.week_starts_on.as_str()) {
             return Err(ApiError::validation("Unsupported week start"));
         }
-        if self.reminder_minutes_before > 1440
-            || !(1..=180).contains(&self.pomodoro_work_minutes)
+        if !(1..=180).contains(&self.pomodoro_work_minutes)
             || !(1..=180).contains(&self.pomodoro_break_minutes)
         {
             return Err(ApiError::validation(
-                "Reminder or timer duration is outside the supported range",
+                "Timer duration is outside the supported range",
             ));
         }
         Ok(())

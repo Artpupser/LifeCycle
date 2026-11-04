@@ -1,6 +1,6 @@
 import { t } from "@/systems/i18n/locale";
 import { weekday, dateLabel, dayDifference, localDate, localDateTimeToInstant, shiftDate } from "@/lib/dates";
-import type { Schedule, Task } from "./types";
+import type { Schedule, Task, TaskOccurrence } from "./types";
 function occurs(schedule: Schedule, date: string) {
   if (date < schedule.start_date || (schedule.end_date && date > schedule.end_date)) return false;
   const elapsed = dayDifference(schedule.start_date, date);
@@ -74,3 +74,6 @@ export function occurrenceCoversDate(item: {date:string;starts_at:string|null;ta
   const last=item.starts_at ? localDate(zone,Date.parse(item.starts_at)+rule.duration_minutes*60_000-1) : shiftDate(item.date,Math.max(0,Math.ceil(rule.duration_minutes/1440)-1));
   return date>=first && date<=last;
 }
+
+/** Calendar contains outstanding work; recurring results belong to each occurrence. */
+export function calendarOccurrenceVisible(item:TaskOccurrence){return (item.task.schedule&&item.task.schedule.recurrence!=="once"?item.status:item.task.status)!=="completed";}

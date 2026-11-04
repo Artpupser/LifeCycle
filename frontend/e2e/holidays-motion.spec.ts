@@ -1,7 +1,7 @@
 import {expect,test,type Page} from "@playwright/test";
 import type {Settings} from "../src/features/settings/types";
 const stamp="2026-11-03T12:00:00Z";
-const defaults:Settings={timezone:"Asia/Tokyo",time_format:"24h",language:"ru",theme:"light",reminders_enabled:false,reminder_minutes_before:10,week_starts_on:"monday",pomodoro_work_minutes:25,pomodoro_break_minutes:5,animations_enabled:true,effects_enabled:true};
+const defaults:Settings={timezone:"Asia/Tokyo",time_format:"24h",language:"ru",theme:"light",week_starts_on:"monday",pomodoro_work_minutes:25,pomodoro_break_minutes:5,animations_enabled:true,effects_enabled:true};
 test.use({viewport:{width:390,height:844},timezoneId:"America/Los_Angeles"});
 async function setup(page:Page,options:{country?:string;language?:"ru"|"en";effects?:boolean;calendarError?:boolean}={}){
  const task={id:"task",title:"Проверить результат",description:"",status:"todo",source_kind:"task",tags:[],color:"#3d6e14",priority:"normal",schedule:null,updated_at:stamp};

@@ -1,3 +1,4 @@
+import {chooseAction} from "./upgrade-helpers";
 import { noteProperties } from "./upgrade-helpers";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -135,9 +136,9 @@ test("AI is a one-click chat with per-item sharing, automatic replies and safe r
   await page.getByRole("button", { name: "Закрыть настройки AI", exact: true }).click();
   await page.screenshot({ path: testInfo.outputPath("mobile-ai-chat.png"), fullPage: true });
   expect(await page.locator("html").evaluate((el) => el.scrollWidth)).toBeLessThanOrEqual(390);
-  await page.getByRole("button", { name: "Удалить чат", exact: true }).click();
+  await chooseAction(page,"Удалить чат");
   await page.getByRole("dialog").getByRole("button", { name: "Отмена", exact: true }).click();
-  await page.getByRole("button", { name: "Удалить чат", exact: true }).click();
+  await chooseAction(page,"Удалить чат");
   await page.getByRole("dialog").getByRole("button", { name: "Удалить навсегда", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Чем займёмся сегодня?" })).toBeVisible();
   expect((await page.request.get(`/api/notes/${note.id}`)).ok()).toBe(true);

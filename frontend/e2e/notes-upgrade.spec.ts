@@ -1,3 +1,4 @@
+import {chooseAction} from "./upgrade-helpers";
 import {expect,test} from "@playwright/test";
 import {login,confirmUi,quickNote} from "./upgrade-helpers";
 
@@ -13,21 +14,21 @@ test("right note editor, quick creation, filter language and atomic selection ac
  await expect(editor.getByText("Сохранено",{exact:true})).toBeVisible();await page.getByRole("button",{name:"Закрыть редактор заметки",exact:true}).click();
  await page.getByLabel("Поиск заметок",{exact:true}).fill('тег:работа ai:нет');await expect(page.locator("article")).toHaveCount(1);await page.getByLabel("Поиск заметок",{exact:true}).fill("");
  for(const title of ["Первая идея","Вторая идея"])await page.getByLabel(`Выбрать заметку ${title}`,{exact:true}).check();
- await page.getByRole("button",{name:"Добавить теги",exact:true}).click();await page.getByLabel("Теги через запятую",{exact:true}).fill("общий");await page.getByRole("button",{name:"Применить к выбранным",exact:true}).click();await expect(page.getByRole("dialog")).toHaveCount(0);
+ await chooseAction(page,"Добавить теги");await page.getByLabel("Теги через запятую",{exact:true}).fill("общий");await page.getByRole("button",{name:"Применить к выбранным",exact:true}).click();await expect(page.getByRole("dialog")).toHaveCount(0);
  await page.getByLabel("Поиск заметок",{exact:true}).fill('тег:общий');await expect(page.locator("article")).toHaveCount(2);
- await page.getByLabel("Действия с выбором",{exact:true}).click();await page.getByRole("button",{name:"Выбрать показанные (до 200)",exact:true}).click();
- await page.getByRole("button",{name:"Разрешить AI",exact:true}).click();
+ await page.getByLabel("Действия с выбором",{exact:true}).click();await chooseAction(page,"Выбрать показанные (до 200)");
+ await chooseAction(page,"Разрешить AI");
  await confirmUi(page,()=>page.getByRole("button",{name:"Применить к выбранным",exact:true}).click(),false);
  await expect(page.getByRole("dialog")).toBeVisible();await page.getByRole("dialog").getByRole("button",{name:"Отмена",exact:true}).click();
  const getNotes=async()=>await (await page.request.get("/api/notes")).json() as {id:string;title:string;ai_shared:boolean}[];
  expect((await getNotes()).every(note=>!note.ai_shared)).toBe(true);
- await page.getByRole("button",{name:"Разрешить AI",exact:true}).click();await confirmUi(page,()=>page.getByRole("button",{name:"Применить к выбранным",exact:true}).click());await expect(page.getByRole("dialog")).toHaveCount(0);
+ await chooseAction(page,"Разрешить AI");await confirmUi(page,()=>page.getByRole("button",{name:"Применить к выбранным",exact:true}).click());await expect(page.getByRole("dialog")).toHaveCount(0);
  await page.getByLabel("Поиск заметок",{exact:true}).fill("ai:нет");await expect(page.locator("article")).toHaveCount(0);await page.getByLabel("Поиск заметок",{exact:true}).fill("ai:да");await expect(page.locator("article")).toHaveCount(2);
  await page.getByRole("button",{name:"Первая идея",exact:true}).click();await page.getByRole("tab",{name:"Характеристики",exact:true}).click();await expect(page.getByLabel("AI Доступ: Первая идея",{exact:true})).toBeChecked();
  await page.getByRole("tab",{name:"Содержание",exact:true}).click();await page.screenshot({path:testInfo.outputPath("notes-editor-desktop.png"),fullPage:true});
  await page.getByLabel("Содержание",{exact:true}).fill("Черновик не теряется");await confirmUi(page,()=>page.getByRole("button",{name:"Закрыть редактор заметки",exact:true}).click(),false);await expect(page.getByLabel("Содержание",{exact:true})).toHaveValue("Черновик не теряется");
  await confirmUi(page,()=>page.getByRole("button",{name:"Закрыть редактор заметки",exact:true}).click());
  await page.setViewportSize({width:390,height:844});await page.getByRole("button",{name:"Первая идея",exact:true}).click();await page.screenshot({path:testInfo.outputPath("notes-editor-mobile.png"),fullPage:true});await expect(page.getByLabel("Содержание",{exact:true})).toHaveValue(/Сохранённый Markdown/);await page.getByRole("button",{name:"Закрыть редактор заметки",exact:true}).click();
- await page.getByLabel("Поиск заметок",{exact:true}).fill("");await page.getByLabel("Выбрать заметку Вторая идея",{exact:true}).check();await page.getByRole("button",{name:"Удалить",exact:true}).click();await confirmUi(page,()=>page.getByRole("button",{name:"Применить к выбранным",exact:true}).click());await expect(page.getByRole("button",{name:"Вторая идея",exact:true})).toHaveCount(0);await page.reload();await expect(page.getByRole("button",{name:"Первая идея",exact:true})).toBeVisible();
+ await page.getByLabel("Поиск заметок",{exact:true}).fill("");await page.getByLabel("Выбрать заметку Вторая идея",{exact:true}).check();await chooseAction(page,"Удалить");await confirmUi(page,()=>page.getByRole("button",{name:"Применить к выбранным",exact:true}).click());await expect(page.getByRole("button",{name:"Вторая идея",exact:true})).toHaveCount(0);await page.reload();await expect(page.getByRole("button",{name:"Первая идея",exact:true})).toBeVisible();
  expect(await page.locator("html").evaluate(element=>element.scrollWidth)).toBeLessThanOrEqual(390);expect(nativeDialogs).toBe(0);expect(failures).toEqual([]);
 });

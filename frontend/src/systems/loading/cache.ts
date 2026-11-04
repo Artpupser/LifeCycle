@@ -19,4 +19,6 @@ export function mutateResource<T>(path:string,updater:(data:T)=>T){const item=en
 export function invalidateResources(){for(const item of entries.values()){item.updated=0;if(item.pending)item.dirty=true;}}
 export function clearResourceCache(){epoch++;if(typeof window!=="undefined")window.dispatchEvent(new Event("lifecycle:cache-cleared"));for(const item of entries.values()){item.pending=undefined;item.updated=0;publish(item,empty);}entries.clear();}
 
-export function revalidateResource(path:string){const item=entries.get(path);if(item?.listeners.size&&item.loader&&item.errorText)void loadResource(path,item.loader,item.errorText,true);}
+export function revalidateResource(path:string){const item=entries.get(path);if(item?.listeners.size&&item.loader&&item.errorText){if(item.pending){item.dirty=true;item.updated=0;}else void loadResource(path,item.loader,item.errorText,true);}}
+
+export function revalidateActiveResources(prefixes:string[]){for(const path of entries.keys())if(prefixes.some(prefix=>path===prefix||path.startsWith(`${prefix}?`)||path.startsWith(`${prefix}/`)))revalidateResource(path);}

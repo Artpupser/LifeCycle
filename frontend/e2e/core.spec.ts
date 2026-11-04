@@ -1,3 +1,4 @@
+import {chooseAction} from "./upgrade-helpers";
 import { confirmUi, quickNote } from "./upgrade-helpers";
 import { expect, test, type Page, type APIRequestContext } from "@playwright/test";
 
@@ -43,11 +44,11 @@ test("notes persist Markdown and private uploaded images across editing and fold
   await expect(page.getByLabel("Содержание",{exact:true})).toHaveValue(/Сохранённый текст/);
   await page.getByLabel("Название заметки",{exact:true}).fill("Изменённая заметка");await page.getByRole("button",{name:"Сохранить заметку",exact:true}).click();await page.getByRole("button",{name:"Закрыть редактор заметки",exact:true}).click();
   await page.getByLabel("Поиск заметок",{exact:true}).fill('папка:"Идеи браузера"');await expect(page.getByRole("button",{name:"Изменённая заметка",exact:true})).toBeVisible();
-  await page.getByText("Папки",{exact:true}).click();await confirmUi(page,()=>page.getByLabel("Удалить папку Идеи браузера",{exact:true}).click());
+  await page.getByText("Папки",{exact:true}).click();await confirmUi(page,()=>chooseAction(page,"Удалить папку Идеи браузера"));
   await page.getByLabel("Поиск заметок",{exact:true}).fill("");await expect(page.getByRole("button",{name:"Изменённая заметка",exact:true})).toBeVisible();
   const card=page.locator("article").filter({has:page.getByRole("button",{name:"Изменённая заметка",exact:true})});
-  await card.getByLabel("Действия заметки Изменённая заметка",{exact:true}).click();await confirmUi(page,()=>card.getByRole("button",{name:"Удалить заметку",exact:true}).click(),false);
-  await expect(card).toBeVisible();await card.getByLabel("Действия заметки Изменённая заметка",{exact:true}).click();await confirmUi(page,()=>card.getByRole("button",{name:"Удалить заметку",exact:true}).click());await expect(card).toHaveCount(0);await page.reload();await expect(card).toHaveCount(0);expect(failures).toEqual([]);
+  await card.getByLabel("Действия заметки Изменённая заметка",{exact:true}).click();await confirmUi(page,()=>chooseAction(page,"Удалить заметку",card),false);
+  await expect(card).toBeVisible();await card.getByLabel("Действия заметки Изменённая заметка",{exact:true}).click();await confirmUi(page,()=>chooseAction(page,"Удалить заметку",card));await expect(card).toHaveCount(0);await page.reload();await expect(card).toHaveCount(0);expect(failures).toEqual([]);
 });
 
 test("recurring task connects list, Kanban, Gantt, Today and calendar without sharing daily completion", async ({ page, request }) => {
@@ -100,22 +101,23 @@ test("recurring task connects list, Kanban, Gantt, Today and calendar without sh
   await page.getByRole("link", { name: "Календарь", exact: true }).click();
   await page.getByLabel("Дата календаря", { exact: true }).fill(today);
   const plan = page.getByRole("region", { name: "План выбранного дня", exact: true });
-  await expect(plan.getByLabel(`Выполнено: ${title}`, { exact: true })).toBeChecked();
-  await plan.getByRole("link", { name: "Открыть задачу", exact: true }).click();
+  await expect(plan.getByLabel(`Выполнено: ${title}`, { exact: true })).toHaveCount(0);
+  await page.getByLabel("Дата календаря", { exact: true }).fill(following);
+  await expect(plan.getByLabel(`Выполнено: ${title}`, { exact: true })).not.toBeChecked();
+  await chooseAction(page,"Открыть задачу",plan);
   await expect(page.getByRole("dialog")).toContainText("Задача Markdown");
   await page.getByRole("dialog").getByRole("button", { name: /Закрыть/ }).click();
-  await page.getByRole("button", { name: "История", exact: true }).click();
+  await chooseAction(page,"История");
   await expect(page.getByRole("dialog")).toContainText("Выполнено");
   await page.getByRole("dialog").getByRole("button", { name: "Закрыть окно", exact: true }).click();
   await page.getByLabel(`Действия задачи ${title}`, { exact: true }).click();
-  await confirmUi(page, async()=>{await page.getByRole("button", { name: "Удалить задачу", exact: true }).click();}, true);
+  await confirmUi(page, async()=>{await chooseAction(page,"Удалить задачу");}, true);
   await expect(page.getByRole("button", { name: title, exact: true })).toHaveCount(0);
   await page.getByRole("link", { name: "Календарь", exact: true }).click();
   await page.getByLabel("Дата календаря", { exact: true }).fill(today);
-  await expect(plan.getByLabel(`Выполнено: ${title}`, { exact: true })).toBeDisabled();
-  await expect(plan.getByLabel(`Выполнено: ${title}`, { exact: true })).toBeChecked();
-  await plan.getByRole("link", { name: "Открыть задачу", exact: true }).click();
-  await page.getByRole("button", { name: "История задачи", exact: true }).click();
+  await expect(plan.getByLabel(`Выполнено: ${title}`, { exact: true })).toHaveCount(0);
+  await page.goto(`/tasks?task=${savedTask.id}`);
+  await chooseAction(page,"История задачи");
   await expect(page.getByRole("dialog")).toContainText(title);
   await expect(page.getByRole("dialog")).toContainText("Задача Markdown");
   expect(failures).toEqual([]);
@@ -136,14 +138,14 @@ test("countdown edits and persisted Pomodoro pause, resume and cancellation work
   await expect(page.getByRole("heading", { name: "Ежегодный праздник", exact: true })).toBeVisible();
   await expect(page.getByText("Каждый год", { exact: true })).toBeVisible();
   await page.reload();
-  await page.getByRole("button", { name: "Изменить", exact: true }).click();
+  await chooseAction(page,"Изменить");
   await expect(page.getByLabel("Повторение события", { exact: true })).toHaveValue("yearly");
   await page.getByLabel("Название события", { exact: true }).fill("Изменённый праздник");
   await page.getByRole("button", { name: "Сохранить событие", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Изменённый праздник", exact: true })).toBeVisible();
   expect(await page.locator("html").evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(390);
   await page.screenshot({ path: testInfo.outputPath("mobile-countdown.png"), fullPage: true });
-  await confirmUi(page, async()=>{await page.getByRole("button", { name: "Удалить событие Изменённый праздник", exact: true }).click();}, true);
+  await confirmUi(page, async()=>{await chooseAction(page,"Удалить событие Изменённый праздник");}, true);
   await expect(page.getByRole("heading", { name: "Изменённый праздник", exact: true })).toHaveCount(0);
   await page.getByRole("link", { name: "Pomodoro", exact: true }).click();
   await page.getByRole("button", { name: "Начать фокус", exact: true }).click();

@@ -27,3 +27,14 @@ export async function confirmUi(page:Page,trigger:()=>Promise<unknown>,approve=t
 }
 export async function quickNote(page:Page,title:string){await page.getByRole("button",{name:"Новая заметка",exact:true}).click();await page.getByLabel("Название новой заметки",{exact:true}).fill(title);await page.getByLabel("Название новой заметки",{exact:true}).press("Enter");await expect(page.getByRole("button",{name:title,exact:true})).toBeVisible();}
 export async function noteProperties(page:Page,title:string){await page.getByRole("button",{name:title,exact:true}).click();await page.getByRole("tab",{name:"Характеристики",exact:true}).click();}
+
+/** Choose an entity action through the shared popup (also supports an already open menu). */
+export async function chooseAction(page:Page,name:string,scope:import('@playwright/test').Locator|Page=page){
+ const popup=page.getByRole('menu',{name:'Действия',exact:true});
+ if(await popup.count()){const item=popup.getByRole('menuitem',{name,exact:true});if(await item.count()){await item.click();return;}await page.keyboard.press('Escape');}
+ let activeScope=scope;
+ await expect.poll(async()=>{activeScope=scope===page&&await page.getByRole('dialog').count()?page.getByRole('dialog').last():scope;return activeScope.locator('button[data-context-ignore]').count();}).toBeGreaterThan(0);
+ const triggers=activeScope.locator('button[data-context-ignore]');await expect(triggers.first()).toBeVisible();
+ for(let index=0;index<await triggers.count();index++){await triggers.nth(index).click();await expect(popup).toBeVisible();const item=popup.getByRole('menuitem',{name,exact:true});if(await item.count()){await item.click();return;}await page.keyboard.press('Escape');}
+ throw new Error(`Entity action not found: ${name}`);
+}

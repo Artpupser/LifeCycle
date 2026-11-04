@@ -72,3 +72,5 @@ it("centralizes midnight carry and preference-aware picker presets", () => {
   expect(dateTimePresets("time",now,"Asia/Tokyo","12h",true)[0]).toEqual(["Сейчас","00:30:47"]);
   expect(dateTimePresets("time",now,"Asia/Tokyo","12h")).toContainEqual(["Вечер · 06:00 PM","18:00"]);
 });
+
+it("counts all-day countdowns by civil days and complete calendar months",async()=>{const {countdownAmount}=await import("./dates");expect(countdownAmount("2026-11-03T22:00:00Z","2026-11-05T21:00:00Z","Europe/Moscow","days",false)).toBe(2);expect(countdownAmount("2026-01-31T12:00:00Z","2026-02-28T12:00:00Z","UTC","months",false)).toBe(1);expect(countdownAmount("2026-11-03T12:00:00Z","2026-11-03T12:01:30Z","UTC","seconds",true)).toBe(90);});

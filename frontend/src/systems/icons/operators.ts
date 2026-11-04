@@ -1,0 +1,10 @@
+import type {IconifyIcon} from "@iconify/react/offline";
+/** Bundled operator marks: natural brand colors, available in the same picker as UI icons. */
+export const operatorMarks:Record<string,IconifyIcon>={
+ "operator-mts":{body:'<rect width="24" height="24" rx="5" fill="#FF0032"/><path fill="#fff" d="M3 17V7h2l2 5 2-5h2v10H9v-6l-2 4-2-4v6zm9-10h7v2h-2v8h-2V9h-3zm10 0v2h-2v6h2v2h-3V7z"/>'},
+ "operator-megafon":{"width":48,"height":48,"body":"<path fill=\"none\" stroke=\"#00B956\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M19 20.23a2.69 2.69 0 1 1 2.68-2.69A2.69 2.69 0 0 1 19 20.23M24 2.5A21.5 21.5 0 0 0 19.43 45V25.72A1.76 1.76 0 0 1 21.12 24h2.95V2.5m14.06 32.22A1.68 1.68 0 1 1 39.81 33a1.68 1.68 0 0 1-1.68 1.68m-5.61 0A1.68 1.68 0 1 1 34.19 33a1.68 1.68 0 0 1-1.67 1.68m-5.62 0A1.68 1.68 0 1 1 28.58 33a1.68 1.68 0 0 1-1.68 1.68\"/><path fill=\"none\" stroke=\"#00B956\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M19.43 45A21.5 21.5 0 1 0 24 2.5\"/>"},
+ "operator-t2":{body:'<rect width="24" height="24" rx="5" fill="#000"/><path d="M5 6h3v3h3v3H8v5h3v3H5V12H3V9h2zm8 1h7v7h-4v3h4v3h-7v-9h4v-1h-4z" fill="#fff"/>'},
+ "operator-beeline":{body:'<circle cx="12" cy="12" r="11" fill="#FFD400"/><path d="M5 3c7 0 13 3 17 7v5C17 9 9 6 2 7zm-4 8c7-2 16 2 21 8l-3 3C14 15 7 12 1 15zm2 8c5-3 9-1 12 4H9z" fill="#000"/>'},
+ "operator-yota":{body:'<rect width="24" height="24" rx="5" fill="#00B7E8"/><circle cx="9" cy="6" r="2" fill="#fff"/><path d="M9 10v5l-5 5m5-5 5 5m0-15v6l5-3m-5 3h-4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>'}
+};
+export function operatorLogo(name:string){if(/мтс|телесистемы|\bmts\b/i.test(name))return "lifecycle:operator-mts";if(/мегафон|megafon/i.test(name))return "lifecycle:operator-megafon";if(/\bt2\b|т2|tele2|теле2/i.test(name))return "lifecycle:operator-t2";if(/билайн|beeline|вымпел/i.test(name))return "lifecycle:operator-beeline";if(/yota|йота|скартел/i.test(name))return "lifecycle:operator-yota";return "tabler:device-mobile";}

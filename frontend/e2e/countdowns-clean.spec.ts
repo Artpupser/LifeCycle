@@ -1,3 +1,4 @@
+import {chooseAction} from "./upgrade-helpers";
 import { expect, test } from "@playwright/test";
 import { login } from "./upgrade-helpers";
 
@@ -7,19 +8,19 @@ test("1.6 clean countdown editor preserves stored metadata and hides removed fie
   expect((await page.request.put("/api/settings", { headers: { Origin: new URL(page.url()).origin }, data: { ...preferences, timezone: "UTC" } })).status()).toBe(200);
   const legacy = await page.request.post("/api/countdowns", {
     headers: { Origin: new URL(page.url()).origin },
-    data: { title: "Сохранённое событие", category: "Памятные даты", icon: "calendar", target_date: "2030-12-31", target_time: "09:15:30", timezone: "Asia/Tokyo", recurrence: "yearly", details: { full_name: "Скрытое прежнее имя", phone: "+12025550187", notes: "Скрытая прежняя заметка" }, display: { clock: "elapsed", show_years: false, show_repetitions: false }, description: "**Исходное описание**" },
+    data: { title: "Сохранённое событие", category: "personal", icon: "calendar", target_date: "2030-12-31", target_time: "09:15:30", timezone: "Asia/Tokyo", recurrence: "yearly", details: { full_name: "Скрытое прежнее имя", phone: "+12025550187", notes: "Скрытая прежняя заметка" }, display: { clock: "elapsed", show_years: false, show_repetitions: false }, description: "**Исходное описание**" },
   });
   expect(legacy.status()).toBe(201);
   const stored = await legacy.json();
   await page.goto("/countdowns");
   const card = page.locator("article");
   await expect(card.getByRole("heading", { name: "Сохранённое событие", exact: true })).toBeVisible();
-  await expect(card.locator(".text-xl")).toBeVisible();
+  await expect(card.locator(".font-mono")).toBeVisible();
   await expect(card).not.toContainText("Скрытое прежнее имя");
   await expect(card).not.toContainText("+12025550187");
   await expect(card).not.toContainText("Asia/Tokyo");
   await expect(card).toContainText("00:15:30");
-  await card.getByRole("button", { name: "Изменить", exact: true }).click();
+  await chooseAction(page,"Изменить",card);
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog.getByLabel("Время события", { exact: true })).toHaveValue("00:15:30");
@@ -28,6 +29,7 @@ test("1.6 clean countdown editor preserves stored metadata and hides removed fie
   await expect(dialog.getByRole("button", { name: /дату рождения из профиля/ })).toHaveCount(0);
   await dialog.getByLabel("Описание события", { exact: true }).fill("**Обновлённое описание**");
   await dialog.getByRole("button", { name: "Сохранить событие", exact: true }).click();
+  await card.getByText("Подробности",{exact:true}).click();
   await expect(card.locator("strong")).toHaveText("Обновлённое описание");
   const after = await (await page.request.get(`/api/countdowns/${stored.id}`)).json();
   expect(after.details).toEqual(stored.details);
@@ -36,7 +38,7 @@ test("1.6 clean countdown editor preserves stored metadata and hides removed fie
   expect(after.target_time).toBe(stored.target_time);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect.poll(() => page.locator("aside").evaluate(e => Math.round(e.getBoundingClientRect().width))).toBe(64);
-  await card.getByRole("button", { name: "Изменить", exact: true }).click();
+  await chooseAction(page,"Изменить",card);
   expect(await dialog.evaluate(e => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: info.outputPath("countdown-clean-editor-mobile.png"), fullPage: true });
   await dialog.getByLabel("Дата события", { exact: true }).fill("2031-06-15");

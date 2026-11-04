@@ -48,7 +48,7 @@ def run(args):
     rule = {'start_date': str(yesterday), 'time': '12:30', 'timezone': 'UTC', 'duration_minutes': 20, 'recurrence': 'daily', 'interval_days': 1, 'weekdays': [], 'end_date': None}
     task, _ = owner.request('POST', '/api/tasks', task_body(marker, schedule=rule), expected=201)
     owner.request('POST', f"/api/tasks/{task['id']}/occurrences/{yesterday}", {'status': 'completed'})
-    habit, _ = owner.request('POST', '/api/habits', {'title': 'habit-' + marker, 'schedule': rule, 'habit': {'icon': '🌱', 'sub_habits': [], 'reminder_enabled': False}}, expected=201)
+    habit, _ = owner.request('POST', '/api/habits', {'title': 'habit-' + marker, 'schedule': rule, 'habit': {'icon': '🌱', }}, expected=201)
     owner.request('POST', f"/api/habits/{habit['id']}/marks/{yesterday}", {'status': 'completed'})
     private, _ = owner.request('POST', '/api/sex', {'kind': 'sex', 'local_start': str(yesterday) + 'T12:00:00', 'timezone': 'UTC', 'duration_minutes': 10, 'partner': {'name': marker}, 'note': marker}, expected=201)
     owner.request('PUT', '/api/analytics/privacy', {'include_profile': True, 'include_intimacy': True})

@@ -117,3 +117,21 @@ export function birthdayAges(birth:string|null|undefined,next:string|null|undefi
  const current=year-born-(today<clamped?1:0);
  return {current,next:Math.max(current,next?Number(next.slice(0,4))-born:current+1),today:today===clamped};
 }
+
+export function isoWeekday(date:string){const day=new Date(`${date}T12:00:00Z`).getUTCDay();return day===0?7:day;}
+export type CountdownUnit="days"|"seconds"|"minutes"|"weeks"|"months";
+export function countdownAmount(start:string,end:string,timezone:string,unit:CountdownUnit,precise:boolean){
+ const a=localDate(timezone,Date.parse(start)),b=localDate(timezone,Date.parse(end));const days=Math.abs(Date.parse(`${b}T00:00:00Z`)-Date.parse(`${a}T00:00:00Z`))/86400000;const seconds=precise?Math.abs(Date.parse(end)-Date.parse(start))/1000:days*86400;
+ if(unit==="months"){const [first,last]=a<=b?[a,b]:[b,a];let months=(Number(last.slice(0,4))-Number(first.slice(0,4)))*12+Number(last.slice(5,7))-Number(first.slice(5,7));const lastDay=new Date(Date.UTC(Number(last.slice(0,4)),Number(last.slice(5,7)),0)).getUTCDate();if(Number(last.slice(8))<Math.min(Number(first.slice(8)),lastDay))months--;return Math.max(0,months);}
+ return Math.floor(seconds/({seconds:1,minutes:60,days:86400,weeks:604800})[unit]);
+}
+
+/** Conventional western zodiac by civil birthday; never shift it through a timezone. */
+export function zodiacCode(birthDate:string|null|undefined){
+ if(!birthDate||!/^\d{4}-\d{2}-\d{2}$/.test(birthDate))return null;
+ const parsed=new Date(`${birthDate}T12:00:00Z`);if(!Number.isFinite(parsed.getTime())||parsed.toISOString().slice(0,10)!==birthDate)return null;
+ const month=Number(birthDate.slice(5,7)),day=Number(birthDate.slice(8,10));
+ const boundaries=[20,19,21,20,21,21,23,23,23,23,22,22];
+ const signs=["capricorn","aquarius","pisces","aries","taurus","gemini","cancer","leo","virgo","libra","scorpio","sagittarius","capricorn"] as const;
+ return signs[month-1+(day>=boundaries[month-1]?1:0)];
+}

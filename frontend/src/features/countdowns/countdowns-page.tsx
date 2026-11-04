@@ -1,8 +1,11 @@
+import {SubjectLabels} from "@/systems/labels/functional";
+import {CategoryChip} from "@/systems/labels/category-chip";
+import {ObjectActions} from "@/systems/actions/action-menu";
 import { formatLabels } from "@/systems/labels/values";
 import {useLabelCatalog} from "@/systems/labels/context";
 import { normalizeLabels } from "@/systems/labels/values";
 import { EventCategorySelect } from "@/systems/labels/category-select";
-import { eventCategory,categoryName,categoryTerms } from "@/systems/labels/categories";
+import { eventCategory,categoryTerms } from "@/systems/labels/categories";
 import { TagChip } from "@/systems/labels/inputs";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { AppIcon } from "@/systems/icons/app-icon";
@@ -25,9 +28,8 @@ import { Input, Select } from "@/components/ui/input";
 import { usePreferences } from "@/features/settings/preferences-context";
 import { useResource } from "@/hooks/use-resource";
 import { api, errorMessage } from "@/lib/api";
-import { birthdayAges, countdownParts, clockFields, durationClock, instantLabel, dateLabel, localDate } from "@/lib/dates";
-import { closeActionMenu } from "@/lib/menu";
-import { MoreHorizontal } from "@/components/icons";
+import { toInstant,countdownAmount,birthdayAges, countdownParts, clockFields, durationClock, instantLabel, dateLabel, localDate } from "@/lib/dates";
+import { } from "@/components/icons";
 import { confirmAction } from "@/lib/feedback";
 import { GreetingDialog } from "./greeting-dialog";
 import { recurrenceLabels, type Countdown, type CountdownInput, type EventOccurrence } from "./types";
@@ -47,7 +49,7 @@ function CountdownEditor({ initial, close, saved }: { initial: CountdownInput & 
     const target_date = clockUnchanged ? initial.target_date : value.target_date;
     const target_time = clockUnchanged ? initial.target_time : value.target_time;
     const timezone = clockUnchanged ? initial.timezone : settings.timezone;
-    try { await api(initial.id ? `/countdowns/${initial.id}` : "/countdowns", { method: initial.id ? "PUT" : "POST", body: { title: value.contact_birthday ? t("День рождения") : title.trim(), category, tags:normalizeLabels(tags), icon, target_date: target_date || "1900-01-01", target_time, timezone, recurrence, description, contact_id: contact_id || null, contact_birthday: Boolean(contact_birthday), ...(initial.updated_at ? { expected_updated_at: initial.updated_at } : {}) } }); saved(); }
+    try { await api(initial.id ? `/countdowns/${initial.id}` : "/countdowns", { method: initial.id ? "PUT" : "POST", body: { title: value.contact_birthday ? t("День рождения") : title.trim(), category, tags:normalizeLabels(tags),display:value.display, icon, target_date: target_date || "1900-01-01", target_time, timezone, recurrence, description, contact_id: contact_id || null, contact_birthday: Boolean(contact_birthday), ...(initial.updated_at ? { expected_updated_at: initial.updated_at } : {}) } }); saved(); }
     catch (failure) { setError(errorMessage(failure)); } finally { setBusy(false); }
   }
   return <><Dialog title={initial.id ? t("Редактировать событие") : t("Новое событие")} onClose={() => { if (!busy && !uploading) close(); }}><form className="space-y-5" onSubmit={event => void submit(event)}><fieldset className="space-y-5" disabled={busy}>
@@ -60,6 +62,7 @@ function CountdownEditor({ initial, close, saved }: { initial: CountdownInput & 
     {value.contact_id && !initial.contact_birthday && <label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={Boolean(value.contact_birthday)} onChange={e => setValue({ ...value, contact_birthday: e.target.checked, recurrence: e.target.checked ? "yearly" : value.recurrence })} />{t("Синхронизировать как день рождения контакта")}</label>}
     {value.contact_birthday && <p className="text-sm text-primary">{t("Дата рождения обновляется из ")}<Link to="/contacts" className="underline">{t("контакта")}</Link>.</p>}
     <div className="grid gap-4 sm:grid-cols-2"><FormField id="countdown-repeat" label={t("Повторение события")}><Select disabled={value.contact_birthday} id="countdown-repeat" value={value.recurrence} onChange={e => setValue({ ...value, recurrence: e.target.value as CountdownInput["recurrence"] })}>{Object.entries(recurrenceLabels).map(([key, label]) => <option key={key} value={key}>{t(label)}</option>)}</Select></FormField><FormField id="countdown-icon" label={t("Значок события")}><IconPicker id="countdown-icon" value={value.icon} change={icon=>setValue({...value,icon})} label={t("Выбрать значок события")}/></FormField></div>
+    <FormField id="countdown-unit" label={t("Единица отсчёта")}><Select id="countdown-unit" value={value.display.unit??"days"} onChange={event=>setValue({...value,display:{...value.display,unit:event.target.value as import("@/lib/dates").CountdownUnit}})}>{[["days","Дни"],["seconds","Секунды"],["minutes","Минуты"],["weeks","Недели"],["months","Месяцы"]].map(([unit,label])=><option key={unit} value={unit}>{t(label)}</option>)}</Select></FormField>
     <FormField id="countdown-description" label={t("Описание события")}><MarkdownEditor id="countdown-description" value={value.description} onChange={description => setValue(v => ({ ...v, description }))} onUploading={setUploading} /></FormField>
     {!value.contact_id && value.details.full_name.trim() && <Button variant="outline" onClick={() => setSeed({ ...emptyContact(), first_name: value.details.full_name, phones: value.details.phone.split(/[·;\n]/).map(p => p.trim()).filter(Boolean), profession: value.details.occupation, relationship: value.details.relationship, description: value.details.notes, birth_date: value.recurrence === "yearly" && resolveIcon(value.icon) === "tabler:cake" ? value.target_date : null })}>{t("Перенести в контакты")}</Button>}
   </fieldset>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<Button type="submit" disabled={busy || uploading}>{busy ? t("Сохраняем…") : t("Сохранить событие")}</Button></form></Dialog>{seed && <ContactEditor seed={seed} close={() => setSeed(null)} saved={contact => { setSeed(null); contacts.mutate(old => [...old, contact]); setValue(v => ({ ...v, contact_id: contact.id, contact_birthday: v.recurrence === "yearly" && resolveIcon(v.icon) === "tabler:cake" })); }} />}</>;
@@ -70,9 +73,10 @@ function Remaining({ countdown, now, eventAt, timezone }: { countdown: Countdown
   const remaining = (Date.parse(eventAt ?? countdown.next_at) - now) / 1000;
   const isAllDayToday = !countdown.target_time && countdown.next_date === localDate(timezone, now);
   const parts=countdownParts(remaining);
+  const unit=countdown.display.unit??"days";const amount=countdownAmount(toInstant(now),eventAt??countdown.next_at,timezone,unit,Boolean(countdown.target_time));const unitName=t(({days:"дн.",seconds:"сек.",minutes:"мин.",weeks:"нед.",months:"мес."})[unit]);
   const birthday=countdown.contact_birthday||eventCategory(countdown.category)==="birthday"||resolveIcon(countdown.icon)==="tabler:cake";
   const age=birthday?birthdayAges(countdown.target_date,countdown.next_date,timezone,now):null;
-  return <div className="space-y-2 py-3 tabular-nums"><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{isAllDayToday ? t("Сегодня · весь день") : remaining >= 0 ? t("До события") : t("С момента события прошло")}</p>{!isAllDayToday&&<div className="flex flex-wrap items-end gap-x-3 gap-y-2"><p className="text-5xl font-semibold tracking-tight text-foreground">{parts.days}<span className="ml-2 text-sm font-normal text-muted-foreground">{t("дн.")}</span></p><p className="pb-1 font-mono text-lg text-primary">{parts.clock}</p></div>}{age&&<div className="flex flex-wrap gap-x-5 gap-y-2 text-sm"><p>{t("Сейчас: {age} лет",{age:age.current})}</p><p className="text-primary">{age.today?t("Сегодня исполняется {age}",{age:age.current}):t("Будет: {age} лет",{age:age.next})}</p></div>}</div>;
+  return <div className="space-y-2 py-3 tabular-nums"><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{isAllDayToday ? t("Сегодня · весь день") : remaining >= 0 ? t("До события") : t("С момента события прошло")}</p>{!isAllDayToday&&<div className="flex flex-wrap items-end gap-x-3 gap-y-2"><p className="text-5xl font-semibold tracking-tight text-foreground">{amount}<span className="ml-2 text-sm font-normal text-muted-foreground">{unitName}</span></p>{countdown.target_time&&unit==="days"&&<p className="pb-1 font-mono text-lg text-primary">{parts.clock}</p>}</div>}{age&&<div className="flex flex-wrap gap-x-5 gap-y-2 text-sm"><p>{t("Сейчас: {age} лет",{age:age.current})}</p><p className="text-primary">{age.today?t("Сегодня исполняется {age}",{age:age.current}):t("Будет: {age} лет",{age:age.next})}</p></div>}</div>;
 
 }
 export function CountdownsPage() {
@@ -95,7 +99,8 @@ export function CountdownsPage() {
   const dayEvents = todayResource.resource.status === "ready" ? todayResource.resource.data.events : [];
   const todayIds = new Set(dayEvents.map(e => e.countdown.id));
   function refresh() { refreshEvents(); refreshToday(); }
-  useEffect(() => { const tick = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(tick); }, []);
+  const preciseClock=events.some(event=>Boolean(event.target_time));
+  useEffect(() => { const tick = window.setInterval(() => setNow(Date.now()), preciseClock?1000:60000); return () => window.clearInterval(tick); }, [preciseClock]);
   useEffect(() => { const timer = window.setInterval(() => { refreshEvents(); refreshToday(); }, 60000); return () => window.clearInterval(timer); }, [refreshEvents, refreshToday]);
   const nextTransition = events.filter(c => c.target_time && c.recurrence !== "once" && c.next_at).reduce((min, c) => Math.min(min, Date.parse(c.next_at!)), Infinity);
   useEffect(() => {
@@ -123,13 +128,13 @@ export function CountdownsPage() {
       const eventAt = occurrence?.event_at ?? countdown.next_at;
       const shownClock = countdown.target_time && eventAt ? clockFields(eventAt, settings.timezone) : null;
       const displayDate = shownClock?.target_date ?? occurrence?.date ?? countdown.next_date;
-      return <article key={countdown.id} className="counter-card flex min-w-0 flex-col rounded-2xl border border-border bg-card p-5 sm:p-6"><div className="mb-5 flex items-start gap-3"><span className="rounded-2xl bg-primary/10 p-3 text-primary"><AppIcon icon={countdown.icon} className="size-7"/></span><div className="min-w-0"><p className="break-words text-xs text-muted-foreground">{categoryName(countdown.category,labelCatalog)}</p><h2 className="mt-1 break-words text-lg font-semibold">{countdown.title}</h2>{todayIds.has(countdown.id) && <p className="mt-1 text-xs text-primary">{t("Сегодня")}</p>}</div></div>
-        {!!countdown.tags?.length&&<div className="flex flex-wrap gap-1">{countdown.tags.map(name=><TagChip key={name} name={name}/>)}</div>}
+      return <article key={countdown.id} className="counter-card flex min-w-0 flex-col rounded-2xl border border-border bg-card p-5 sm:p-6"><div className="mb-5 flex items-start gap-3"><span className="rounded-2xl bg-primary/10 p-3 text-primary"><AppIcon icon={countdown.icon} className="size-7"/></span><div className="min-w-0"><p className="break-words text-xs text-muted-foreground"><CategoryChip value={countdown.category}/></p><h2 className="mt-1 break-words text-lg font-semibold">{countdown.title}</h2>{todayIds.has(countdown.id) && <p className="mt-1 text-xs text-primary">{t("Сегодня")}</p>}</div></div>
+        <SubjectLabels subject={{kind:"countdowns",id:countdown.id}}>{countdown.tags?.map(name=><TagChip key={name} name={name}/>)}</SubjectLabels>
         <Remaining countdown={countdown} now={now} timezone={settings.timezone} eventAt={occurrence?.event_at} />
         {displayDate && <p className="mt-4 text-sm">{dateLabel(displayDate, { day: "numeric", month: "long", year: "numeric" })}{shownClock && ` · ${instantLabel(eventAt!, settings.timezone, settings.time_format, true)}`}</p>}
         <p className="mt-1 text-xs text-muted-foreground">{t(recurrenceLabels[countdown.recurrence])}</p>
         <details className="mt-4 text-sm"><summary className="cursor-pointer text-muted-foreground">{t("Подробности")}</summary><div className="mt-3 space-y-3">{countdown.original_at&&Date.parse(countdown.original_at)<=now&&<p className="text-xs text-muted-foreground">{t("С первоначальной даты: ")}{durationClock((now-Date.parse(countdown.original_at))/1000,true)}</p>}{countdown.recurrence!=="once"&&<p className="text-xs text-muted-foreground">{t("Повторений: ")}{countdown.repetitions}</p>}{countdown.description&&<Markdown value={countdown.description}/>} {countdown.contact_id&&<Link to="/contacts" className="text-primary underline">{t("Открыть контакт")}</Link>}</div></details>
-        <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-border pt-4"><Button size="sm" variant="ghost" onClick={() => setEditor({ ...countdown, target_date: countdown.target_date ?? "" })}><Pencil/>{t("Изменить")}</Button><Button size="icon" variant="ghost" aria-label={t("Поздравление")} title={t("Поздравление")} onClick={() => setGreeting(countdown)}><AppIcon icon="tabler:gift"/></Button><details data-menu onClick={closeActionMenu} className="relative ml-auto"><summary aria-label={t("Действия события {v0}", {v0: countdown.title})} className="flex size-9 cursor-pointer list-none items-center justify-center rounded-lg hover:bg-muted"><MoreHorizontal/></summary><div className="absolute bottom-11 right-0 z-20 w-56 rounded-xl border border-border bg-card p-2 shadow-xl">{countdown.contact_id&&<Button size="sm" variant="ghost" className="w-full justify-start" disabled={busy} onClick={()=>void unlink(countdown)}>{t("Отвязать контакт")}</Button>}<Button size="sm" variant="ghost" className="w-full justify-start text-destructive" aria-label={t("Удалить событие {v0}", {v0: countdown.title})} disabled={busy} onClick={()=>void remove(countdown)}><Trash2/>{t("Удалить событие")}</Button></div></details></div>
+        <div className="mt-auto border-t border-border pt-4"><ObjectActions label={t("Действия события {v0}",{v0:countdown.title})} subject={{kind:"countdowns",id:countdown.id}}><Button size="sm" variant="ghost" onClick={() => setEditor({ ...countdown, target_date: countdown.target_date ?? "" })}><Pencil/>{t("Изменить")}</Button><Button size="icon" variant="ghost" aria-label={t("Поздравление")} title={t("Поздравление")} onClick={() => setGreeting(countdown)}><AppIcon icon="tabler:gift"/></Button>{countdown.contact_id&&<Button size="sm" variant="ghost" className="w-full justify-start" disabled={busy} onClick={()=>void unlink(countdown)}>{t("Отвязать контакт")}</Button>}<Button size="sm" variant="ghost" className="w-full justify-start text-destructive" aria-label={t("Удалить событие {v0}", {v0: countdown.title})} disabled={busy} onClick={()=>void remove(countdown)}><Trash2/>{t("Удалить событие")}</Button></ObjectActions></div>
 
       </article>;
     })}</div>}

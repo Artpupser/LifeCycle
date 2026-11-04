@@ -56,7 +56,7 @@ def run(args):
     first.request('DELETE', f"/api/notes/folders/{folder['id']}", expected=204)
     first.request('GET', f"/api/notes/folders/{folder['id']}", expected=404)
     require(first.request('GET', f"/api/notes/{linked['id']}")[0]['folder_id'] is None, 'Folder deletion removed a note')
-    habit_body = {'title': 'Analytics habit', 'schedule': rule, 'habit': {'icon': '🌱', 'sub_habits': [], 'reminder_enabled': False}}
+    habit_body = {'title': 'Analytics habit', 'schedule': rule, 'habit': {'icon': '🌱', }}
     habit, _ = first.request('POST', '/api/habits', habit_body, expected=201)
     hid = habit['id']
     first.request('POST', f'/api/habits/{hid}/marks/{yesterday}', {'status': 'completed', 'note': marker})

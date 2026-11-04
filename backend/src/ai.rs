@@ -49,12 +49,14 @@ pub(crate) struct Config {
     encrypted_key: Option<Vec<u8>>,
     encrypted_openrouter_key: Option<Vec<u8>>,
     pub(crate) provider: String,
+    pub(crate) ollama_url: String,
     pub(crate) auth_mode: String,
     pub(crate) active_account_id: Option<Uuid>,
     pub(crate) revision: i64,
 }
 #[derive(Serialize)]
 struct ConfigView {
+    ollama_url: String,
     provider: String,
     auth_mode: String,
     active_account_id: Option<Uuid>,
@@ -73,6 +75,7 @@ impl Config {
         let openai_key_present = self.encrypted_key.is_some();
         let openrouter_key_present = self.encrypted_openrouter_key.is_some();
         ConfigView {
+            ollama_url: self.ollama_url,
             provider: self.provider,
             auth_mode: self.auth_mode,
             active_account_id: self.active_account_id,
@@ -89,7 +92,9 @@ impl Config {
     fn ready(&self) -> Result<(), ApiError> {
         if !self.enabled
             || (self.auth_mode == "login" && self.active_account_id.is_none())
-            || (self.auth_mode == "api_key" && self.selected_key().is_none())
+            || (self.provider != "ollama"
+                && self.auth_mode == "api_key"
+                && self.selected_key().is_none())
         {
             return Err(ApiError::new(
                 StatusCode::CONFLICT,
@@ -100,7 +105,9 @@ impl Config {
         Ok(())
     }
     fn selected_key(&self) -> Option<&Vec<u8>> {
-        if self.provider == "openrouter" {
+        if self.provider == "ollama" {
+            None
+        } else if self.provider == "openrouter" {
             self.encrypted_openrouter_key.as_ref()
         } else {
             self.encrypted_key.as_ref()
@@ -118,6 +125,7 @@ struct ConfigInput {
     #[serde(default)]
     remove_key: bool,
     provider: Option<String>,
+    ollama_url: Option<String>,
     auth_mode: Option<String>,
 }
 #[derive(Serialize, sqlx::FromRow)]
@@ -185,6 +193,7 @@ const TURN_COLUMNS: &str =
 
 pub fn routes() -> Router<AppState> {
     Router::new()
+        .route("/api/ai/ollama/models", get(ollama_models))
         .route("/api/ai/settings", get(read_config).put(update_config))
         .route(
             "/api/ai/connections/{provider}",
@@ -259,7 +268,7 @@ pub(crate) async fn config(db: &mut PgConnection, user: Uuid) -> Result<Config, 
         .bind(user)
         .execute(&mut *db)
         .await?;
-    Ok(sqlx::query_as("SELECT model,enabled,permissions,encrypted_key,encrypted_openrouter_key,provider,auth_mode,active_account_id,revision FROM app.ai_settings WHERE user_id=$1 FOR UPDATE").bind(user).fetch_one(db).await?)
+    Ok(sqlx::query_as("SELECT model,enabled,permissions,encrypted_key,encrypted_openrouter_key,provider,auth_mode,active_account_id,revision,ollama_url FROM app.ai_settings WHERE user_id=$1 FOR UPDATE").bind(user).fetch_one(db).await?)
 }
 pub(crate) async fn invalidate(db: &mut PgConnection, user: Uuid) -> Result<(), ApiError> {
     sqlx::query("DELETE FROM app.ai_previews WHERE user_id=$1")
@@ -297,7 +306,7 @@ fn valid_model(model: &str, provider: &str) -> bool {
         && model.bytes().all(|b| {
             b.is_ascii_alphanumeric()
                 || b"-_.:".contains(&b)
-                || (provider == "openrouter" && b == b'/')
+                || (["openrouter", "ollama"].contains(&provider) && b == b'/')
         })
         && !model.contains("://")
 }
@@ -326,7 +335,7 @@ async fn update_config(
     }
     let provider = v.provider.as_deref().unwrap_or(&old.provider);
     let auth_mode = v.auth_mode.as_deref().unwrap_or(&old.auth_mode);
-    if !["openai", "openrouter"].contains(&provider)
+    if !["openai", "openrouter", "ollama"].contains(&provider)
         || !["api_key", "login"].contains(&auth_mode)
         || (auth_mode == "login" && provider != "openai")
         || !valid_model(&v.model, provider)
@@ -334,6 +343,13 @@ async fn update_config(
     {
         return Err(ApiError::validation(
             "Invalid provider, authentication method or model",
+        ));
+    }
+    let ollama_url = crate::ollama::endpoint(v.ollama_url.as_deref().unwrap_or(&old.ollama_url))
+        .map_err(|_| ApiError::validation("Use a local Ollama service URL"))?;
+    if provider == "ollama" && (v.api_key.is_some() || v.remove_key) {
+        return Err(ApiError::validation(
+            "Local Ollama does not use a provider API key",
         ));
     }
     let mut encrypted_key = old.encrypted_key.clone();
@@ -354,14 +370,15 @@ async fn update_config(
         *selected = Some(seal(&s, &context, key)?);
     }
     if v.enabled
-        && ((auth_mode == "api_key" && selected.is_none())
+        && ((provider != "ollama" && auth_mode == "api_key" && selected.is_none())
             || (auth_mode == "login" && old.active_account_id.is_none()))
     {
         return Err(ApiError::validation(
             "Connect the selected provider before enabling AI",
         ));
     }
-    let changed = old.model != v.model
+    let changed = old.ollama_url != ollama_url
+        || old.model != v.model
         || old.enabled != v.enabled
         || old.permissions.0 != v.permissions
         || old.provider != provider
@@ -369,8 +386,8 @@ async fn update_config(
         || v.api_key.is_some()
         || v.remove_key;
     let revision = old.revision + i64::from(changed);
-    sqlx::query("UPDATE app.ai_settings SET model=$2,enabled=$3,permissions=$4,encrypted_key=$5,revision=$6,updated_at=now(),provider=$7,auth_mode=$8,encrypted_openrouter_key=$9 WHERE user_id=$1")
-        .bind(u.id).bind(&v.model).bind(v.enabled).bind(DbJson(&v.permissions)).bind(&encrypted_key).bind(revision).bind(provider).bind(auth_mode).bind(&encrypted_openrouter_key).execute(&mut *tx).await?;
+    sqlx::query("UPDATE app.ai_settings SET model=$2,enabled=$3,permissions=$4,encrypted_key=$5,revision=$6,updated_at=now(),provider=$7,auth_mode=$8,encrypted_openrouter_key=$9,ollama_url=$10 WHERE user_id=$1")
+        .bind(u.id).bind(&v.model).bind(v.enabled).bind(DbJson(&v.permissions)).bind(&encrypted_key).bind(revision).bind(provider).bind(auth_mode).bind(&encrypted_openrouter_key).bind(&ollama_url).execute(&mut *tx).await?;
     if changed {
         invalidate(&mut tx, u.id).await?;
     }
@@ -382,6 +399,7 @@ async fn update_config(
             permissions: DbJson(v.permissions),
             encrypted_key,
             encrypted_openrouter_key,
+            ollama_url,
             provider: provider.to_owned(),
             auth_mode: auth_mode.to_owned(),
             active_account_id: old.active_account_id,
@@ -482,7 +500,9 @@ async fn delete_chat(
     Ok(StatusCode::NO_CONTENT)
 }
 fn question(request: &Value) -> &str {
-    request["input"]
+    request
+        .get("input")
+        .unwrap_or(&request["messages"])
         .as_array()
         .and_then(|v| v.last())
         .and_then(|v| v["content"].as_str())
@@ -747,7 +767,9 @@ async fn generate(s: AppState, user: Uuid, chat: Uuid, id: Uuid) -> Result<(), A
     if row.status != "pending" || row.config_revision != c.revision || c.ready().is_err() {
         return Ok(());
     }
-    let credential = if c.auth_mode == "login" {
+    let credential = if c.provider == "ollama" {
+        Ok(String::new())
+    } else if c.auth_mode == "login" {
         ai_login::access(&s, &mut tx, user, c.active_account_id.unwrap()).await
     } else {
         let context = if c.provider == "openrouter" {
@@ -759,7 +781,7 @@ async fn generate(s: AppState, user: Uuid, chat: Uuid, id: Uuid) -> Result<(), A
     };
     tx.commit().await?;
     let result = tokio::select! {
-        result=async { match credential { Ok(key) => ai_provider::generate(&c.provider,&key,&row.data.request).await, Err(code) => Err(code) } }=>result,
+        result=async { match credential { Ok(key) => if c.provider=="ollama"{crate::ollama::generate(&c.ollama_url,&row.data.request).await}else{ai_provider::generate(&c.provider,&key,&row.data.request).await}, Err(code) => Err(code) } }=>result,
         _=wait_for_cancel(&s,user,chat,id)=>return Ok(()),
     };
     let mut tx = s.database.begin().await?;
@@ -798,6 +820,35 @@ async fn wait_for_cancel(s: &AppState, user: Uuid, chat: Uuid, id: Uuid) {
     }
 }
 
+async fn ollama_models(State(s): State<AppState>, u: CurrentUser) -> Result<Json<Value>, ApiError> {
+    let mut tx = s.database.begin().await?;
+    let c = config(&mut tx, u.id).await?;
+    tx.commit().await?;
+    let url = crate::ollama::endpoint(&c.ollama_url)
+        .map_err(|_| ApiError::validation("Invalid Ollama address"))?;
+    let response = crate::ollama::client(5)
+        .map_err(|_| ApiError::unavailable())?
+        .get(format!("{url}/api/tags"))
+        .send()
+        .await
+        .map_err(|_| ApiError::unavailable())?;
+    if !response.status().is_success() {
+        return Err(ApiError::unavailable());
+    }
+    let data = ai_provider::bounded_json_limit(response, 1024 * 1024)
+        .await
+        .map_err(|_| ApiError::unavailable())?;
+    let models = data["models"]
+        .as_array()
+        .ok_or_else(ApiError::unavailable)?
+        .iter()
+        .filter_map(|item| item["name"].as_str())
+        .filter(|name| valid_model(name, "ollama"))
+        .take(500)
+        .collect::<Vec<_>>();
+    Ok(Json(json!({"models":models})))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -819,6 +870,7 @@ mod tests {
             config_revision: revision,
             model: "model".into(),
             provider: "openai".into(),
+
             status: status.into(),
             error_code: None,
             data: TurnData {

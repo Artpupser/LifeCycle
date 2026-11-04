@@ -1,3 +1,4 @@
+import {chooseAction} from "./upgrade-helpers";
 import {expect,test,type Page} from "@playwright/test";
 import type {Settings} from "../src/features/settings/types";
 import {emptyContact} from "../src/features/contacts/types";
@@ -5,7 +6,7 @@ import type {Countdown} from "../src/features/countdowns/types";
 const stamp="2026-11-02T12:00:00Z";
 const imageId="123e4567-e89b-12d3-a456-426614174000";
 const png=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNQMHAAAAEEAJGibWOuAAAAAElFTkSuQmCC","base64");
-const defaults:Settings={timezone:"Europe/Moscow",time_format:"24h",language:"ru",theme:"light",reminders_enabled:false,reminder_minutes_before:10,week_starts_on:"monday",pomodoro_work_minutes:25,pomodoro_break_minutes:5,sounds_enabled:false,sound_ui:true,sound_notifications:true,sound_volume:25,sound_theme:"soft",background_image:null,background_dim:85};
+const defaults:Settings={timezone:"Europe/Moscow",time_format:"24h",language:"ru",theme:"light",week_starts_on:"monday",pomodoro_work_minutes:25,pomodoro_break_minutes:5,sounds_enabled:false,sound_ui:true,sound_notifications:true,sound_volume:25,sound_theme:"soft",background_image:null,background_dim:85};
 test.use({viewport:{width:390,height:844}});
 async function setup(page:Page){
   const state={settings:{...defaults},authenticated:true,uploads:[] as string[],note:{id:"note",title:"Работа",content:"**Личный текст**",tags:[],color:"#6366f1",folder_id:null,updated_at:stamp,ai_shared:false,ai_access_revision:0}};
@@ -34,33 +35,33 @@ async function chooseIcon(page:Page,trigger:string,query:string,id:string){
   await expect(picker).toHaveCount(0);
 }
 
-test("a form waits for every concurrent image upload, including removed editors",async({page})=>{
+test("a journal form waits for concurrent uploads when an idle editor is removed",async({page})=>{
   const {errors}=await setup(page);
   const finish:Array<()=>void>=[];
   await page.route("**/api/media",async route=>{
     await new Promise<void>(resolve=>finish.push(resolve));
     await route.fulfill({status:201,json:{id:imageId,url:`/api/media/${imageId}`}});
   });
-  await page.goto("/habits");
-  await page.getByRole("button",{name:"Новая привычка",exact:true}).click();
-  await page.getByLabel("Название привычки",{exact:true}).fill("С изображениями");
-  await page.getByRole("button",{name:"Добавить подпривычку",exact:true}).click();
-  await page.getByLabel("Подпривычка 1",{exact:true}).fill("Пункт");
+  const answers={yes:0,no:0,unknown:0};
+  await page.route("**/api/sex?**",route=>route.fulfill({json:{total:0,entries:[],statistics:{total:0,sex:0,masturbation:0,active_days:0,duration_minutes:0,duration_answers:0,average_duration_minutes:null,with_toys:0,ejaculations:0,repeat_desired:answers,lubricant_used:answers,protection_used:answers,days:{},emotions:{}}}}));
+  await page.goto("/sex");
+  await page.getByRole("button",{name:"Новое событие",exact:true}).click();
   const inputs=page.getByLabel("Загрузить изображение",{exact:true});
   await inputs.nth(0).setInputFiles({name:"main.png",mimeType:"image/png",buffer:png});
   await inputs.nth(1).setInputFiles({name:"step.png",mimeType:"image/png",buffer:png});
   await expect.poll(()=>finish.length).toBe(2);
-  const save=page.getByRole("button",{name:"Сохранить привычку",exact:true});
+  const save=page.getByRole("button",{name:"Сохранить событие",exact:true});
   await expect(save).toBeDisabled();
   finish[0]();
-  await expect(page.getByLabel("Описание привычки",{exact:true})).toHaveValue(/main\.png/);
+  await expect(page.getByLabel("Ощущения после (Markdown)",{exact:true})).toHaveValue(/main\.png/);
   await expect(save).toBeDisabled();
   finish[1]();
   await expect(save).toBeEnabled();
   // Removing an idle editor must not clear another editor's active upload.
-  await inputs.nth(0).setInputFiles({name:"again.png",mimeType:"image/png",buffer:png});
+  await inputs.nth(1).setInputFiles({name:"again.png",mimeType:"image/png",buffer:png});
   await expect.poll(()=>finish.length).toBe(3);
-  await page.getByRole("button",{name:"Удалить пункт 1",exact:true}).click();
+  await page.getByLabel("Тип события",{exact:true}).selectOption("sex");
+  await page.getByRole("alertdialog").getByRole("button").last().click();
   await expect(save).toBeDisabled();
   finish[2]();
   await expect(save).toBeEnabled();
@@ -131,7 +132,7 @@ test("phone country picker shows flags and formats a country-specific number",as
   const {errors}=await setup(page);
   let contact={id:"anna",revision:1,created_at:stamp,updated_at:stamp,data:{...emptyContact(),first_name:"Анна",phones:["+12025550123"]}};
   await page.route("**/api/contacts**",async route=>{if(route.request().method()==="PUT")contact={...contact,...route.request().postDataJSON()};await route.fulfill({json:route.request().method()==="PUT"?contact:[contact]});});
-  await page.goto("/contacts");await page.getByRole("button",{name:"Изменить контакт",exact:true}).click();
+  await page.goto("/contacts");await chooseAction(page,"Изменить контакт");
   await page.getByRole("button",{name:"Страна телефона",exact:true}).click();
   const picker=page.getByRole("dialog",{name:"Выберите страну",exact:true});
   await picker.getByLabel("Поиск страны",{exact:true}).fill("Germany");

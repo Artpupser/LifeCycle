@@ -1,3 +1,4 @@
+import {chooseAction} from "./upgrade-helpers";
 import {expect, test, type Page} from "@playwright/test";
 import type {Settings} from "../src/features/settings/types";
 import {emptyContact, type Contact} from "../src/features/contacts/types";
@@ -11,7 +12,7 @@ test.afterEach(async ({page}, info)=>{
   if(info.title.startsWith("countdowns")) await page.screenshot({path:info.outputPath("mobile-events.png"),fullPage:true});
 });
 
-const settings: Settings = {timezone:"Asia/Tokyo",time_format:"12h",language:"ru",theme:"light",reminders_enabled:false,reminder_minutes_before:5,week_starts_on:"monday",pomodoro_work_minutes:25,pomodoro_break_minutes:5};
+const settings: Settings = {timezone:"Asia/Tokyo",time_format:"12h",language:"ru",theme:"light",week_starts_on:"monday",pomodoro_work_minutes:25,pomodoro_break_minutes:5};
 const stamp="2026-11-02T15:30:47Z";
 function contact(id:string, name:string, category:string, tags:string[]):Contact {
   return {id,data:{...emptyContact(),first_name:name,categories:[category],tags,phones:["+7 (999) 123-45-67"]},revision:1,created_at:stamp,updated_at:stamp};
@@ -41,13 +42,13 @@ test("contacts use one search, normalized tags and queued deletion choices with 
   await expect(page.locator("article")).toHaveCount(1);
   await expect(page.locator("article")).toContainText("Анна");
   await expect(page.locator("main select")).toHaveCount(0);
-  await page.getByRole("button",{name:"Удалить контакт",exact:true}).click();
+  await chooseAction(page,"Удалить контакт");
   const confirmation=page.getByRole("alertdialog");
   await expect(confirmation.getByRole("combobox")).toHaveValue("keep");
   await page.keyboard.press("Escape");
   expect(deleted).toEqual([]);
   await expect(confirmation).toHaveCount(0);
-  await page.getByRole("button",{name:"Удалить контакт",exact:true}).click();
+  await chooseAction(page,"Удалить контакт");
   await confirmation.getByRole("combobox").selectOption("delete");
   await confirmation.getByRole("button",{name:"Подтвердить удаление контакта",exact:true}).click();
   await expect(page.getByText("Контакт удалён.",{exact:true})).toBeVisible();
@@ -64,7 +65,7 @@ test("contact tag editor preserves legacy punctuation and validates limits befor
     else await route.fulfill({json:[saved??original]});
   });
   await page.goto("/contacts");
-  await page.getByRole("button",{name:"Изменить контакт",exact:true}).click();
+  await chooseAction(page,"Изменить контакт");
   await expect(page.getByLabel("Категории контакта",{exact:true})).toHaveCount(0);
   const tags=page.getByLabel("Теги контакта",{exact:true});
   await tags.fill("x".repeat(65));

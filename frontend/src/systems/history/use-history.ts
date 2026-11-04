@@ -1,3 +1,4 @@
+import {revalidateActiveResources} from "@/systems/loading/cache";
 import {useResource} from "@/hooks/use-resource";
 export type HistoryQuery=
  |{kind:"task"|"habit";id:string}
@@ -13,3 +14,6 @@ export function historyPath(query:HistoryQuery){
  return `${query.kind==="workout"?"/workout-sessions":"/ai/actions"}${params.size?`?${params}`:""}`;
 }
 export function useHistory<T>(query:HistoryQuery){return useResource<T>(historyPath(query));}
+
+/** Domain observations that record results during GET must refresh the same shared snapshots. */
+export function refreshHistory(query:HistoryQuery){revalidateActiveResources([historyPath(query).split("?")[0],"/history"]);}

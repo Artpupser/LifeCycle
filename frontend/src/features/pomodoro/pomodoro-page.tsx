@@ -1,3 +1,4 @@
+import {refreshHistory} from "@/systems/history/use-history";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { notify, notifyDesktop, notificationPermission, enableNotifications } from "@/lib/feedback";
 import { durationClock } from "@/lib/dates";
@@ -43,7 +44,7 @@ export function PomodoroPage() {
         const old = previous.current;
         if (old?.program && old.id !== session?.id) {
           const message = session?.program ? t("Новый этап: {v0}.", {v0: kindLabels[session.interval_kind ?? "w"]}) : t("Алгоритм завершён. История сохранена.");
-          notifyDesktop("LifeCycle · Pomodoro", message); setHistoryVersion(v => v + 1);
+          notifyDesktop("LifeCycle · Pomodoro", message); refreshHistory({kind:"pomodoro"}); setHistoryVersion(v => v + 1);
         }
         previous.current = session; setSnapshot({ session, receivedAt: Date.now() }); setError(null);
       }
@@ -65,7 +66,7 @@ export function PomodoroPage() {
     try {
       const session = await api<Session>(config ? "/pomodoro/program" : phase ? "/pomodoro" : `/pomodoro/${snapshot?.session?.id}/${action}`, { method: "POST", body: config ? { config_id: config.id, revision: config.revision, task_id: taskId || null } : phase ? { phase, task_id: taskId || null } : { ...(snapshot?.session?.program ? { revision: snapshot.session.program.revision } : {}) } });
       if (mounted.current) {
-        previous.current = ["completed", "cancelled"].includes(session.status) ? null : session; setHistoryVersion(v => v + 1);
+        previous.current = ["completed", "cancelled"].includes(session.status) ? null : session; refreshHistory({kind:"pomodoro"}); setHistoryVersion(v => v + 1);
         setSnapshot({ session: ["completed", "cancelled"].includes(session.status) ? null : session, receivedAt: Date.now() });
         setNow(Date.now());
         if (session.status === "completed") notify(t("Интервал завершён. Результат сохранён."));

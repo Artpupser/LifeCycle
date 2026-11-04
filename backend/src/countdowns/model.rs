@@ -16,6 +16,7 @@ pub(super) struct Details {
 #[serde(default, deny_unknown_fields)]
 pub(super) struct Display {
     pub(super) clock: String,
+    pub(super) unit: String,
     pub(super) show_years: bool,
     pub(super) show_repetitions: bool,
 }
@@ -23,6 +24,7 @@ impl Default for Display {
     fn default() -> Self {
         Self {
             clock: "both".into(),
+            unit: "days".into(),
             show_years: true,
             show_repetitions: true,
         }

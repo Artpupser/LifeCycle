@@ -1,0 +1,3 @@
+import {describe,it,expect} from "vitest";
+import {normalizeCost} from "./functional-values";
+describe("exact functional cost",()=>{it("normalizes decimal input without floating point",()=>{expect(normalizeCost(" 000100,1 ","RUB")).toEqual({amount:"100.10",currency:"RUB"});expect(normalizeCost("999999999999.99","USD")?.amount).toBe("999999999999.99");expect(normalizeCost("0","EUR")?.amount).toBe("0.00");});it("rejects ambiguous, negative, overflowing and unsupported values",()=>{for(const value of ["-1","1.001","1e3","Infinity","","1,2,3","1000000000000",".5"])expect(normalizeCost(value,"RUB")).toBeNull();expect(normalizeCost("10","BTC")).toBeNull();});});

@@ -1,5 +1,6 @@
 import {lazy} from "react";
 const importers={
+ "/history":()=>import("@/systems/history/history-page").then(m=>({default:m.HistoryPage})),
  "/labels":()=>import("@/systems/labels/labels-page").then(m=>({default:m.LabelsPage})),
  "/ai":()=>import("@/features/ai/ai-page").then(m=>({default:m.AiPage})),
  "/analytics":()=>import("@/features/analytics/analytics-page").then(m=>({default:m.AnalyticsPage})),

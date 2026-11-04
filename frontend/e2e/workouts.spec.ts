@@ -1,3 +1,4 @@
+import {chooseAction} from "./upgrade-helpers";
 import { confirmUi } from "./upgrade-helpers";
 import { expect, test, type Page, type APIRequestContext } from "@playwright/test";
 
@@ -78,11 +79,11 @@ test("mobile workout builder persists exercises, progression and Today completio
   await page.screenshot({ path: testInfo.outputPath("mobile-result.png"), fullPage: true });
   const resultUrl = page.url();
   await page.getByRole("link", { name: "Сегодня", exact: true }).click();
-  await expect(page.getByLabel("Результат Тренировка дня", { exact: true })).toHaveValue("completed");
+  await expect(page.getByRole("checkbox",{name:"Выполнено: Тренировка дня",exact:true})).toBeChecked();
   await page.getByRole("link", { name: "Календарь", exact: true }).click();
-  await expect(page.getByRole("region", { name: "План выбранного дня" }).getByLabel("Результат Тренировка дня", { exact: true })).toHaveValue("completed");
+  await expect(page.getByRole("region", { name: "План выбранного дня" }).getByRole("checkbox",{name:"Выполнено: Тренировка дня",exact:true})).toHaveCount(0);
   await page.getByRole("link", { name: "Тренировки", exact: true }).click();
-  await page.getByRole("button", { name: "Изменить упражнение", exact: true }).click();
+  await chooseAction(page,"Изменить упражнение");
   await page.getByLabel("Название упражнения", { exact: true }).fill("Новая версия приседания");
   await page.getByRole("button", { name: "Сохранить упражнение", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -108,7 +109,7 @@ test("timed workout checks actual expiry, round rests and cancellation after rel
   await page.getByLabel("Начальное время, сек", { exact: true }).fill("3");
   await page.getByRole("button", { name: "Сохранить тренировку", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.getByRole("button", { name: "Начать тренировку", exact: true }).click();
+  await chooseAction(page,"Начать тренировку");
   await expect(page.getByRole("button", { name: "Упражнение выполнено", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Пауза", exact: true }).click();
   await expect(page.getByRole("button", { name: "Продолжить", exact: true })).toBeVisible();

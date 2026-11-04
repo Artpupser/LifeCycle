@@ -1,0 +1,2 @@
+/** Exact decimal representation, ready for future integrations without floating-point loss. */
+export function normalizeCost(amount:string,currency:string){const value=amount.trim().replace(",",".");if(!/^\d{1,12}(\.\d{1,2})?$/.test(value)||!["RUB","USD","EUR"].includes(currency))return null;const [integer,fraction=""]=value.split(".");return {amount:`${integer.replace(/^0+(?=\d)/,"")}.${fraction.padEnd(2,"0")}`,currency};}

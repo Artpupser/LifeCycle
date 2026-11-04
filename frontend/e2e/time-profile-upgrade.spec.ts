@@ -1,3 +1,4 @@
+import {chooseAction} from "./upgrade-helpers";
 import { expect, test } from "@playwright/test";
 import { confirmUi, login } from "./upgrade-helpers";
 
@@ -16,7 +17,7 @@ test("1.6 recurring events preserve Markdown, reach Today/calendar, and create e
   await card.getByText("Подробности",{exact:true}).click();
   await expect(card.locator("strong")).toHaveText("Событие Markdown");
   await expect(card).toContainText("Ежедневно"); await page.reload();
-  await card.getByRole("button", { name: "Поздравление", exact: true }).click();
+  await chooseAction(page,"Поздравление",card);
   await expect(page.getByLabel("Получатель поздравления", { exact: true })).toHaveValue("");
   await page.getByLabel("Получатель поздравления", { exact: true }).fill("Анна");
   await page.getByLabel("Стиль поздравления", { exact: true }).selectOption("family");
@@ -51,7 +52,7 @@ test("1.7 Pomodoro constructor, snapshots, pause/reload/reset, copying and autom
   await page.getByLabel("Повторять всю последовательность", { exact: true }).uncheck();
   await page.getByRole("button", { name: "Сохранить алгоритм", exact: true }).click();
   await page.reload();
-  await page.getByRole("button", { name: "Запустить Мой алгоритм", exact: true }).click();
+  await chooseAction(page,"Запустить Мой алгоритм");
   await expect(page.getByText("Далее: Работа 30 сек.", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Пауза", exact: true }).click();
   const paused = await page.getByRole("timer").textContent(); await page.reload();
@@ -60,11 +61,11 @@ test("1.7 Pomodoro constructor, snapshots, pause/reload/reset, copying and autom
   await page.getByRole("button", { name: "Сбросить", exact: true }).click();
   await expect(page.getByRole("timer")).toHaveText("00:30");
   await page.getByRole("button", { name: "Остановить", exact: true }).click();
-  await page.getByLabel("Копировать алгоритм Мой алгоритм", { exact: true }).click();
+  await chooseAction(page,"Копировать алгоритм Мой алгоритм");
   await page.getByLabel("Название алгоритма", { exact: true }).fill("Короткий алгоритм");
   for (const label of ["Работа, секунд", "Обычный отдых, секунд", "Продолжительный отдых, секунд"]) await page.getByLabel(label, { exact: true }).fill("1");
   await page.getByRole("button", { name: "Сохранить алгоритм", exact: true }).click();
-  await page.getByRole("button", { name: "Запустить Короткий алгоритм", exact: true }).click();
+  await chooseAction(page,"Запустить Короткий алгоритм");
   await expect(page.getByText("Алгоритм завершён. История сохранена.", { exact: true })).toBeVisible({ timeout: 12000 });
   const history = page.getByRole("region", { name: "История Pomodoro", exact: true });
   await expect(history).toContainText("Работа · Завершён");

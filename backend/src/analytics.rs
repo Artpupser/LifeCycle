@@ -62,8 +62,6 @@ struct HabitMetrics {
     cancelled: u64,
     missed: u64,
     pending: u64,
-    completed_sub_habits: u64,
-    total_sub_habits: u64,
     completion_rate: Option<f64>,
     ranking: Vec<HabitStatistics>,
 }
@@ -213,8 +211,6 @@ fn habit_metrics(mut stats: Vec<HabitStatistics>) -> HabitMetrics {
         m.cancelled += u64::from(s.cancelled);
         m.missed += u64::from(s.missed);
         m.pending += u64::from(s.pending);
-        m.completed_sub_habits += u64::from(s.completed_sub_habits);
-        m.total_sub_habits += u64::from(s.total_sub_habits);
     }
     m.completion_rate = percent(m.completed, m.completed + m.skipped + m.missed);
     stats.retain(|s| s.expected > 0);

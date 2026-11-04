@@ -24,7 +24,7 @@ struct Input {
     revision: i64,
 }
 #[derive(Serialize, sqlx::FromRow)]
-struct Access {
+pub(crate) struct Access {
     ai_shared: bool,
     ai_access_revision: i64,
 }

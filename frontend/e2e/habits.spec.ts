@@ -1,3 +1,4 @@
+import {chooseAction} from "./upgrade-helpers";
 import { confirmUi } from "./upgrade-helpers";
 import { expect, test, type Page, type APIRequestContext } from "@playwright/test";
 
@@ -21,7 +22,7 @@ async function login(page: Page, request: APIRequestContext) {
   await expect(page.getByRole("button", { name: "Выйти", exact: true })).toBeVisible();
 }
 
-test("habit children, Markdown marks and historical snapshots integrate with Today and calendar on mobile", async ({ page, request }, testInfo) => {
+test("habit checkbox, Markdown marks and historical snapshots integrate with Today and calendar on mobile", async ({ page, request }, testInfo) => {
   const errors: string[] = []; page.on("pageerror", (error) => errors.push(error.message));
   await page.setViewportSize({ width: 390, height: 844 });
   await login(page, request);
@@ -29,73 +30,41 @@ test("habit children, Markdown marks and historical snapshots integrate with Tod
   await page.getByRole("button", { name: "Новая привычка", exact: true }).click();
   await page.getByLabel("Название привычки", { exact: true }).fill("Утренний ритм");
   await page.getByLabel("Описание привычки", { exact: true }).fill("**Мой ритуал**");
-  await page.getByLabel("Время начала", { exact: true }).fill("");
-  await page.getByRole("button", { name: "Добавить подпривычку", exact: true }).click();
-  await page.getByLabel("Подпривычка 1", { exact: true }).fill("Стакан воды");
-  await page.getByRole("button", { name: "Добавить подпривычку", exact: true }).click();
-  await page.getByLabel("Подпривычка 2", { exact: true }).fill("Дыхание");
+  await expect(page.getByLabel("Время начала",{exact:true})).toHaveCount(0);
+  await expect(page.getByRole("button",{name:"Добавить подпривычку",exact:true})).toHaveCount(0);
   await page.getByRole("button", { name: "Сохранить привычку", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("link", { name: "Сегодня", exact: true }).click();
   const occurrence = page.locator("article").filter({ has: page.getByRole("heading", { name: "Утренний ритм", exact: true }) });
   await expect(occurrence).toBeVisible();
-  await occurrence.getByLabel("Стакан воды", { exact: true }).check();
-  await expect(occurrence).toContainText("1/2");
-  await expect(page.getByLabel("Результат Утренний ритм", { exact: true })).toHaveValue("pending");
-  await occurrence.getByLabel("Дыхание", { exact: true }).check();
-  await expect(page.getByLabel("Результат Утренний ритм", { exact: true })).toHaveValue("completed");
-  await occurrence.getByRole("button", { name: "Отметка и заметка", exact: true }).click();
+  await occurrence.getByRole("checkbox",{name:"Выполнено: Утренний ритм",exact:true}).check();
+  await chooseAction(page,"Отметка и заметка",occurrence);
   await page.getByLabel("Заметка к отметке", { exact: true }).fill("**Хорошее утро**");
   await page.getByRole("button", { name: "Сохранить отметку", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.reload();
-  await expect(page.getByLabel("Результат Утренний ритм", { exact: true })).toHaveValue("completed");
+  await expect(page.getByRole("checkbox",{name:"Выполнено: Утренний ритм",exact:true})).toBeChecked();
   await occurrence.getByText("Заметка к отметке", { exact: true }).click();
   await expect(occurrence.locator("strong").filter({ hasText: "Хорошее утро" })).toHaveText("Хорошее утро");
   await page.getByRole("link", { name: "Календарь", exact: true }).click();
-  await expect(page.getByRole("region", { name: "План выбранного дня" }).getByLabel("Результат Утренний ритм", { exact: true })).toHaveValue("completed");
+  await expect(page.getByRole("region", { name: "План выбранного дня" }).getByRole("checkbox",{name:"Выполнено: Утренний ритм",exact:true})).toHaveCount(0);
   await page.getByRole("link", { name: "Привычки", exact: true }).click();
   await expect(page.getByRole("region", { name: "Статистика привычек" })).toContainText("100.0%");
-  await page.getByRole("button", { name: "Изменить привычку", exact: true }).click();
+  await chooseAction(page,"Изменить привычку");
   await page.getByLabel("Название привычки", { exact: true }).fill("Новый ритм");
-  await page.getByRole("button", { name: "Удалить пункт 2", exact: true }).click();
   await page.getByRole("button", { name: "Сохранить привычку", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.getByRole("button", { name: "История привычки", exact: true }).click();
+  await chooseAction(page,"История привычки");
   await expect(page.getByRole("dialog")).toContainText("Утренний ритм");
-  await expect(page.getByRole("dialog")).toContainText("2/2");
   await page.getByRole("button", { name: "Закрыть окно", exact: true }).click();
-  await confirmUi(page, async()=>{await page.getByRole("button", { name: "Удалить привычку", exact: true }).click();}, true);
+  await confirmUi(page, async()=>{await chooseAction(page,"Удалить привычку");}, true);
   await expect(page.getByRole("button", { name: "Изменить привычку", exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "Открыть историю", exact: true }).click();
-  await expect(page.getByRole("dialog").getByLabel("Результат Утренний ритм", { exact: true })).toBeDisabled();
+  await chooseAction(page,"Открыть историю");
+  await expect(page.getByRole("dialog").getByRole("checkbox",{name:"Выполнено: Утренний ритм",exact:true})).toBeDisabled();
   await page.getByRole("button", { name: "Закрыть окно", exact: true }).click();
   expect(await page.locator("html").evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(390);
   await page.screenshot({ path: testInfo.outputPath("mobile-habits.png"), fullPage: true });
   expect(errors).toEqual([]);
 });
 
-test("due habit reminders appear in the open app and acknowledgements survive reload", async ({ page, request }) => {
-  await login(page, request);
-  await page.getByRole("link", { name: "Настройки", exact: true }).click();
-  await page.getByLabel("Включить напоминания", { exact: true }).check();
-  await page.getByLabel("За сколько минут напоминать", { exact: true }).fill("0");
-  await page.getByRole("button", { name: "Сохранить настройки", exact: true }).click();
-  await expect(page.getByText("Настройки сохранены", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Привычки", exact: true }).click();
-  await page.getByRole("button", { name: "Новая привычка", exact: true }).click();
-  await page.getByLabel("Название привычки", { exact: true }).fill("Время дыхания");
-  const due = new Date(Date.now() - 60_000);
-  await page.getByLabel("Дата начала", { exact: true }).fill(due.toISOString().slice(0, 10));
-  await page.getByLabel("Время начала", { exact: true }).fill(due.toISOString().slice(11, 16));
-  await page.getByLabel("Напоминать о привычке", { exact: true }).check();
-  await page.getByRole("button", { name: "Сохранить привычку", exact: true }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  const reminder = page.getByRole("complementary", { name: "Напоминания привычек" });
-  await expect(reminder.getByRole("link", { name: /Время дыхания/ })).toBeVisible();
-  await reminder.getByRole("button", { name: "Прочитано: Время дыхания", exact: true }).click();
-  await expect(reminder.getByRole("link", { name: /Время дыхания/ })).toHaveCount(0);
-  await page.reload();
-  await expect(page.getByRole("heading", { name: "Привычки", exact: true })).toBeVisible();
-  await expect(reminder.getByRole("link", { name: /Время дыхания/ })).toHaveCount(0);
-});
+test("habit editor has only repeating all-day rules and no reminder controls",async({page,request})=>{await login(page,request);await page.goto("/habits");await page.getByRole("button",{name:"Новая привычка",exact:true}).click();for(const label of ["Время начала","Длительность, минут","Напоминать о привычке"])await expect(page.getByLabel(label,{exact:true})).toHaveCount(0);await expect(page.getByLabel("Повторение",{exact:true}).locator('option[value="once"]')).toHaveCount(0);});

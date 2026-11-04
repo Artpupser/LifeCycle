@@ -23,6 +23,9 @@ importers:
       '@iconify-json/tabler':
         specifier: ^1.2.43
         version: 1.2.43
+      '@iconify-json/twemoji':
+        specifier: ^1.2.5
+        version: 1.2.5
       '@iconify/react':
         specifier: ^6.0.4
         version: 6.0.4(react@19.3.1)
@@ -286,6 +289,9 @@ packages:
 
   '@iconify-json/tabler@1.2.43':
     resolution: {integrity: sha512-EKhyOj6nASi25ZjuRpEhPL1fwiKVtg/e/VX6v6X3FPKpjG9og26ypW8ItnWYSTn6fdNuQe3VPeyuThWlP6QuWw==}
+
+  '@iconify-json/twemoji@1.2.5':
+    resolution: {integrity: sha512-uKpuIEV0v6K5BW3Mjdyl+XKFVAbbcPxAgifKvEMtZoUZB5+YiY5zaMm2uNNCxyXzAWU9yNLlj41WU6/mvgALsw==}
 
   '@iconify/react@6.0.4':
     resolution: {integrity: sha512-7nKd1eF52E1QGIl46eDWfMNPuTQHUxsXoK2Evgtu5jr386jCWTuWFLHM9vfsTNbUcKp+uq6ao+3skNUalDhH/w==}
@@ -2172,6 +2178,10 @@ snapshots:
       '@iconify/types': 2.0.0
 
   '@iconify-json/tabler@1.2.43':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/twemoji@1.2.5':
     dependencies:
       '@iconify/types': 2.0.0
 

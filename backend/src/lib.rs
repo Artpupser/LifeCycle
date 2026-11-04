@@ -23,6 +23,7 @@ mod mail;
 mod media;
 mod navigation;
 mod notes;
+mod ollama;
 mod operators;
 mod pomodoro;
 mod pomodoro_programs;
@@ -78,6 +79,7 @@ pub fn router(state: AppState) -> Router {
         .merge(ai_access::routes())
         .merge(ai_login::routes())
         .fallback(error::not_found)
+        .layer(axum::middleware::from_fn_with_state(state.clone(),history::audit))
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             csrf::guard,

@@ -115,7 +115,7 @@ def training(owner, other):
     require(len(searched_context['workouts']['exercises']) == 1 and not searched_context['workouts']['plans'], 'Library search returned unrelated records')
 
     save(permissions={**config['permissions'], 'habits': True})
-    planned_habit = owner.request('POST', '/api/habits', {'title': 'Linked planned workout ' + str(uuid4()), 'schedule': {'start_date': today, 'time': None, 'timezone': 'UTC', 'duration_minutes': 20, 'recurrence': 'daily', 'interval_days': 1, 'weekdays': [], 'end_date': None}, 'habit': {'workout_id': wid, 'sub_habits': []}}, expected=201)[0]
+    planned_habit = owner.request('POST', '/api/habits', {'title': 'Linked planned workout ' + str(uuid4()), 'schedule': {'start_date': today, 'time': None, 'timezone': 'UTC', 'duration_minutes': 20, 'recurrence': 'daily', 'interval_days': 1, 'weekdays': [], 'end_date': None}, 'habit': {'workout_id': wid, }}, expected=201)[0]
     owner.request('POST', f"/api/habits/{planned_habit['id']}/marks/{today}", {'status': 'skipped', 'note': 'PRIVATE_HABIT_NOTE'})
     linked_preview = owner.request('POST', f"/api/ai/chats/{chat['id']}/preview", {'revision': config['revision'], 'from': today, 'to': today, 'message': 'Explain explicit skipped training only.'})[0]
     linked_context = json.loads(linked_preview['request']['input'][-2]['content'].split('\n', 1)[1])
