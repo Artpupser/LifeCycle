@@ -99,6 +99,36 @@ def run(args):
     owner.request('POST', f"/api/tasks/{recurring['id']}/occurrences/{yesterday}", {'status': 'completed'})
     rows = [row for row in owner.request('GET', calendar)[0]['occurrences'] if row['task']['id'] == recurring['id']]
     require(rows and all(row['date'] != str(yesterday) for row in rows) and any(row['date'] == str(today) for row in rows), 'One completion hid the rest of the series')
+    # Cardinality is enforced by the adapter, including direct API calls.
+    require(not functions['ai_access']['repeatable'], 'AI access must be single per subject')
+    single = owner.request('POST', '/api/labels', {'name': 'One cost', 'kind': 'functional', 'function_key': 'cost', 'repeatable': False}, expected=201)[0]
+    task_path = '/api/labels/subjects/tasks/' + recurring['id']
+    owner.request('POST', task_path, {'label_id': single['id'], 'value': {'amount': '1', 'currency': 'USD'}}, expected=201)
+    owner.request('POST', task_path, {'label_id': single['id'], 'value': {'amount': '2', 'currency': 'USD'}}, expected=409)
+    ai_subject = owner.request('GET', task_path)[0]
+    grant = {'label_id': functions['ai_access']['id'], 'revision': ai_subject['ai_access']['ai_access_revision'], 'value': {'enabled': True}}
+    owner.request('PUT', task_path, grant, expected=204)
+    owner.request('PUT', task_path, grant, expected=409)
+    owner.request('POST', task_path, {'label_id': functions['ai_access']['id'], 'value': {'enabled': True}}, expected=400)
+    assigned = owner.request('GET', task_path)[0]
+    require(sum(row['label_id'] == functions['ai_access']['id'] for row in assigned['values']) == 1, 'AI access created duplicate labels')
+    other.request('PUT', task_path, grant, expected=404)
+    ai_assignment = next(row for row in assigned['values'] if row['label_id'] == functions['ai_access']['id'])
+    owner.request('PUT', task_path, {**grant, 'revision': ai_assignment['revision'], 'value': None}, expected=204)
+    require(not owner.request('GET', task_path)[0]['ai_access']['ai_shared'], 'Removing the label did not revoke access')
+
+    # Bulk removal is owner-scoped and transactional; operational tasks survive.
+    history_path = f'/api/history?from={today}&to={today}'
+    entries = owner.request('GET', history_path)[0]['items']
+    require(len(entries) >= 2, 'Missing activity fixtures')
+    other.request('POST', '/api/tasks', {'title': 'Foreign history'}, expected=201)
+    foreign = other.request('GET', history_path)[0]['items'][0]
+    owner.request('POST', '/api/history/remove', {'confirmed': True, 'items': [{'kind': 'activity', 'item_key': entries[0]['id']}, {'kind': 'activity', 'item_key': foreign['id']}]}, expected=404)
+    require(any(row['id'] == entries[0]['id'] for row in owner.request('GET', history_path)[0]['items']), 'Partial invalid batch was committed')
+    chosen = [row['id'] for row in entries[:2]]
+    owner.request('POST', '/api/history/remove', {'confirmed': True, 'items': [{'kind': 'activity', 'item_key': key} for key in chosen]}, expected=204)
+    require(all(row['id'] not in chosen for row in owner.request('GET', history_path)[0]['items']), 'Selected history entries stayed visible')
+    require(owner.request('GET', '/api/tasks/' + recurring['id'])[0]['title'] == recurring['title'], 'History deletion changed operational data')
     print('Repeated/custom functional labels, shared native/fallback tags, icons, exact money, ABA revisions, cleanup, AI permissions, owner isolation and calendar: OK')
 
 

@@ -3,6 +3,7 @@ let english: Record<string,string> | null = null;
 let loading: Promise<void> | null = null;
 let requestVersion=0;
 export type Language = "ru" | "en";
+export const languageOptions:ReadonlyArray<{code:Language;name:string}>=[{code:"ru",name:"Русский"},{code:"en",name:"Английский"}];
 let language: Language = "ru";
 const listeners = new Set<() => void>();
 export const getLanguage = () => language;

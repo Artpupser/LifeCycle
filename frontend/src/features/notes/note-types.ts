@@ -1,4 +1,4 @@
-import type {AiAccess} from "@/components/ai-visibility";
+import type {AiAccess} from "@/systems/labels/context";
 export type Folder={id:string;name:string;color:string};
 export type NoteInput={title:string;content:string;tags:string[];color:string;folder_id:string|null};
 export type Note=NoteInput&AiAccess&{id:string;updated_at:string};

@@ -49,6 +49,11 @@ pub async fn build(
             data["analytics"] = json!({"events":report["event_count"],"active_days":report["active_days"],"event_types":report["event_types"],"tasks":report["tasks"],"habits":report["habits"],"workouts":report["workouts"],"pomodoro":report["pomodoro"],"days":report["days"]});
         }
     }
+    let shared_tasks: Vec<Uuid> =
+        sqlx::query_scalar("SELECT id FROM app.tasks WHERE user_id=$1 AND ai_shared")
+            .bind(user)
+            .fetch_all(&s.database)
+            .await?;
     if p.training() {
         let exercises:Vec<Value> = sqlx::query_scalar("SELECT jsonb_build_object('id',id,'updated_at',updated_at,'data',(data-'images') || jsonb_build_object('description',left(data->>'description',4000)),'description_truncated',length(data->>'description')>4000) FROM app.exercises x WHERE user_id=$1 AND ai_shared AND ($2::text IS NULL OR strpos(lower((data->>'title')||' '||(data->>'description')),lower($2))>0) ORDER BY updated_at DESC,id LIMIT 101").bind(user).bind(search).fetch_all(&s.database).await?;
         let plans:Vec<Value> = sqlx::query_scalar("SELECT jsonb_build_object('id',id,'updated_at',updated_at,'data',data || jsonb_build_object('description',left(data->>'description',4000)),'description_truncated',length(data->>'description')>4000) FROM app.workouts WHERE user_id=$1 AND ai_shared AND ($2::text IS NULL OR strpos(lower((data->>'title')||' '||(data->>'description')),lower($2))>0) ORDER BY updated_at DESC,id LIMIT 51").bind(user).bind(search).fetch_all(&s.database).await?;
@@ -66,6 +71,7 @@ pub async fn build(
             let occurrences = tasks::occurrences(s, user, from, to, &settings.timezone).await?;
             let planned:Vec<Value>=occurrences.iter().filter_map(|row| {
                 let o=&row.occurrence;
+                if !shared_tasks.contains(&o.task.id) {return None;}
                 let workout=o.task.habit.as_ref()?.workout_id?;
                 if !plans.iter().take(50).any(|p|p["id"].as_str()==Some(&workout.to_string())) {return None;}
                 Some(json!({"habit_id":o.task.id,"workout_id":workout,"date":o.date,"starts_at":o.starts_at,"status":o.status,"mark_status":o.habit_mark.as_ref().map(|m| &m.status)}))
@@ -84,6 +90,7 @@ pub async fn build(
             .iter()
             .filter(|row| {
                 row.occurrence.task.source_kind == "manual"
+                    && shared_tasks.contains(&row.occurrence.task.id)
                     && search.is_none_or(|q| {
                         format!(
                             "{} {}",
@@ -98,7 +105,7 @@ pub async fn build(
             let o = &row.occurrence;
             json!({"id":o.task.id,"title":o.task.title,"description":clip(&o.task.description,4000),"date":o.date,"starts_at":o.starts_at,"status":o.status,"schedule":o.task.schedule,"due_at":o.task.due_at,"tags":o.task.tags,"priority":o.task.priority,"updated_at":o.task.updated_at,"editable":row.editable})
         }).collect();
-        let unscheduled: Vec<Value> = sqlx::query_scalar("SELECT jsonb_build_object('id',id,'updated_at',updated_at,'title',title,'description',left(description,4000),'description_truncated',length(description)>4000,'status',status,'due_at',due_at,'tags',tags,'priority',priority) FROM app.tasks WHERE user_id=$1 AND source_kind='manual' AND schedule IS NULL AND ($2::text IS NULL OR strpos(lower(title||' '||description),lower($2))>0) ORDER BY updated_at DESC,id LIMIT 51").bind(user).bind(search).fetch_all(&s.database).await?;
+        let unscheduled: Vec<Value> = sqlx::query_scalar("SELECT jsonb_build_object('id',id,'updated_at',updated_at,'title',title,'description',left(description,4000),'description_truncated',length(description)>4000,'status',status,'due_at',due_at,'tags',tags,'priority',priority) FROM app.tasks WHERE user_id=$1 AND source_kind='manual' AND ai_shared AND schedule IS NULL AND ($2::text IS NULL OR strpos(lower(title||' '||description),lower($2))>0) ORDER BY updated_at DESC,id LIMIT 51").bind(user).bind(search).fetch_all(&s.database).await?;
         let mut template_ids: Vec<Uuid> = manual
             .iter()
             .take(100)
@@ -110,7 +117,7 @@ pub async fn build(
                 .take(50)
                 .filter_map(|v| v["id"].as_str().and_then(|id| id.parse::<Uuid>().ok())),
         );
-        let templates:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',id,'updated_at',updated_at,'title',title,'description',left(description,4000),'description_truncated',length(description)>4000,'status',status,'tags',tags,'color',color,'priority',priority,'parent_id',parent_id,'due_at',due_at,'schedule',schedule) FROM app.tasks WHERE user_id=$1 AND source_kind='manual' AND id=ANY($2) ORDER BY updated_at DESC,id LIMIT 101").bind(user).bind(&template_ids).fetch_all(&s.database).await?;
+        let templates:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',id,'updated_at',updated_at,'title',title,'description',left(description,4000),'description_truncated',length(description)>4000,'status',status,'tags',tags,'color',color,'priority',priority,'parent_id',parent_id,'due_at',due_at,'schedule',schedule) FROM app.tasks WHERE user_id=$1 AND source_kind='manual' AND ai_shared AND id=ANY($2) ORDER BY updated_at DESC,id LIMIT 101").bind(user).bind(&template_ids).fetch_all(&s.database).await?;
         data["tasks"] = json!({"query":search,"occurrences":items,"total_occurrences":manual.len(),"occurrences_truncated":manual.len()>100,"unscheduled":unscheduled.iter().take(50).collect::<Vec<_>>(),"unscheduled_truncated":unscheduled.len()>50,"templates":templates.iter().take(100).collect::<Vec<_>>(),"templates_truncated":templates.len()>100});
     }
     if p.notes {
@@ -123,9 +130,39 @@ pub async fn build(
     }
     if p.intimacy {
         data["intimacy"] = serde_json::to_value(
-            intimacy::analytics_summary(s, user, from, to, &settings.timezone).await?,
+            intimacy::analytics_summary_shared(s, user, from, to, &settings.timezone).await?,
         )
         .map_err(|_| ApiError::internal())?;
+    }
+    if p.contacts {
+        let ids:Vec<Uuid>=sqlx::query_scalar("SELECT id FROM app.contacts WHERE user_id=$1 AND ai_shared ORDER BY updated_at DESC,id LIMIT 51").bind(user).fetch_all(&s.database).await?;
+        let mut db = s.database.acquire().await?;
+        let mut items = Vec::new();
+        for id in ids.iter().take(50) {
+            let contact = crate::modules::contacts::load(s, user, *id, &mut db).await?;
+            if search.is_none_or(|q| {
+                format!("{} {}", contact.data.name(), contact.data.description)
+                    .to_lowercase()
+                    .contains(&q.to_lowercase())
+            }) {
+                let mut value =
+                    serde_json::to_value(&contact.data).map_err(|_| ApiError::internal())?;
+                value.as_object_mut().unwrap().remove("source_keys");
+                value["description"] = clip(&contact.data.description, 4000);
+                items.push(json!({"id":id,"data":value}));
+            }
+        }
+        data["contacts"] = json!({"items":items,"truncated":ids.len()>50});
+    }
+    if p.countdowns {
+        let items:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',id,'title',title,'description',left(description,4000),'tags',tags,'target_date',target_date,'target_time',target_time,'timezone',timezone,'recurrence',recurrence,'details',details) FROM app.countdowns WHERE user_id=$1 AND ai_shared AND ($2::text IS NULL OR strpos(lower(title||' '||description),lower($2))>0) ORDER BY updated_at DESC,id LIMIT 51").bind(user).bind(search).fetch_all(&s.database).await?;
+        data["countdowns"] =
+            json!({"items":items.iter().take(50).collect::<Vec<_>>(),"truncated":items.len()>50});
+    }
+    if p.boards {
+        let items:Vec<Value>=sqlx::query_scalar("SELECT jsonb_build_object('id',id,'name',name,'emoji',emoji,'view',view) FROM app.task_boards WHERE user_id=$1 AND ai_shared AND ($2::text IS NULL OR strpos(lower(name),lower($2))>0) ORDER BY id DESC LIMIT 51").bind(user).bind(search).fetch_all(&s.database).await?;
+        data["boards"] =
+            json!({"items":items.iter().take(50).collect::<Vec<_>>(),"truncated":items.len()>50});
     }
     if serde_json::to_vec(&data)
         .map_err(|_| ApiError::internal())?

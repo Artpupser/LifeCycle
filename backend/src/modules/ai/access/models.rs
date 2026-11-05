@@ -3,15 +3,15 @@ use uuid::Uuid;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct Input {
-    pub(super) ai_shared: bool,
-    pub(super) revision: i64,
+pub(crate) struct Input {
+    pub(crate) ai_shared: bool,
+    pub(crate) revision: i64,
 }
 
 #[derive(Serialize, sqlx::FromRow)]
 pub(crate) struct Access {
-    pub(super) ai_shared: bool,
-    pub(super) ai_access_revision: i64,
+    pub(crate) ai_shared: bool,
+    pub(crate) ai_access_revision: i64,
 }
 
 #[derive(Deserialize)]
@@ -25,7 +25,7 @@ pub(super) struct BulkItem {
 #[serde(deny_unknown_fields)]
 pub(super) struct BulkInput {
     pub(super) items: Vec<BulkItem>,
-    pub(super) ai_shared: bool,
+    pub(crate) ai_shared: bool,
     pub(super) confirmed: bool,
 }
 

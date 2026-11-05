@@ -7,13 +7,14 @@ use axum::{Json, http::StatusCode};
 use sqlx::PgConnection;
 use uuid::Uuid;
 
-pub(super) async fn change(
+pub(crate) async fn change(
     s: AppState,
     user: Uuid,
     id: Uuid,
     v: Input,
     table: &str,
 ) -> Result<Json<Access>, ApiError> {
+    let table = object_table(table)?;
     let mut tx = s.database.begin().await?;
     ai::config(&mut tx, user).await?;
     tasks::lock_tasks(&mut tx, user).await?;
@@ -64,14 +65,26 @@ pub(crate) async fn visible(
     kind: &str,
     id: Uuid,
 ) -> Result<bool, ApiError> {
+    let table = object_table(kind)?;
+    Ok(sqlx::query_scalar(&format!(
+        "SELECT EXISTS(SELECT 1 FROM app.{table} WHERE user_id=$1 AND id=$2 AND ai_shared)"
+    ))
+    .bind(user)
+    .bind(id)
+    .fetch_one(db)
+    .await?)
+}
+
+pub(crate) fn object_table(kind: &str) -> Result<&'static str, ApiError> {
     match kind {
-        "notes" | "workouts" | "exercises" => Ok(sqlx::query_scalar(&format!(
-            "SELECT EXISTS(SELECT 1 FROM app.{kind} WHERE user_id=$1 AND id=$2 AND ai_shared)"
-        ))
-        .bind(user)
-        .bind(id)
-        .fetch_one(db)
-        .await?),
-        _ => Ok(true),
+        "notes" => Ok("notes"),
+        "tasks" | "habits" => Ok("tasks"),
+        "workouts" => Ok("workouts"),
+        "exercises" => Ok("exercises"),
+        "contacts" => Ok("contacts"),
+        "countdowns" => Ok("countdowns"),
+        "intimacy" => Ok("intimacy_entries"),
+        "boards" => Ok("task_boards"),
+        _ => Err(ApiError::validation("Unsupported AI subject")),
     }
 }

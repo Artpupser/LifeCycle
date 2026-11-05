@@ -8,6 +8,7 @@ pub(super) struct FeedQuery {
     pub(super) before_id: Option<Uuid>,
     pub(super) section: Option<String>,
     pub(super) operation: Option<String>,
+    pub(super) text: Option<String>,
 }
 
 #[derive(serde::Serialize, sqlx::FromRow)]

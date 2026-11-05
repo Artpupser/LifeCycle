@@ -64,7 +64,7 @@ pub(super) async fn create(
     }
     let id = Uuid::new_v4();
     sqlx::query(
-        "INSERT INTO app.labels(id,user_id,kind,name_key,encrypted_data,function_key) VALUES($1,$2,$3,$4,$5,$6)",
+        "INSERT INTO app.labels(id,user_id,kind,name_key,encrypted_data,function_key,repeatable) VALUES($1,$2,$3,$4,$5,$6,$7)",
     )
     .bind(id)
     .bind(u.id)
@@ -81,6 +81,7 @@ pub(super) async fn create(
         },
     )?)
     .bind(&v.function_key)
+    .bind(v.repeatable.unwrap_or(true))
     .execute(&mut *tx)
     .await?;
     tx.commit().await?;
@@ -94,6 +95,7 @@ pub(super) async fn create(
             icon: v.icon,
             function_key: v.function_key,
             is_system: false,
+            repeatable: v.repeatable.unwrap_or(true),
             revision: 0,
         }),
     ))
@@ -125,6 +127,24 @@ pub(super) async fn update(
     }) {
         return Err(domain::conflict("Label already exists"));
     }
+    let repeatable = v.repeatable.unwrap_or(old.repeatable);
+    if old.function_key.as_deref() == Some("ai_access") && repeatable {
+        return Err(ApiError::validation("AI access can only be assigned once"));
+    }
+    if !repeatable && old.repeatable {
+        let duplicates: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.label_values WHERE user_id=$1 AND label_id=$2 GROUP BY subject_kind,subject_id HAVING count(*)>1)").bind(u.id).bind(id).fetch_one(&mut *tx).await?;
+        if duplicates {
+            return Err(domain::conflict(
+                "Remove repeated assignments before changing cardinality",
+            ));
+        }
+    }
+    sqlx::query("UPDATE app.labels SET repeatable=$3 WHERE user_id=$1 AND id=$2")
+        .bind(u.id)
+        .bind(id)
+        .bind(repeatable)
+        .execute(&mut *tx)
+        .await?;
     let icon = v.icon.clone().or_else(|| old.icon.clone());
     if old.kind != "functional" && old.name != v.name.trim() {
         propagate(&s, &mut tx, u.id, old, Some(v.name.trim())).await?;
@@ -138,6 +158,7 @@ pub(super) async fn update(
         icon,
         function_key: old.function_key.clone(),
         is_system: old.is_system,
+        repeatable,
         revision: old.revision + 1,
     };
     tx.commit().await?;

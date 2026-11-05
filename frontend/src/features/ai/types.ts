@@ -1,19 +1,22 @@
-export type Permissions = Record<"analytics" | "tasks" | "habits" | "workouts" | "notes" | "profile" | "intimacy" | "changes", boolean>;
+export type Permissions = Record<"analytics" | "tasks" | "habits" | "workouts" | "notes" | "profile" | "intimacy" | "contacts" | "countdowns" | "boards" | "changes", boolean>;
 export type AiConfig = { provider: "openai" | "openrouter" | "ollama"; auth_mode: "api_key" | "login"; ollama_url?:string; active_account_id: string | null; login_available: boolean; model: string; enabled: boolean; permissions: Permissions; key_present: boolean; openai_key_present: boolean; openrouter_key_present: boolean; revision: number };
 export type Chat = { id: string; version: number; created_at: string };
 export type ProviderRequest = { model: string; instructions?: string; messages?: {role:string;content:string}[]; input?: { role: "user" | "assistant"; content: string }[]; store?: false; options?:{num_predict:number}; max_output_tokens?: number; stream?: boolean; provider?: { data_collection: "deny"; zdr: true } };
 export type Turn = { id: string; config_revision: number; model: string; provider: "openai" | "openrouter" | "ollama"; status: "pending" | "completed" | "failed" | "cancelled"; error_code: string | null; data: { request: ProviderRequest; answer: string | null; usage: { input_tokens: number | null; output_tokens: number | null; total_tokens: number | null } | null }; created_at: string; finished_at: string | null };
 export type Preview = { id: string; expires_at: string; config_revision: number; history_turns: number; request: ProviderRequest };
-export const noPermissions: Permissions = { analytics: false, tasks: false, habits: false, workouts: false, notes: false, profile: false, intimacy: false, changes: false };
+export const noPermissions: Permissions = { analytics: false, tasks: false, habits: false, workouts: false, notes: false, profile: false, intimacy: false, contacts:false,countdowns:false,boards:false, changes: false };
 export const scopes: [keyof Permissions, string, string][] = [
   ["analytics", "Числовая аналитика", "Результаты задач, привычек, тренировок, Pomodoro и действия по дням; без названий и личных текстов."],
   ["tasks", "Задачи и расписания", "До 100 появлений ручных задач за период и 50 задач без расписания: названия, описания, теги, сроки, правила и результаты; до 100 текущих версий этих же задач для предложений изменений."],
-  ["habits", "Привычки", "Результаты, серии и рейтинг до 10 привычек с названиями за выбранный период."],
-  ["workouts", "Тренировки", "Цели, оборудование и ограничения из раздела тренировок; упражнения и планы с галочкой «AI Доступ», результаты отмеченных тренировок. С разрешением изменений AI может предложить новый план."],
+  ["habits", "Привычки", "Результаты, серии и рейтинг привычек с меткой «AI Доступ»."],
+  ["workouts", "Тренировки", "Цели, оборудование и ограничения из раздела тренировок; упражнения и планы с меткой «AI Доступ», результаты тренировок с меткой. С разрешением изменений AI может предложить новый план."],
+  ["contacts","Контакты","Только контакты с меткой «AI Доступ», до 50 записей."],
+  ["countdowns","Отсчёты","Только события с меткой «AI Доступ», до 50 записей."],
+  ["boards","Доски","Только свойства досок с меткой «AI Доступ», без содержимого закрытых задач."],
   ["changes", "Предложения изменений AI", "Только разрешённые категории. Каждое предложение требует отдельной проверки и подтверждения; доступны журнал и отмена."],
-  ["notes", "Тексты заметок", "Только заметки с галочкой «AI Доступ», до 30 записей и 4000 символов каждой. Markdown передаётся текстом, фотографии не передаются."],
+  ["notes", "Тексты заметок", "Только заметки с меткой «AI Доступ», до 30 записей и 4000 символов каждой. Markdown передаётся текстом, фотографии не передаются."],
   ["profile", "Полная анкета профиля", "Все заполненные поля, включая имя, здоровье, лекарства и интимные измерения. Проверьте точный предпросмотр перед отправкой."],
-  ["intimacy", "Интимная сводка", "Только количества по типам, активные дни и известная длительность; без имён, анкет, эмоций и личных текстов."],
+  ["intimacy", "Интимная сводка", "Только записи с меткой «AI Доступ»: количества по типам, активные дни и известная длительность; без имён, анкет, эмоций и личных текстов."],
 ];
 
 export type AiAccount = { id: string; email: string | null; label: string; connected: boolean };

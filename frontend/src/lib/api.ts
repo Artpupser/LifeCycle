@@ -99,7 +99,7 @@ export async function api<T>(path: string, options: { method?: "GET" | "POST" | 
   if(options.method&&options.method!=="GET"&&path!=="/operators/lookup")invalidateResources();
   if(options.method==="POST"&&(/^\/tasks\/[^/]+\/occurrences\/[^/]+$/.test(path)||/^\/habits\/[^/]+\/marks\/[^/]+$/.test(path))){const status=(result as {status?:string}|null)?.status;if(status)feedbackEvents.dispatchEvent(new CustomEvent("task-result",{detail:{status}}));}
   if(options.method&&options.method!=="GET"&&/^\/(labels|task-tags|notes|contacts|countdowns|workouts|exercises)(\/|$)/.test(path))revalidateResource("/labels");
-  if(options.method&&options.method!=="GET"&&path.startsWith("/labels")){revalidateResource("/labels/values");revalidateResource("/labels/subject-tags");}
+  if(options.method&&options.method!=="GET"&&(path.startsWith("/labels")||/\/ai-access$/.test(path))){revalidateResource("/labels/values");revalidateResource("/labels/subject-tags");}
   const effect=mutationEffect(path,options.method??"GET",options.body,result);
   if(effect)showEffect(effect,origin);
   return result;

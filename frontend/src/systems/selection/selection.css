@@ -1,0 +1,12 @@
+[data-selection-key][data-selected="true"] {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+[data-selection-marquee] {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  border: 1px solid var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border-radius: 4px;
+}

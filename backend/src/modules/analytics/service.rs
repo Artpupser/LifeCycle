@@ -169,11 +169,17 @@ pub(super) async fn build_report(
                 .bind(user)
                 .fetch_all(&s.database)
                 .await?;
+        let shared_tasks: Vec<Uuid> =
+            sqlx::query_scalar("SELECT id FROM app.tasks WHERE user_id=$1 AND ai_shared")
+                .bind(user)
+                .fetch_all(&s.database)
+                .await?;
         let visible = |t: &tasks::Task| {
-            t.habit
-                .as_ref()
-                .and_then(|h| h.workout_id)
-                .is_none_or(|id| shared.contains(&id))
+            shared_tasks.contains(&t.id)
+                && t.habit
+                    .as_ref()
+                    .and_then(|h| h.workout_id)
+                    .is_none_or(|id| shared.contains(&id))
         };
         rows.retain(|r| visible(&r.occurrence.task));
         templates.retain(&visible);
@@ -211,7 +217,7 @@ pub(super) async fn build_report(
             }
         }
     }
-    let events:Vec<(NaiveDate,String,i64)>=sqlx::query_as("SELECT (occurred_at AT TIME ZONE $2)::date,event_type,count(*) FROM app.activity_events ev WHERE user_id=$1 AND (NOT $5 OR CASE entity_type WHEN 'note' THEN EXISTS(SELECT 1 FROM app.notes n WHERE n.user_id=ev.user_id AND n.id=ev.entity_id AND n.ai_shared) WHEN 'workout' THEN EXISTS(SELECT 1 FROM app.workouts w WHERE w.user_id=ev.user_id AND w.id=ev.entity_id AND w.ai_shared) WHEN 'workout_session' THEN EXISTS(SELECT 1 FROM app.workout_sessions ws JOIN app.workouts w ON w.id=ws.workout_id AND w.user_id=ws.user_id WHERE ws.user_id=ev.user_id AND ws.id=ev.entity_id AND w.ai_shared) WHEN 'exercise' THEN EXISTS(SELECT 1 FROM app.exercises x WHERE x.user_id=ev.user_id AND x.id=ev.entity_id AND x.ai_shared) WHEN 'folder' THEN false WHEN 'countdown' THEN false ELSE true END) AND (occurred_at AT TIME ZONE $2)::date BETWEEN $3 AND $4 AND entity_type IN ('note','folder','task','habit','exercise','workout','workout_session','countdown','pomodoro') GROUP BY 1,2")
+    let events:Vec<(NaiveDate,String,i64)>=sqlx::query_as("SELECT (occurred_at AT TIME ZONE $2)::date,event_type,count(*) FROM app.activity_events ev WHERE user_id=$1 AND (NOT $5 OR CASE entity_type WHEN 'note' THEN EXISTS(SELECT 1 FROM app.notes n WHERE n.user_id=ev.user_id AND n.id=ev.entity_id AND n.ai_shared) WHEN 'workout' THEN EXISTS(SELECT 1 FROM app.workouts w WHERE w.user_id=ev.user_id AND w.id=ev.entity_id AND w.ai_shared) WHEN 'workout_session' THEN EXISTS(SELECT 1 FROM app.workout_sessions ws JOIN app.workouts w ON w.id=ws.workout_id AND w.user_id=ws.user_id WHERE ws.user_id=ev.user_id AND ws.id=ev.entity_id AND w.ai_shared) WHEN 'exercise' THEN EXISTS(SELECT 1 FROM app.exercises x WHERE x.user_id=ev.user_id AND x.id=ev.entity_id AND x.ai_shared) WHEN 'task' THEN EXISTS(SELECT 1 FROM app.tasks t WHERE t.user_id=ev.user_id AND t.id=ev.entity_id AND t.ai_shared) WHEN 'habit' THEN EXISTS(SELECT 1 FROM app.tasks t WHERE t.user_id=ev.user_id AND t.id=ev.entity_id AND t.ai_shared) WHEN 'folder' THEN false WHEN 'countdown' THEN false ELSE true END) AND (occurred_at AT TIME ZONE $2)::date BETWEEN $3 AND $4 AND entity_type IN ('note','folder','task','habit','exercise','workout','workout_session','countdown','pomodoro') GROUP BY 1,2")
         .bind(user).bind(&settings.timezone).bind(q.from).bind(q.to).bind(ai_mode).fetch_all(&s.database).await?;
     let mut event_types = BTreeMap::new();
     for (date, kind, count) in events {

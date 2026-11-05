@@ -5,8 +5,8 @@ export const animationsEnabled=()=>enabled;
 export const subscribeAnimations=(listener:()=>void)=>{listeners.add(listener);return()=>{listeners.delete(listener);};};
 export function prefersReducedMotion(){return typeof window!=="undefined"&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;}
 export const motionAllowed=()=>enabled&&!prefersReducedMotion();
-export function scrollElement(element:HTMLElement|null,options:{left?:number;top?:number;relative?:boolean}) {
+export function scrollElement(element:HTMLElement|null,options:{left?:number;top?:number;relative?:boolean;immediate?:boolean}) {
   if(!element)return;
-  const {relative,...position}=options;
-  element[relative?"scrollBy":"scrollTo"]({...position,behavior:motionAllowed()?"smooth":"instant"});
+  const {relative,immediate,...position}=options;
+  element[relative?"scrollBy":"scrollTo"]({...position,behavior:!immediate&&motionAllowed()?"smooth":"instant"});
 }

@@ -51,9 +51,28 @@ pub(crate) async fn analytics_summary(
     to: NaiveDate,
     timezone: &str,
 ) -> Result<AnalyticsSummary, ApiError> {
+    summary(s, user, from, to, timezone, false).await
+}
+pub(crate) async fn analytics_summary_shared(
+    s: &AppState,
+    user: Uuid,
+    from: NaiveDate,
+    to: NaiveDate,
+    timezone: &str,
+) -> Result<AnalyticsSummary, ApiError> {
+    summary(s, user, from, to, timezone, true).await
+}
+async fn summary(
+    s: &AppState,
+    user: Uuid,
+    from: NaiveDate,
+    to: NaiveDate,
+    timezone: &str,
+    shared_only: bool,
+) -> Result<AnalyticsSummary, ApiError> {
     let zone = timezone.parse::<Tz>().map_err(|_| ApiError::internal())?;
-    let rows = sqlx::query_as::<_, Row>("SELECT id,started_at,encrypted_data,revision,created_at,updated_at FROM app.intimacy_entries WHERE user_id=$1 AND (started_at AT TIME ZONE $2)::date BETWEEN $3 AND $4")
-        .bind(user).bind(timezone).bind(from).bind(to).fetch_all(&s.database).await?;
+    let rows = sqlx::query_as::<_, Row>("SELECT id,started_at,encrypted_data,revision,created_at,updated_at FROM app.intimacy_entries WHERE user_id=$1 AND (started_at AT TIME ZONE $2)::date BETWEEN $3 AND $4 AND (NOT $5 OR ai_shared)")
+        .bind(user).bind(timezone).bind(from).bind(to).bind(shared_only).fetch_all(&s.database).await?;
     let mut stats = Statistics::default();
     for row in rows {
         let entry = decode(s, user, row)?;

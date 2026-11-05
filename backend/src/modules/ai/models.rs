@@ -18,6 +18,9 @@ pub(crate) struct Permissions {
     pub(crate) notes: bool,
     pub(crate) profile: bool,
     pub(crate) intimacy: bool,
+    pub(crate) contacts: bool,
+    pub(crate) countdowns: bool,
+    pub(crate) boards: bool,
     #[serde(skip_serializing)]
     pub(crate) workout_editor: bool,
     #[serde(skip_serializing)]

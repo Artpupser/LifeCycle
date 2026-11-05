@@ -6,6 +6,8 @@ import {AnimatedSurface} from "@/systems/animations/surfaces";
 import {AppIcon} from "@/systems/icons/app-icon";
 import {t,useLanguage} from "@/systems/i18n/locale";
 import type {LabelSubject} from "@/systems/labels/context";
+import {Input} from "@/components/ui/input";
+import {Button} from "@/components/ui/button";
 import {SubjectLabelEditor} from "@/systems/labels/functional";
 import {ActionsContext,useActionMenu,type ContextAction,type Menu} from "./context";
 
@@ -39,16 +41,16 @@ function declaredActions(children:ReactNode,navigate:(path:string)=>void):Contex
   return [{id:String(index),label:props["aria-label"]??textOf(props.children),disabled:props.disabled,danger:props.className?.includes("text-destructive"),run:props.onClick??(()=>navigate(to!))}];
  });
 }
-export function ObjectActions({children,actions=[],label,subject,contribute=false}:{children?:ReactNode;actions?:ContextAction[];label?:string;subject?:LabelSubject;contribute?:boolean}){
+export function ObjectActions({children,actions=[],label,subject,contribute=false,alias}:{children?:ReactNode;actions?:ContextAction[];label?:string;subject?:LabelSubject;contribute?:boolean;alias?:string}){
  useLanguage();
  const [editing,setEditing]=useState(false);
  const navigate=useNavigate();const anchor=useRef<HTMLSpanElement>(null);
- const key=subject?`${subject.kind}:${subject.id}`:null;
+ const key=subject?`${subject.kind}:${subject.id}`:alias??null;
  const all=[...actions,...declaredActions(children,navigate),...(subject?[{id:"labels",label:t("Метки"),icon:"tabler:tags",run:()=>setEditing(true)}]:[])].map((action,index)=>({...action,id:`${index}:${action.id}`}));
  const latest=useRef(all);useLayoutEffect(()=>{latest.current=all;});
  useLayoutEffect(()=>{
   const node=anchor.current!;const root=node.closest(subjects)??node;
-  if(root!==node){root.setAttribute("data-action-menu-root","");node.setAttribute("data-action-menu-anchor",contribute?"contribution":"corner");}
+  if(root!==node){if(!contribute)root.setAttribute("data-action-menu-root","");node.setAttribute("data-action-menu-anchor",contribute?"contribution":"corner");}
   const group=scopes.get(root)??new Map<HTMLElement,ReadActions>();
   group.set(node,()=>latest.current);scopes.set(root,group);
   const shared=key?(aliases.get(key)??new Map<HTMLElement,ReadActions>()):null;
@@ -77,21 +79,37 @@ export function ActionMenuProvider({children}:{children:ReactNode}){
   const node=ref.current;
   node.style.left=`${Math.max(8,Math.min(menu.x,innerWidth-node.offsetWidth-8))}px`;
   node.style.top=`${Math.max(8,Math.min(menu.y,innerHeight-node.offsetHeight-8))}px`;
-  node.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({preventScroll:true});
+  (node.querySelector<HTMLInputElement>('input')??node.querySelector<HTMLButtonElement>('button:not(:disabled)'))?.focus({preventScroll:true});
   const dismiss=()=>setMenu(null);
   const outside=(event:Event)=>{if(!node.contains(event.target as Node))dismiss();};
   window.addEventListener('resize',dismiss);document.addEventListener('pointerdown',outside);
   document.addEventListener('wheel',outside,{passive:true});document.addEventListener('touchmove',outside,{passive:true});
   return()=>{window.removeEventListener('resize',dismiss);document.removeEventListener('pointerdown',outside);document.removeEventListener('wheel',outside);document.removeEventListener('touchmove',outside);};
  },[menu]);
- function keys(event:React.KeyboardEvent){
-  const buttons=[...ref.current!.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
-  const current=buttons.indexOf(document.activeElement as HTMLButtonElement);
-  if(event.key==='Escape'||event.key==='Tab'){event.preventDefault();menu?.returnTo?.focus({preventScroll:true});setMenu(null);}
-  else if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)){event.preventDefault();buttons[event.key==='Home'?0:event.key==='End'?buttons.length-1:(current+(event.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length]?.focus();}
+ function activate(action:ContextAction){
+  if(!menu||action.disabled)return;
+  if(action.children){setMenu({...menu,actions:action.children,back:menu,entry:undefined});return;}
+  if(action.numberInput){setMenu({...menu,entry:action,back:menu});return;}
+  setMenu(null);menu.returnTo?.focus({preventScroll:true});action.run();
  }
- return <ActionsContext value={open}>{children}{menu&&createPortal(<div ref={ref} role="menu" aria-label={t("Действия")} onKeyDown={keys} className="fixed z-[100] max-h-[min(75svh,36rem)] w-64 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-xl border border-border bg-card p-1 text-foreground shadow-xl" style={{left:menu.x,top:menu.y}}><AnimatedSurface>{menu.actions.map(action=><button key={action.id} type="button" role="menuitem" disabled={action.disabled} onClick={()=>{setMenu(null);menu.returnTo?.focus({preventScroll:true});action.run();}} className={`flex min-h-10 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted focus:bg-muted focus:outline-none disabled:opacity-40 ${action.danger?'text-destructive':''}`}>{action.icon&&<AppIcon icon={action.icon}/>}<span>{action.label}</span></button>)}</AnimatedSurface></div>,menu.returnTo?.closest("dialog")??document.body)}</ActionsContext>;
+ function keys(event:React.KeyboardEvent){
+  const fields=[...ref.current!.querySelectorAll<HTMLButtonElement|HTMLInputElement>('button:not(:disabled),input:not(:disabled)')];
+  const current=fields.indexOf(document.activeElement as HTMLButtonElement);
+  const input=event.target instanceof HTMLInputElement;
+  if(event.key==='Tab'&&menu?.entry&&current+(event.shiftKey?-1:1)>=0&&current+(event.shiftKey?-1:1)<fields.length){event.preventDefault();fields[current+(event.shiftKey?-1:1)]?.focus();}
+  else if(event.key==='Escape'||event.key==='Tab'){event.preventDefault();menu?.returnTo?.focus({preventScroll:true});setMenu(null);}
+  else if(event.key==='ArrowLeft'&&!input&&menu?.back){event.preventDefault();setMenu(menu.back);}
+  else if(event.key==='ArrowRight'&&!input){const action=menu?.actions.find(action=>`action-${action.id}`===(document.activeElement as HTMLElement)?.dataset.menuAction);if(action?.children){event.preventDefault();activate(action);}}
+  else if(!input&&['ArrowDown','ArrowUp','Home','End'].includes(event.key)){event.preventDefault();fields[event.key==='Home'?0:event.key==='End'?fields.length-1:(current+(event.key==='ArrowDown'?1:-1)+fields.length)%fields.length]?.focus();}
+ }
+
+ return <ActionsContext value={open}>{children}{menu&&createPortal(<div ref={ref} role="menu" aria-label={t("Действия")} onKeyDown={keys} className="fixed z-[100] max-h-[min(75svh,36rem)] w-64 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-xl border border-border bg-card p-1 text-foreground shadow-xl" style={{left:menu.x,top:menu.y}}><AnimatedSurface>{menu.back&&<button type="button" role="menuitem" className="flex min-h-10 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted" onClick={()=>setMenu(menu.back!)}><AppIcon icon="tabler:chevron-left"/>{t("Назад")}</button>}{menu.entry?.numberInput?<NumberEntry key={menu.entry.id} action={menu.entry} submit={value=>{const action=menu.entry!;setMenu(null);menu.returnTo?.focus({preventScroll:true});action.numberInput!.submit(value);}}/>:menu.actions.map(action=><button key={action.id} data-menu-action={`action-${action.id}`} type="button" role="menuitem" aria-haspopup={action.children?"menu":undefined} disabled={action.disabled} onClick={()=>activate(action)} className={`flex min-h-10 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted focus:bg-muted focus:outline-none disabled:opacity-40 ${action.danger?'text-destructive':''}`}>{action.icon&&<AppIcon icon={action.icon}/>}<span>{action.label}</span>{action.children&&<AppIcon icon="tabler:chevron-right" className="ml-auto shrink-0"/>}</button>)}</AnimatedSurface></div>,menu.returnTo?.closest("dialog")??document.body)}</ActionsContext>;
 }
+function NumberEntry({action,submit}:{action:ContextAction;submit:(value:number)=>void}){
+ useLanguage();const spec=action.numberInput!;const [value,setValue]=useState(String(spec.initial??spec.min));const number=Number(value);
+ return <form role="group" aria-label={action.label} className="space-y-3 p-3" onSubmit={event=>{event.preventDefault();if(Number.isSafeInteger(number)&&number>=spec.min&&(spec.max===undefined||number<=spec.max))submit(number);}}><label className="block space-y-2 text-sm"><span>{spec.label}</span><Input autoFocus required type="number" min={spec.min} max={spec.max} step={1} value={value} onChange={event=>setValue(event.target.value)}/></label><Button className="w-full" type="submit" disabled={!Number.isSafeInteger(number)||number<spec.min||(spec.max!==undefined&&number>spec.max)}>{t("Выбрать")}</Button></form>;
+}
+
 export function ActionMenuButton({actions,label,readActions}:{actions:ContextAction[];label?:string;readActions?:()=>ContextAction[]}){
  useLanguage();const open=useActionMenu();
  return <button data-context-ignore type="button" aria-haspopup="menu" className="rounded-lg border border-border bg-card p-2 hover:bg-muted" aria-label={label??t("Действия")} onClick={(event:MouseEvent<HTMLButtonElement>)=>{const box=event.currentTarget.getBoundingClientRect();open(readActions?.()??actions,box.left,box.bottom,event.currentTarget);}}><AppIcon icon="tabler:dots"/></button>;

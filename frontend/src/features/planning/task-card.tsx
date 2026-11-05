@@ -1,3 +1,4 @@
+import {SelectionItem} from "@/systems/selection/entities";
 import {SubjectLabels} from "@/systems/labels/functional";
 import {ObjectActions} from "@/systems/actions/action-menu";
 import {taskDateActions} from "./quick-date-values";
@@ -30,12 +31,12 @@ export function TaskCard({ task, occurrence, tags, now, timezone, busy, toggle, 
   const overdue=isTaskOverdue(task,now,timezone,occurrence);
   const priority=priorityColors[task.priority];
   const timing = taskTiming(task, now, timezone);
-  return <AnimatedArticle data-drag-item="task" data-drag-key={`task-${task.id}`} draggable={draggable} onDragStart={dragStart} onDragOver={dragOver} onDrop={drop} data-task-result={overdue?"overdue":completed?"finished":"active"} style={priority?{borderLeft:`4px solid ${priority}`,backgroundColor:`color-mix(in srgb, ${priority} 8%, var(--card))`}:undefined} className={`group min-w-0 space-y-3 rounded-xl border bg-card p-4 shadow-sm hover:shadow-md ${completed ? "border-border/60 opacity-70" : "border-border"}`}>
+  return <SelectionItem id={task.id}><AnimatedArticle data-drag-item="task" data-drag-key={`task-${task.id}`} draggable={draggable} onDragStart={dragStart} onDragOver={dragOver} onDrop={drop} data-task-result={overdue?"overdue":completed?"finished":"active"} style={priority?{borderLeft:`4px solid ${priority}`,backgroundColor:`color-mix(in srgb, ${priority} 8%, var(--card))`}:undefined} className={`group min-w-0 space-y-3 rounded-xl border bg-card p-4 shadow-sm hover:shadow-md ${completed ? "border-border/60 opacity-70" : "border-border"}`}>
     <div className="flex items-start gap-3"><TaskCheckbox task={task} occurrence={occurrence} busy={busy} toggle={toggle} /><button className={`min-w-0 flex-1 break-words text-left text-sm font-medium leading-6 hover:text-primary ${completed ? "text-muted-foreground line-through" : ""}`} onClick={edit}>{task.title}</button><ObjectActions subject={{kind:"tasks",id:task.id}} actions={taskDateActions(task,timezone,busy,edit)} label={t("Действия задачи {v0}", {v0:task.title})}>{cancel && <Button className="w-full justify-start" size="sm" variant="ghost" disabled={busy} onClick={cancel}>{result==="rejected"?<RotateCcw/>:<CircleSlash/>}{result==="rejected"?t("Вернуть в работу"):t("Отменить задачу")}</Button>}{menuActions}<Button className="w-full justify-start text-destructive" size="sm" variant="ghost" disabled={busy} onClick={remove}><Trash2 />{t("Удалить задачу")}</Button></ObjectActions></div>
     {overdue && <p className="inline-flex items-center gap-1 rounded-md bg-red-500/10 px-2 py-1 text-xs font-semibold text-destructive"><AlertTriangle className="size-3"/>{t("Просрочена")}</p>}{result==="rejected" && <p className="text-xs text-muted-foreground">{t("Отменена")}</p>}
     {task.description && <div className="max-h-14 overflow-hidden text-xs text-muted-foreground"><Markdown value={task.description} /></div>}
     <SubjectLabels subject={{kind:"tasks",id:task.id}}>{task.tags.map((name) => <TagChip key={name} name={name} color={tags.find((tag) => tag.name === name)?.color} />)}</SubjectLabels>
     {(timing || recurring || location) && <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">{timing && <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 ${timing.today ? "bg-primary/10 font-medium text-primary" : "bg-muted"}`}><Clock3 className="size-3" />{timing.text}</span>}{recurring && <span>{t("↻ Повторяется")}</span>}{location && <span className="truncate">{location}</span>}</div>}
     {children && <div className="border-t border-border/60 pt-3">{children}</div>}
-  </AnimatedArticle>;
+  </AnimatedArticle></SelectionItem>;
 }

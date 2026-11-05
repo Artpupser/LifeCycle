@@ -29,8 +29,8 @@ test("2.1 Contacts support editing, search, selective repeat import and mobile l
   await page.getByRole("button", { name: "Подтвердить импорт", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Контакт из файла", exact: true })).toBeVisible();
   await page.getByLabel("Файл контактов", { exact: true }).setInputFiles({ name: "contacts.vcf", mimeType: "text/vcard", buffer: Buffer.from(vcard.replace("Контакт из файла", "Обновлённый контакт")) });
-  await expect(page.getByLabel("Действие импорта 1", { exact: true })).toHaveValue("skip");
-  await page.getByLabel("Действие импорта 1", { exact: true }).selectOption("update");
+  await expect(page.getByRole("dialog",{name:"Предпросмотр импорта",exact:true}).getByText("Пропустить",{exact:true})).toBeVisible();
+  await page.getByLabel("Действие импорта 1",{exact:true}).click();await page.getByRole("menuitem",{name:"Обновить существующий контакт",exact:true}).click();
   await page.getByRole("button", { name: "Подтвердить импорт", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Обновлённый контакт", exact: true })).toBeVisible();
   await expect(page.locator("article")).toHaveCount(2);

@@ -34,8 +34,8 @@ pub(super) async fn seed(s: &AppState, db: &mut PgConnection, user: Uuid) -> Res
             color: domain::default_color(),
             icon: Some(icon.into()),
         };
-        sqlx::query("INSERT INTO app.labels(id,user_id,kind,function_key,name_key,encrypted_data,is_system) VALUES($1,$2,'functional',$3,$4,$5,true) ON CONFLICT DO NOTHING")
-        .bind(id).bind(user).bind(function).bind(key(s,user,"functional",name)).bind(encode(s,user,id,&data)?).execute(&mut *db).await?;
+        sqlx::query("INSERT INTO app.labels(id,user_id,kind,function_key,name_key,encrypted_data,is_system,repeatable) VALUES($1,$2,'functional',$3,$4,$5,true,$6) ON CONFLICT DO NOTHING")
+        .bind(id).bind(user).bind(function).bind(key(s,user,"functional",name)).bind(encode(s,user,id,&data)?).bind(function!="ai_access").execute(&mut *db).await?;
     }
     Ok(())
 }
@@ -189,11 +189,50 @@ async fn list(
 ) -> Result<Json<Vec<Assignment>>, ApiError> {
     let mut db = s.database.acquire().await?;
     let rows:Vec<Stored>=sqlx::query_as("SELECT id,aad_version,label_id,subject_kind,subject_id,encrypted_value,revision FROM app.label_values WHERE user_id=$1").bind(u.id).fetch_all(&mut *db).await?;
-    Ok(Json(
-        rows.into_iter()
-            .map(|row| decoded(&s, u.id, row))
-            .collect::<Result<_, _>>()?,
-    ))
+    let mut values = rows
+        .into_iter()
+        .map(|row| decoded(&s, u.id, row))
+        .collect::<Result<Vec<_>, _>>()?;
+    seed(&s, &mut db, u.id).await?;
+    let ai_label: Uuid = sqlx::query_scalar(
+        "SELECT id FROM app.labels WHERE user_id=$1 AND function_key='ai_access' AND is_system",
+    )
+    .bind(u.id)
+    .fetch_one(&mut *db)
+    .await?;
+    for kind in [
+        "notes",
+        "tasks",
+        "habits",
+        "workouts",
+        "exercises",
+        "contacts",
+        "countdowns",
+        "intimacy",
+        "boards",
+    ] {
+        let table = crate::modules::ai::access::object_table(kind)?;
+        let extra = match kind {
+            "tasks" => " AND source_kind='manual'",
+            "habits" => " AND source_kind='habit'",
+            _ => "",
+        };
+        let shared: Vec<(Uuid, i64)> = sqlx::query_as(&format!(
+            "SELECT id,ai_access_revision FROM app.{table} WHERE user_id=$1 AND ai_shared{extra}"
+        ))
+        .bind(u.id)
+        .fetch_all(&mut *db)
+        .await?;
+        values.extend(shared.into_iter().map(|(id, revision)| Assignment {
+            id,
+            label_id: ai_label,
+            subject_kind: kind.into(),
+            subject_id: id,
+            value: serde_json::json!({"enabled":true}),
+            revision,
+        }));
+    }
+    Ok(Json(values))
 }
 async fn subject(
     State(s): State<AppState>,
@@ -203,25 +242,43 @@ async fn subject(
     let mut db = s.database.acquire().await?;
     exists(&mut db, u.id, &kind, id).await?;
     let rows:Vec<Stored>=sqlx::query_as("SELECT id,aad_version,label_id,subject_kind,subject_id,encrypted_value,revision FROM app.label_values WHERE user_id=$1 AND subject_kind=$2 AND subject_id=$3").bind(u.id).bind(&kind).bind(id).fetch_all(&mut *db).await?;
-    let ai_access = if ["notes", "workouts", "exercises"].contains(&kind.as_str()) {
+    let ai_table = crate::modules::ai::access::object_table(&kind)?;
+    let ai_access: Option<crate::modules::ai::access::Access> = {
         Some(
             sqlx::query_as(&format!(
-                "SELECT ai_shared,ai_access_revision FROM app.{kind} WHERE user_id=$1 AND id=$2"
+                "SELECT ai_shared,ai_access_revision FROM app.{ai_table} WHERE user_id=$1 AND id=$2"
             ))
             .bind(u.id)
             .bind(id)
             .fetch_one(&mut *db)
             .await?,
         )
-    } else {
-        None
     };
+    let mut values = rows
+        .into_iter()
+        .map(|row| decoded(&s, u.id, row))
+        .collect::<Result<Vec<_>, _>>()?;
+    if let Some(access) = ai_access.as_ref().filter(|access| access.ai_shared) {
+        let label_id: Option<Uuid> = sqlx::query_scalar(
+            "SELECT id FROM app.labels WHERE user_id=$1 AND function_key='ai_access' AND is_system",
+        )
+        .bind(u.id)
+        .fetch_optional(&mut *db)
+        .await?;
+        if let Some(label_id) = label_id {
+            values.push(Assignment {
+                id,
+                label_id,
+                subject_kind: kind.clone(),
+                subject_id: id,
+                value: serde_json::json!({"enabled":true}),
+                revision: access.ai_access_revision,
+            });
+        }
+    }
     Ok(Json(Subject {
         tags: tags::read(&s, &mut db, u.id, &kind, id).await?,
-        values: rows
-            .into_iter()
-            .map(|row| decoded(&s, u.id, row))
-            .collect::<Result<_, _>>()?,
+        values,
         ai_access,
     }))
 }
@@ -259,6 +316,40 @@ async fn mutate(
     v: Change,
     append: bool,
 ) -> Result<(), ApiError> {
+    let function: Option<String> =
+        sqlx::query_scalar("SELECT function_key FROM app.labels WHERE user_id=$1 AND id=$2")
+            .bind(user)
+            .bind(v.label_id)
+            .fetch_optional(&s.database)
+            .await?
+            .flatten();
+    if function.as_deref() == Some("ai_access") {
+        if append {
+            return Err(ApiError::validation("AI access is a single label; use PUT"));
+        }
+        let enabled = match v.value {
+            None => false,
+            Some(value) if value == serde_json::json!({"enabled":true}) => true,
+            _ => return Err(ApiError::validation("Expected AI access label")),
+        };
+        let mut db = s.database.acquire().await?;
+        exists(&mut db, user, kind, id).await?;
+        drop(db);
+        let _ = crate::modules::ai::access::change(
+            s.clone(),
+            user,
+            id,
+            crate::modules::ai::access::Input {
+                ai_shared: enabled,
+                revision: v
+                    .revision
+                    .ok_or_else(|| ApiError::validation("AI access revision is required"))?,
+            },
+            kind,
+        )
+        .await?;
+        return Ok(());
+    }
     let mut tx = s.database.begin().await?;
     tasks::lock_tasks(&mut tx, user).await?;
     lock(&mut tx, user).await?;
@@ -283,6 +374,18 @@ async fn mutate(
         return Err(ApiError::validation(
             "Use the capability's registered adapter",
         ));
+    }
+    let repeatable: bool =
+        sqlx::query_scalar("SELECT repeatable FROM app.labels WHERE user_id=$1 AND id=$2")
+            .bind(user)
+            .bind(v.label_id)
+            .fetch_one(&mut *tx)
+            .await?;
+    if append && !repeatable {
+        let present:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.label_values WHERE user_id=$1 AND label_id=$2 AND subject_kind=$3 AND subject_id=$4)").bind(user).bind(v.label_id).bind(kind).bind(id).fetch_one(&mut *tx).await?;
+        if present {
+            return Err(domain::conflict("Label can only be assigned once"));
+        }
     }
     let rows: Vec<(Uuid, i64)> = if append {
         vec![]

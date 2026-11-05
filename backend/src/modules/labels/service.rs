@@ -39,6 +39,7 @@ pub(super) fn decode(s: &AppState, user: Uuid, row: Row) -> Result<Label, ApiErr
         icon: data.icon,
         function_key: row.function_key,
         is_system: row.is_system,
+        repeatable: row.repeatable,
         revision: row.revision,
     })
 }
@@ -90,7 +91,7 @@ pub(super) async fn all(
     user: Uuid,
 ) -> Result<Vec<Label>, ApiError> {
     let rows: Vec<Row> = sqlx::query_as(
-        "SELECT id,kind,function_key,is_system,encrypted_data,revision FROM app.labels WHERE user_id=$1",
+        "SELECT id,kind,function_key,is_system,repeatable,encrypted_data,revision FROM app.labels WHERE user_id=$1",
     )
     .bind(user)
     .fetch_all(db)

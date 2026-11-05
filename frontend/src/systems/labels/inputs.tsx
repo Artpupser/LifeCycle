@@ -1,3 +1,4 @@
+import {toggleKeys} from "@/systems/selection/state";
 import {AppIcon} from "@/systems/icons/app-icon";
 import { useLabelCatalog } from "./context";
 import { t, useLanguage } from "@/systems/i18n/locale";
@@ -69,6 +70,7 @@ export function TagSelection({ value, change, tags = [], id, label, required = f
   const catalog=useLabelCatalog();
   const options=[...tags,...(registry.resource.status==="ready"?registry.resource.data:catalog).filter(item=>(item.kind??"tag")==="tag")];
   const [draft,setDraft]=useState("");
+  const [repeatable,setRepeatable]=useState(true);
   const [creationKind,setCreationKind]=useState<"tag"|"functional">("tag");
   const action=useAction();
   const names=normalizeLabels([...options.map(tag=>tag.name),...value]);
@@ -82,18 +84,19 @@ export function TagSelection({ value, change, tags = [], id, label, required = f
     const existing=creationKind==="tag"?options.find(option=>key(option.name)===key(name)):undefined;
     if(existing){change(normalizeLabels([...value,existing.name]));setDraft("");return;}
     await action.run(async()=>{
-      const created=await api<Label>("/labels",{method:"POST",body:{name,kind:creationKind,icon:creationKind==="functional"?"tabler:coin":"tabler:tags",...(creationKind==="functional"?{function_key:"cost"}:{})}});
+      const created=await api<Label>("/labels",{method:"POST",body:{name,kind:creationKind,icon:creationKind==="functional"?"tabler:coin":"tabler:tags",...(creationKind==="functional"?{function_key:"cost",repeatable}:{})}});
       if(creationKind==="functional")functionalCreated?.(created);else change(normalizeLabels([...value,created.name]));
       setDraft("");
     },registry.retry);
   }
   return <div className="space-y-3">
     <div className="flex flex-wrap items-center gap-2">{functionalCreated&&<Select aria-label={t("Вид метки")} className="w-auto" value={creationKind} disabled={unavailable} onChange={event=>setCreationKind(event.target.value as "tag"|"functional")}><option value="tag">{t("Тег")}</option><option value="functional">{t("Функциональная метка")}</option></Select>}<Input id={inputId} aria-label={label??(!id?t("Найти или создать метку"):undefined)} placeholder={t("Найти или создать метку")} className="min-w-40 flex-1" value={draft} disabled={disabled} aria-disabled={action.busy} maxLength={128} aria-invalid={!!(invalid||nameError)} aria-describedby={invalid||nameError?`${inputId}-error`:undefined} ref={element=>element?.setCustomValidity(invalid||nameError||(action.busy?t("Сохранение…"):""))} onChange={event=>{if(!action.busy)setDraft(event.target.value);}} onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();void add();}}}/><Button disabled={unavailable||!name||!!nameError||(creationKind==="tag"&&value.length>=30)} onClick={()=>void add()}>{t("Добавить метку")}</Button></div>
+    {functionalCreated&&creationKind==="functional"&&<Cardinality value={repeatable} change={setRepeatable} disabled={unavailable}/> }
     <div className="flex max-h-52 flex-wrap gap-3 overflow-y-auto">{names.filter(item=>!name||key(item).includes(key(name))||value.some(selected=>key(selected)===key(item))).map(item=>{
       const same=(candidate:string)=>key(candidate)===key(item);
       const selected=value.some(same);
       const option=options.find(option=>same(option.name));
-      return <label key={key(item)} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selected} disabled={unavailable||(!selected&&value.length>=30)} onChange={event=>change(event.target.checked?normalizeLabels([...value,item]):value.filter(candidate=>!same(candidate)))}/><TagChip name={item} color={option?.color} icon={option?.icon}/></label>;
+      return <label key={key(item)} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selected} disabled={unavailable||(!selected&&value.length>=30)} onChange={event=>change(toggleKeys(value,item,event.target.checked,key))}/><TagChip name={item} color={option?.color} icon={option?.icon}/></label>;
     })}</div>
     {registry.resource.status==="loading"&&!names.length&&<LoadingState/>}
     {registry.resource.status==="error"&&<ErrorState message={registry.resource.message} retry={registry.retry}/>}
@@ -117,3 +120,5 @@ export function LabelManager({ labels, busy, rename, remove, label = t("Метк
     </div>
   </div>;
 }
+
+export function Cardinality({value,change,disabled=false}:{value:boolean;change:(value:boolean)=>void;disabled?:boolean}){useLanguage();const id=useId();return <FormField id={id} label={t("Кратность метки")}><Select id={id} value={value?"multiple":"single"} disabled={disabled} onChange={event=>change(event.target.value==="multiple")}><option value="single">{t("Единоразовая")}</option><option value="multiple">{t("Многоразовая")}</option></Select></FormField>;}

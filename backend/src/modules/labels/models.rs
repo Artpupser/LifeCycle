@@ -19,6 +19,7 @@ pub(super) struct Label {
     pub(super) icon: Option<String>,
     pub(super) function_key: Option<String>,
     pub(super) is_system: bool,
+    pub(super) repeatable: bool,
     pub(super) revision: i64,
 }
 
@@ -28,6 +29,7 @@ pub(super) struct Row {
     pub(super) kind: String,
     pub(super) function_key: Option<String>,
     pub(super) is_system: bool,
+    pub(super) repeatable: bool,
     pub(super) encrypted_data: Vec<u8>,
     pub(super) revision: i64,
 }
@@ -48,6 +50,7 @@ pub(super) struct Input {
     pub(super) revision: Option<i64>,
     #[serde(default)]
     pub(super) function_key: Option<String>,
+    pub(super) repeatable: Option<bool>,
     #[serde(default)]
     pub(super) icon: Option<String>,
 }
