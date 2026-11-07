@@ -1,11 +1,28 @@
-import {contactName,type Contact} from "./types";
-import {isParentKind,isCoupleKind,type ContactRelationship} from "./relationships";
+import {type Contact} from "./types";
+import {sortRelationshipPeople,isParentKind,isCoupleKind,type KinshipProjection,type RelationshipSort,type ContactRelationship} from "./relationships";
 
 export const treeNodeSize={width:236,height:152};
 export type TreeNode={id:string;x:number;y:number;generation:number};
+/** Ports stay on card boundaries, so same-generation links remain visible. */
+export function contactTreeEdgePath(from:TreeNode,to:TreeNode,parent:boolean){
+ const {width,height}=treeNodeSize;
+ const fromX=from.x+width/2,toX=to.x+width/2;
+ if(to.y>=from.y+height+24||from.y>=to.y+height+24){
+  const down=to.y>from.y,y1=from.y+(down?height:0),y2=to.y+(down?0:height),middle=(y1+y2)/2;
+  return `M${fromX},${y1} C${fromX},${middle} ${toX},${middle} ${toX},${y2}`;
+ }
+ const right=to.x>from.x,x1=from.x+(right?width:0),x2=to.x+(right?0:width),y1=from.y+height/2,y2=to.y+height/2;
+ // Adjacent cards use the clear horizontal gap; longer links pass above the row.
+ if(Math.abs(to.x-from.x)<=width+64&&Math.abs(to.x-from.x)>=width){
+  const middle=(x1+x2)/2;
+  return `M${x1},${y1} C${middle},${y1} ${middle},${y2} ${x2},${y2}`;
+ }
+ const lane=Math.max(12,Math.min(from.y,to.y)-(parent?32:24));
+ return `M${fromX},${from.y} V${lane} H${toX} V${to.y}`;
+}
 /** Automatic positions are derived from contacts and parentage; no independent people/layout store. */
-export function layoutContactTree(contacts:Contact[],relationships:ContactRelationship[]){
- const ordered=[...contacts].sort((a,b)=>contactName(a.data).localeCompare(contactName(b.data))||a.id.localeCompare(b.id));
+export function layoutContactTree(contacts:Contact[],relationships:ContactRelationship[],sort:RelationshipSort="name",projection?:KinshipProjection){
+ const ordered=sortRelationshipPeople(contacts,relationships,sort,projection);
  const order=new Map(ordered.map((contact,index)=>[contact.id,index]));
  const ids=new Set(ordered.map(contact=>contact.id));
  const edges=relationships.filter(edge=>ids.has(edge.source_id)&&ids.has(edge.target_id)&&edge.source_id!==edge.target_id);
@@ -25,12 +42,16 @@ export function layoutContactTree(contacts:Contact[],relationships:ContactRelati
  // A partner/sibling with no recorded parents can share the known generation.
  // Never align an ancestor with a descendant, even if stale data contains that link.
  function reaches(from:string,to:string){const seen=new Set<string>(),pending=[from];while(pending.length){const id=pending.pop()!;if(id===to)return true;if(seen.has(id))continue;seen.add(id);pending.push(...children.get(id)??[]);}return false;}
- for(const edge of edges)if(isCoupleKind(edge.kind)||edge.kind==="sibling"){
-  const first=generation.get(edge.source_id)!,second=generation.get(edge.target_id)!;
-  const lower=first<second?edge.source_id:edge.target_id,higher=first<second?edge.target_id:edge.source_id;
-  if(first!==second&&!hasParent.has(lower)&&!reaches(lower,higher))generation.set(lower,Math.max(first,second));
+ for(let pass=0;pass<ordered.length;pass++){
+  let changed=false;
+  for(const edge of edges)if(isCoupleKind(edge.kind)||edge.kind==="sibling"){
+   const first=generation.get(edge.source_id)!,second=generation.get(edge.target_id)!;
+   const lower=first<second?edge.source_id:edge.target_id,higher=first<second?edge.target_id:edge.source_id;
+   if(first!==second&&!hasParent.has(lower)&&!reaches(lower,higher)){generation.set(lower,Math.max(first,second));changed=true;}
+  }
+  for(const id of queue)for(const child of children.get(id)??[]){const next=generation.get(id)!+1;if(next>generation.get(child)!){generation.set(child,next);changed=true;}}
+  if(!changed)break;
  }
- for(const id of queue)for(const child of children.get(id)??[])generation.set(child,Math.max(generation.get(child)!,generation.get(id)!+1));
  const visited=new Set<string>();const nodes:TreeNode[]=[];
  const preferredWidth=Math.max(960,Math.min(2400,Math.ceil(Math.sqrt(contacts.length))*268));
  let offsetX=32,offsetY=48,shelfHeight=0,width=480,height=280;

@@ -48,7 +48,7 @@ pub(super) async fn start(
     let mut tx = s.database.begin().await?;
     tasks::lock_tasks(&mut tx, u.id).await?;
     if let Some(task) = v.task_id {
-        tasks::get_active(&s, u.id, task).await?;
+        crate::modules::pomodoro::ensure_focus_task(&s, u.id, task).await?;
     }
     crate::modules::pomodoro::programs::lock(&mut tx, u.id).await?;
     crate::modules::pomodoro::programs::sync(&mut tx, u.id).await?;

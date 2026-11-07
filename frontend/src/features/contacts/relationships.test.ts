@@ -1,6 +1,6 @@
 import {expect,it} from "vitest";
-import {familyAnalysis,kinshipProjection,relativeRole,type ContactRelationship} from "./relationships";
-import {layoutContactTree} from "./tree-layout";
+import {sortRelationshipPeople,familyAnalysis,kinshipProjection,relativeRole,type ContactRelationship} from "./relationships";
+import {contactTreeEdgePath,layoutContactTree,treeNodeSize} from "./tree-layout";
 import {emptyContact,profileContact,type Contact} from "./types";
 import {emptyOrigin,emptyFirsts,type Profile} from "@/features/profile/types";
 const relation=(id:string,source_id:string,target_id:string,kind:ContactRelationship["kind"]="parent"):ContactRelationship=>({id,source_id,target_id,kind,category:kind==="friend"?"social":"family",revision:0});
@@ -46,6 +46,34 @@ it("aligns a partner with no recorded parents and keeps their shared child below
  expect(byId.get("a")!.y).toBe(byId.get("b")!.y);expect(byId.get("child")!.y).toBeGreaterThan(byId.get("b")!.y);
 });
 
+it("settles partner and sibling generations independently of relationship order",()=>{
+ const people=["grandparent","parent","a","b","c","child"].map(person);
+ const edges=[relation("bc","b","c","sibling"),relation("ab","a","b","partner"),relation("gp","grandparent","parent"),relation("pa","parent","a"),relation("cc","c","child")];
+ const result=layoutContactTree(people,edges);
+ expect(layoutContactTree(people,[...edges].reverse()).nodes).toEqual(result.nodes);
+ const byId=new Map(result.nodes.map(node=>[node.id,node]));
+ expect(byId.get("a")!.y).toBe(byId.get("c")!.y);
+ expect(byId.get("child")!.y).toBeGreaterThan(byId.get("c")!.y);
+ for(const node of result.nodes){
+  expect(node.x+treeNodeSize.width).toBeLessThan(result.width);
+  expect(node.y+treeNodeSize.height).toBeLessThan(result.height);
+  for(const other of result.nodes.filter(other=>other.id!==node.id)){
+   expect(node.x+treeNodeSize.width<=other.x||other.x+treeNodeSize.width<=node.x||node.y+treeNodeSize.height<=other.y||other.y+treeNodeSize.height<=node.y).toBe(true);
+  }
+ }
+});
+
+it("draws adjacent links in the gap and routes longer same-row links above intervening cards",()=>{
+ const from={id:"a",x:32,y:48,generation:0};
+ const adjacent={...from,id:"b",x:300};
+ const far={...from,id:"c",x:568};
+ const child={...from,id:"child",y:264,generation:1};
+ expect(contactTreeEdgePath(from,adjacent,false)).toBe("M268,124 C284,124 284,124 300,124");
+ expect(contactTreeEdgePath(adjacent,from,false)).toBe("M300,124 C284,124 284,124 268,124");
+ expect(contactTreeEdgePath(from,far,false)).toBe("M150,48 V24 H686 V48");
+ expect(contactTreeEdgePath(from,child,true)).toBe("M150,200 C150,232 150,232 150,264");
+});
+
 it("computes arbitrary cousin order and generation offsets from common ancestors",()=>{
  for(const depth of [2,3,4,5,6,12]){
   const ids=["root"];const edges:ContactRelationship[]=[];
@@ -81,4 +109,26 @@ it("preserves multiple roles and terminates on missing people and stale ancestry
  const edges=[relation("1","g","p"),relation("2","g","q"),relation("3","p","a"),relation("4","q","b"),relation("5","a","b","spouse"),relation("6","ghost","a")];
  const result=kinshipProjection("a",people,edges);expect(result.roles.get("b")!.map(role=>role.label)).toEqual(["Муж","Двоюродный брат"]);expect(result.roles.has("ghost")).toBe(false);
  const cyclic=kinshipProjection("p",people,[...edges,relation("cycle","a","g")]);expect(cyclic.roles.has("p")).toBe(false);expect(cyclic.ancestors.has("p")).toBe(false);
+});
+
+it("resolves wives' sisters and their husbands, husbands' sisters and brothers' wives reciprocally",()=>{
+ const people=["a","wife","sister","husband","brother","brother-wife"].map(person);
+ const genders=["male","female","female","male","male","female"] as const;
+ people.forEach((p,i)=>p.data.gender=genders[i]);
+ const edges=[relation("a-wife","a","wife","spouse"),relation("sisters","wife","sister","sibling"),relation("sister-husband","sister","husband","spouse"),relation("brothers","a","brother","sibling"),relation("brother-wife","brother","brother-wife","spouse")];
+ const names=(id:string,relative:string)=>kinshipProjection(id,people,edges).roles.get(relative)?.map(role=>role.label);
+ expect(names("a","sister")).toContain("Свояченица");expect(names("a","husband")).toContain("Свояк");expect(names("husband","a")).toContain("Свояк");
+ expect(names("wife","brother-wife")).toContain("Ятровка (ятровь)");expect(names("brother-wife","wife")).toContain("Ятровка (ятровь)");
+ expect(names("husband","wife")).toContain("Свояченица");
+ const sister=person("husband-sister");sister.data.gender="female";
+ expect(kinshipProjection("wife",[...people,sister],[...edges,relation("siblings","a",sister.id,"sibling")]).roles.get(sister.id)?.map(role=>role.label)).toContain("Золовка");
+});
+it("shares stable relationship sorting with the layout while keeping generations intact",()=>{
+ const people=["a","b","c"].map(person);people[0].data.birth_date="2000-01-01";people[1].data.birth_date="1980-01-01";
+ const edges=[relation("1","b","a"),relation("2","a","c","friend")];
+ expect(sortRelationshipPeople(people,edges,"birth").map(person=>person.id)).toEqual(["b","a","c"]);
+ expect(sortRelationshipPeople(people,edges,"connections").map(person=>person.id)).toEqual(["a","b","c"]);
+ const projection=kinshipProjection("b",people,edges);
+ expect(sortRelationshipPeople(people.filter(p=>p.id!=="b"),edges,"kinship",projection).map(p=>p.id)).toEqual(["a","c"]);
+ const layout=layoutContactTree(people,edges,"birth",projection);expect(layout.nodes.find(n=>n.id==="a")!.y).toBeGreaterThan(layout.nodes.find(n=>n.id==="b")!.y);
 });

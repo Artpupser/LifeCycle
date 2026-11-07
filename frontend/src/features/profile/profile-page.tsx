@@ -1,3 +1,4 @@
+import {genders,genderName,genderIcon,normalizeGender} from "@/systems/icons/gender";
 import {ChoiceField} from "@/components/ui/choice-picker";
 import {ZodiacBadge} from "@/systems/icons/zodiac-badge";
 import {SaveButton,SaveForm} from "@/components/ui/save";
@@ -72,7 +73,7 @@ function ProfileEditor({ initial }: { initial: Profile }) {
       <Section title={t("Основное")} description={t("Все поля анкеты необязательны. Заполняйте только то, что хотите сохранить в своём профиле.")}>
         {textField("nickname", t("Псевдоним"), 80)}{textField("name", t("Имя"), 80)}
         <FormField id="profile-email" label={t("Электронная почта")} hint={t("Адрес, который используется для входа.")}><Input id="profile-email" type="email" value={user?.email ?? ""} readOnly aria-describedby="profile-email-hint" /></FormField>
-        <FormField id="gender" label={t("Пол")}><ChoiceField id="gender" value={draft.gender} change={(next) => update("gender", next as Profile["gender"])}><option value="unspecified">{t("Не указан")}</option><option value="female">{t("Женский")}</option><option value="male">{t("Мужской")}</option><option value="other">{t("Другое")}</option></ChoiceField></FormField>
+        <FormField id="gender" label={t("Пол")}><ChoiceField id="gender" presentation="radio" value={normalizeGender(draft.gender)} options={genders.map(value=>({value,label:genderName(value),icon:genderIcon(value)}))} change={next=>update("gender",next as Profile["gender"])}/></FormField>
         {textField("residence_country", t("Страна проживания"))}
       </Section>
       <Section title={t("Рождение и происхождение")} description={t("Исторические сведения хранятся отдельно от текущего имени, пола и страны проживания. Их можно исправить или очистить явно.")}>

@@ -69,3 +69,16 @@ fn validates_custom_palette_colors_and_contrast() {
     settings.custom_theme.as_mut().unwrap().foreground = "url(https://example.test)".into();
     assert!(settings.validate().is_err());
 }
+
+#[test]
+fn collection_visibility_uses_catalog_and_preserves_legacy_settings() {
+    let mut settings: Settings = serde_json::from_str(r#"{"timezone":"UTC"}"#).unwrap();
+    assert!(settings.hidden_collections.is_empty());
+    settings.hidden_collections = vec!["toy".into(), "lubricant".into()];
+    assert!(settings.validate().is_ok());
+    let saved = serde_json::to_string(&settings).unwrap();
+    let restored: Settings = serde_json::from_str(&saved).unwrap();
+    assert_eq!(settings.hidden_collections, restored.hidden_collections);
+    settings.hidden_collections.push("unknown".into());
+    assert!(settings.validate().is_err());
+}

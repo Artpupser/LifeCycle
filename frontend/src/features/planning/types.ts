@@ -32,3 +32,11 @@ export function taskInput(task: TaskInput): TaskInput {
 
 /** Shared normalization for tags and categories across the frontend. */
 export { normalizeLabels } from "@/systems/labels/values";
+
+export function focusTasks(tasks:Task[],occurrences:TaskOccurrence[]):Task[] {
+ const today=new Map(occurrences.map(item=>[item.task.id,item.status]));
+ return tasks.filter(task=>{
+  const status=today.get(task.id)??(isRecurring(task)?null:task.status);
+  return status==="todo"||status==="in_progress";
+ });
+}

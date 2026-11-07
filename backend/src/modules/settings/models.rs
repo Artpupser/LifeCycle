@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default, deny_unknown_fields)]
 pub struct Settings {
+    pub hidden_collections: Vec<String>,
     pub timezone: String,
     pub time_format: String,
     pub language: String,
@@ -88,6 +89,7 @@ impl ThemeColors {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            hidden_collections: Vec::new(),
             timezone: "UTC".to_owned(),
             time_format: "24h".to_owned(),
             language: "ru".to_owned(),
@@ -111,6 +113,9 @@ impl Default for Settings {
 
 impl Settings {
     pub fn validate(&self) -> Result<(), ApiError> {
+        if self.hidden_collections.len() > crate::modules::labels::collection_catalog().len() || self.hidden_collections.iter().any(|kind| !crate::modules::labels::collection_catalog().iter().any(|item| item.id == *kind)) {
+            return Err(ApiError::validation("Unsupported hidden collection"));
+        }
         if self.timezone.parse::<chrono_tz::Tz>().is_err() {
             return Err(ApiError::validation(
                 "Timezone must be a supported IANA timezone",

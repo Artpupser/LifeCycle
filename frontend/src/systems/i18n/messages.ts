@@ -1,5 +1,23 @@
 /** English interface catalog. Keys are Russian source messages; user content is never translated. */
 export const english: Record<string, string> = {
+  "О расчёте": "Calculation details",
+  "Низкое либидо": "Low libido",
+  "Среднее либидо": "Moderate libido",
+  "Высокое либидо": "High libido",
+  "Ятровка (ятровь)": "Sister-in-law (husband’s brother’s wife)",
+  "По имени": "By name",
+  "По дате рождения": "By birth date",
+  "По числу связей": "By number of connections",
+  "По близости родства": "By kinship distance",
+  "По виду родства": "By kinship type",
+  "Сортировка связей": "Sort relationships",
+  "Выйти из полного экрана": "Exit full screen",
+  "Показать приватные коллекции": "Show private collections",
+  "Скрыть приватные коллекции": "Hide private collections",
+  "Скрытые коллекции": "Hidden collections",
+  "Скрыть коллекцию": "Hide collection",
+  "Скрытие действует на этой странице. Данные и выбор в журнале сохраняются.": "Hiding applies to this page. Journal data and choices are preserved.",
+
   "Выбор": "Choice",
   "Выберите вариант": "Choose an option",
   "Выберите вариант.": "Choose an option.",

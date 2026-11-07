@@ -1,5 +1,5 @@
 import {expect,it} from "vitest";
-import {collectionCatalog,collectionDefinition,collectionLabel,collectionOptions,isCollectionKind} from "./collection-catalog";
+import {visibleCollectionCatalog,collectionCatalog,collectionDefinition,collectionLabel,collectionOptions,isCollectionKind} from "./collection-catalog";
 import {resolveIcon} from "@/systems/icons/catalog";
 import type {Label} from "./types";
 
@@ -27,4 +27,12 @@ it("locks lubricant and contraception catalogs while retaining historical privat
  expect(collectionOptions("lubricant",[old],[water.name])).toHaveLength(1);
  expect(collectionOptions("lubricant",[old],[water.name])[0].value).toBe(water.name);
  expect(isCollectionKind("feelings_after")).toBe(false);
+});
+
+it("hides private collection definitions without changing journal options or stored references",()=>{
+ const hidden=collectionCatalog.filter(item=>item.sensitive).map(item=>item.id);
+ expect(hidden).toEqual(expect.arrayContaining(["sex_type","toy","lubricant","contraception"]));
+ expect(visibleCollectionCatalog(hidden).map(item=>item.id)).toEqual(["emotion"]);
+ const definition=collectionDefinition("lubricant"),entry=definition.entries[0];
+ expect(collectionOptions("lubricant",[{id:"water",kind:"lubricant",name:entry.name,value:entry.value,revision:1,color:""}])).toHaveLength(1);
 });

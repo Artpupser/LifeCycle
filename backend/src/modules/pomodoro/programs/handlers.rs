@@ -110,7 +110,7 @@ pub(super) async fn start(
     sync(&mut tx, u.id).await?;
     if sqlx::query_scalar::<_,bool>("SELECT EXISTS(SELECT 1 FROM app.pomodoro_sessions WHERE user_id=$1 AND status IN ('running','paused'))").bind(u.id).fetch_one(&mut *tx).await?{return Err(domain::conflict("Finish or cancel the active timer first"));}
     if let Some(task) = v.task_id {
-        tasks::get_active(&s, u.id, task).await?;
+        crate::modules::pomodoro::ensure_focus_task(&s, u.id, task).await?;
     }
     let config: Config =
         sqlx::query_as("SELECT * FROM app.pomodoro_configs WHERE id=$1 AND user_id=$2 FOR SHARE")

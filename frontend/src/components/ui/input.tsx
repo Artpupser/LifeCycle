@@ -1,5 +1,5 @@
 import "./controls.css";
-import { useContext, type ComponentProps } from "react";
+import { useContext, type ComponentProps, type CSSProperties } from "react";
 import {FormFieldContext} from "../form-field-context";
 import { DateTimeInput } from "./date-time-input";
 import { cn } from "@/lib/utils";
@@ -7,15 +7,14 @@ import { AppIcon } from "@/systems/icons/app-icon";
 import { numberLabel, t, useLanguage } from "@/systems/i18n/locale";
 
 /** The same optional 0–10 scale serves editable fields and saved measurements. */
-export function RatingScale({id,label,value,change}:{id:string;label:string;value:number|null;change?:(value:number|null)=>void}) {
+export function RatingScale({id,label,value,change,kind="satisfaction"}:{id:string;label:string;value:number|null;change?:(value:number|null)=>void;kind?:"satisfaction"|"libido"}) {
   useLanguage();
-  const anchors=[{value:0,icon:"tabler:mood-sad",label:t("Не удовлетворён")},{value:5,icon:"tabler:mood-neutral",label:t("Нейтрально")},{value:10,icon:"tabler:mood-happy",label:t("Удовлетворён")}];
-  const description=value===null?t("Не указано"):anchors[value<5?0:value===5?1:2].label;
-  return <div className="min-w-0 space-y-3 rounded-xl border border-border p-4">
-    <div className="flex items-start justify-between gap-2"><label id={`${id}-label`} htmlFor={id} className="text-sm font-medium">{label}</label><output htmlFor={id} className="shrink-0 text-sm text-muted-foreground">{value===null?t("Не указано"):`${numberLabel(value)} / ${numberLabel(10)}`}</output></div>
-    {change?<Input id={id} aria-labelledby={`${id}-label`} aria-valuetext={value===null?description:`${numberLabel(value)} — ${description}`} type="range" min={0} max={10} step={1} value={value??5} onChange={event=>change(event.target.valueAsNumber)} className="h-6 w-full cursor-pointer accent-primary disabled:cursor-not-allowed"/>:<meter id={id} aria-labelledby={`${id}-label`} min={0} max={10} value={value??0} aria-valuetext={description} className="h-4 w-full accent-primary"/>}
-    <div className="flex justify-between gap-2">{anchors.map(anchor=>change?<button key={anchor.value} type="button" aria-label={`${numberLabel(anchor.value)} — ${anchor.label}`} title={anchor.label} aria-pressed={value===anchor.value} onClick={()=>change(anchor.value)} className="flex min-h-11 flex-col items-center gap-1 rounded-lg px-2 text-xs text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"><AppIcon icon={anchor.icon}/>{numberLabel(anchor.value)}</button>:<span key={anchor.value} title={anchor.label} className="flex flex-col items-center gap-1 text-xs text-muted-foreground"><AppIcon icon={anchor.icon}/>{numberLabel(anchor.value)}</span>)}</div>
-    {change&&value!==null&&<button type="button" className="min-h-9 text-xs text-primary underline" onClick={()=>change(null)}>{t("Очистить")}</button>}
+  const anchors=[{value:0,icon:"tabler:mood-sad",label:kind==="libido"?t("Низкое либидо"):t("Не удовлетворён")},{value:5,icon:"tabler:mood-neutral",label:kind==="libido"?t("Среднее либидо"):t("Нейтрально")},{value:10,icon:"tabler:mood-happy",label:kind==="libido"?t("Высокое либидо"):t("Удовлетворён")}];
+  const anchor=anchors[value===null||value===5?1:value<5?0:2];
+  const description=value===null?t("Не указано"):anchor.label;
+  return <div className={cn("min-w-0 rounded-xl bg-muted/30",change?"space-y-1 border border-border px-3 py-2":"space-y-2 px-3 py-2")}>
+    <div className="flex items-center justify-between gap-2"><label id={`${id}-label`} htmlFor={id} className="min-w-0 text-xs font-medium">{label}</label><div className="flex shrink-0 items-center gap-1.5"><AppIcon icon={anchor.icon} className={cn("size-4",value===null?"text-muted-foreground":"text-primary")}/><output htmlFor={id} className="text-sm font-semibold tabular-nums" title={description}>{value===null?"—":<>{numberLabel(value)}<span className="text-xs font-normal text-muted-foreground"> / {numberLabel(10)}</span></>}</output>{change&&value!==null&&<button type="button" aria-label={`${t("Очистить")}: ${label}`} onClick={()=>change(null)} className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"><AppIcon icon="tabler:x" className="size-3.5"/></button>}</div></div>
+    {change?<><Input id={id} aria-labelledby={`${id}-label`} aria-describedby={`${id}-anchors`} aria-valuetext={value===null?description:`${numberLabel(value)} — ${description}`} type="range" min={0} max={10} step={1} value={value??5} onChange={event=>change(event.target.valueAsNumber)} style={{"--range-progress":`${(value??5)*10}%`} as CSSProperties} className="lc-rating-range"/><div id={`${id}-anchors`} className="flex justify-between gap-2">{anchors.map(item=><button key={item.value} type="button" aria-label={`${numberLabel(item.value)} — ${item.label}`} title={item.label} aria-pressed={value===item.value} onClick={()=>change(item.value)} className="flex min-h-8 items-center gap-1 rounded-md px-1 text-xs text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"><AppIcon icon={item.icon} className="size-3.5"/>{numberLabel(item.value)}</button>)}</div></>:value!==null?<div className="h-1 overflow-hidden rounded-full bg-border" role="meter" id={id} aria-labelledby={`${id}-label`} aria-valuemin={0} aria-valuemax={10} aria-valuenow={value} aria-valuetext={description}><div className="h-full rounded-full bg-primary" style={{width:`${value*10}%`}}/></div>:<p id={id} className="text-xs text-muted-foreground">{description}</p>}
   </div>;
 }
 

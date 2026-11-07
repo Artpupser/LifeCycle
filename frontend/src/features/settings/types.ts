@@ -1,6 +1,7 @@
 import type { ThemeColors, ThemeName } from "@/systems/themes/themes";
 import type { Language } from "@/systems/i18n/locale";
 export type Settings = {
+  hidden_collections?: string[];
   timezone: string;
   time_format: "12h" | "24h";
   language: Language;

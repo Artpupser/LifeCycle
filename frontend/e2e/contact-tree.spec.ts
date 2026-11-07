@@ -160,3 +160,89 @@ test("tree actions and drag share relationship editing, gender and generation pr
  await page.getByRole("button",{name:"Поколения до и после",exact:true}).click();await expect(page.getByRole("button",{name:"Поколения до и после",exact:true})).toHaveAttribute("aria-pressed","false");
  expect(errors).toEqual([]);
 });
+
+test("tree expands through the shared dialog and sorts relationships without losing selection",async({page})=>{
+ const {errors}=await setup(page);await page.goto(`/tree?contact=${ids.child}`);
+ await page.getByRole("button",{name:"На весь экран",exact:true}).click();
+ const screen=page.getByRole("dialog",{name:"Древо",exact:true});await expect(screen).toBeVisible();
+ const bounds=await screen.boundingBox();expect(bounds!.width).toBe(1280);expect(bounds!.height).toBe(900);
+ const canvas=screen.getByRole("region",{name:"Карта связей",exact:true});
+ await canvas.getByRole("button",{name:"Действия",exact:true}).first().click();
+ await page.getByRole("menuitem",{name:"Сортировка связей",exact:true}).click();
+ await page.getByRole("menuitem",{name:"По дате рождения",exact:true}).click();
+ await expect(screen.getByRole("region",{name:"Выбранный контакт",exact:true})).toContainText("По дате рождения");
+ await expect(screen.locator(`[data-tree-contact="${ids.child}"]`)).toHaveAttribute("aria-pressed","true");
+ await page.keyboard.press("Escape");await expect(screen).toHaveCount(0);
+ await expect(page.locator(`[data-tree-contact="${ids.child}"]`)).toHaveAttribute("aria-pressed","true");
+ expect(errors).toEqual([]);
+});
+
+test("tree layout contains long names and keeps action menus separate across sizes and zoom levels",async({page},testInfo)=>{
+ const {state,errors}=await setup(page);
+ const longName="АннаМария".repeat(12);
+ state.contacts.find(person=>person.id===ids.child)!.data.first_name=longName;
+ state.relationships.push({id:"partner-edge",source_id:ids.child,target_id:ids.sibling,kind:"partner",category:"family",revision:1});
+ await page.goto(`/tree?contact=${ids.child}`);
+ const selected=page.getByRole("region",{name:"Выбранный контакт",exact:true});
+ await expect(selected).toContainText(longName);
+ for(const width of [320,390,1280,1600]){
+  await page.setViewportSize({width,height:900});
+  await expect.poll(()=>page.locator(".app-content").evaluate(element=>element.scrollWidth-element.clientWidth)).toBeLessThanOrEqual(1);
+  const overlapping=await page.locator("main#main [aria-haspopup=menu]").evaluateAll(all=>all.filter(button=>!button.closest("[data-tree-person]")).flatMap((button,index,buttons)=>{
+   const a=button.getBoundingClientRect();
+   return buttons.slice(index+1).filter(other=>{const b=other.getBoundingClientRect();return a.width&&a.height&&b.width&&b.height&&a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom;}).map(()=>true);
+  }));
+  expect(overlapping).toEqual([]);
+  expect(await selected.evaluate(element=>element.scrollWidth-element.clientWidth)).toBeLessThanOrEqual(1);
+ }
+ await selected.locator("header").getByRole("button",{name:"Действия",exact:true}).click();
+ await expect(page.getByRole("menuitem",{name:"Открыть контакт",exact:true})).toHaveCount(1);
+ await expect(page.getByRole("menuitem",{name:"Сортировка связей",exact:true})).toHaveCount(0);
+ await page.keyboard.press("Escape");
+ await selected.locator('[data-action-subject="relationship-sort"]').getByRole("button",{name:"Действия",exact:true}).click();
+ await expect(page.getByRole("menuitem",{name:"Сортировка связей",exact:true})).toHaveCount(1);
+ await expect(page.getByRole("menuitem",{name:"Открыть контакт",exact:true})).toHaveCount(0);
+ await page.keyboard.press("Escape");
+ const viewport=page.getByRole("region",{name:"Интерактивное древо контактов",exact:true});
+ for(let step=0;step<5;step++)await page.getByRole("button",{name:"Уменьшить древо",exact:true}).click();
+ expect(await viewport.evaluate(element=>Math.abs(element.scrollWidth-Math.max(element.clientWidth,element.querySelector("[data-tree-stage]")!.getBoundingClientRect().width)))).toBeLessThanOrEqual(1);
+ const backgrounds=await page.locator("[data-tree-person]").evaluateAll(nodes=>nodes.map(node=>({opacity:getComputedStyle(node).opacity,background:getComputedStyle(node).backgroundColor})));
+ expect(backgrounds.every(node=>node.opacity==="1"&&!node.background.endsWith(", 0)")&&node.background!=="transparent")).toBe(true);
+ await page.getByRole("button",{name:"Сбросить масштаб",exact:true}).click();
+ for(let step=0;step<6;step++)await page.getByRole("button",{name:"Увеличить древо",exact:true}).click();
+ await page.getByRole("button",{name:"Показать выбранного человека",exact:true}).click();
+ await expect(page.locator(`[data-tree-contact="${ids.child}"]`)).toBeInViewport();
+ await page.screenshot({path:testInfo.outputPath("tree-desktop.png"),fullPage:true});
+ await page.setViewportSize({width:320,height:740});
+ await page.getByRole("button",{name:"На весь экран",exact:true}).click();
+ const screen=page.getByRole("dialog",{name:"Древо",exact:true});
+ await expect(screen).toBeVisible();
+ expect(await screen.evaluate(element=>element.scrollWidth-element.clientWidth)).toBeLessThanOrEqual(1);
+ await screen.getByRole("button",{name:"Сбросить масштаб",exact:true}).click();
+ await page.screenshot({path:testInfo.outputPath("tree-mobile.png")});
+ await page.keyboard.press("Escape");await expect(screen).toHaveCount(0);
+ await page.getByLabel("Поиск в древе",{exact:true}).fill("НикогоНет");
+ await expect(page.getByRole("status").filter({hasText:"Нет контактов с такими условиями поиска."})).toBeVisible();
+ expect(errors).toEqual([]);
+});
+
+test("tree moves a card onto empty viewport space using scaled canvas coordinates",async({page})=>{
+ await page.setViewportSize({width:1600,height:1000});
+ const {errors}=await setup(page);await page.goto(`/tree?contact=${ids.child}`);
+ await page.getByRole("button",{name:"Редактирование",exact:true}).click();
+ for(let step=0;step<5;step++)await page.getByRole("button",{name:"Уменьшить древо",exact:true}).click();
+ const viewport=page.getByRole("region",{name:"Интерактивное древо контактов",exact:true});
+ const card=page.locator(`[data-tree-person="${ids.parent}"]`);
+ const before=await card.boundingBox();const region=await viewport.boundingBox();
+ const transfer=await page.evaluateHandle(()=>new DataTransfer());
+ const dropX=region!.x+region!.width-40,dropY=region!.y+region!.height-40;
+ const stage=await page.locator("[data-tree-stage]").boundingBox();
+ await card.dispatchEvent("dragstart",{clientX:before!.x+20,clientY:before!.y+20,dataTransfer:transfer});
+ await viewport.dispatchEvent("drop",{clientX:dropX,clientY:dropY,dataTransfer:transfer});
+ await card.dispatchEvent("dragend",{dataTransfer:transfer});
+ await transfer.dispose();
+ await expect.poll(()=>card.evaluate(element=>Number.parseFloat(element.style.left))).toBeCloseTo((dropX-stage!.x-20)/.5,0);
+ await expect.poll(()=>card.evaluate(element=>Number.parseFloat(element.style.top))).toBeCloseTo((dropY-stage!.y-20)/.5,0);
+ await expect(page.getByRole("dialog",{name:"Новая связь",exact:true})).toHaveCount(0);
+ expect(errors).toEqual([]);
+});

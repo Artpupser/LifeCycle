@@ -6,7 +6,7 @@ import type {Resource} from "@/systems/loading/cache";
 import type {Gender} from "@/systems/icons/gender";
 import {api} from "@/lib/api";
 import {confirmAction,notify} from "@/lib/feedback";
-import {profileContact,type Contact} from "./types";
+import {contactName,profileContact,type Contact} from "./types";
 import {getLanguage,t,useLanguage} from "@/systems/i18n/locale";
 
 export const relationshipKinds=["parent","partner","romantic_partner","spouse","former_spouse","sibling","adoptive_parent","step_parent","godparent","guardian","friend","colleague","other"] as const;
@@ -153,7 +153,7 @@ export function kinshipProjection(selected:string,people:Contact[],relationships
   for(const parent of parents.get(spouse)??[])affinity(parent,gender(spouse)==="male"?gendered(gender(parent),"Свёкор","Свекровь","Родитель мужа"):gender(spouse)==="female"?gendered(gender(parent),"Тесть","Тёща","Родитель жены"):t("Родитель супруга / супруги"),[selected,spouse,parent]);
   for(const sibling of siblingIds(spouse)){
    affinity(sibling,gender(spouse)==="male"?gendered(gender(sibling),"Деверь","Золовка","Брат / сестра мужа"):gender(spouse)==="female"?gendered(gender(sibling),"Шурин","Свояченица","Брат / сестра жены"):t("Брат / сестра супруга"),[selected,spouse,sibling]);
-   for(const partner of spouses.get(sibling)??[])affinity(partner,gender(spouse)==="female"&&gender(sibling)==="female"&&gender(partner)==="male"?t("Свояк"):gender(spouse)==="male"&&gender(sibling)==="male"&&gender(partner)==="female"?t("Ятровь (невестка)"):t("Супруг родственника супруга"),[selected,spouse,sibling,partner]);
+   for(const partner of spouses.get(sibling)??[])affinity(partner,gender(spouse)==="female"&&gender(sibling)==="female"&&gender(partner)==="male"?t("Свояк"):gender(spouse)==="male"&&gender(sibling)==="male"&&gender(partner)==="female"?t("Ятровка (ятровь)"):t("Супруг родственника супруга"),[selected,spouse,sibling,partner]);
   }
  }
  for(const child of children.get(selected)??[])for(const partner of spouses.get(child)??[]){
@@ -173,4 +173,22 @@ export function kinshipProjection(selected:string,people:Contact[],relationships
  for(const id of connected.distance.keys())if(id!==selected&&!roles.has(id))add(id,{label:t("Связь через семью"),path:walkedPath(selected,id,connected),basis:"chain"});
  const generations=familyAnalysis(selected,edges);
  return {roles,ancestors:generations.ancestors,descendants:generations.descendants};
+}
+
+export const relationshipSorts=[{value:"name",label:"По имени"},{value:"birth",label:"По дате рождения"},{value:"connections",label:"По числу связей"},{value:"kinship",label:"По близости родства"},{value:"role",label:"По виду родства"}] as const;
+export type RelationshipSort=typeof relationshipSorts[number]["value"];
+/** Both the tree and contact relationship list use one stable ordering policy. */
+export function sortRelationshipPeople(people:Contact[],edges:ContactRelationship[],sort:RelationshipSort="name",projection?:KinshipProjection){
+ const counts=new Map<string,number>();
+ for(const edge of edges){counts.set(edge.source_id,(counts.get(edge.source_id)??0)+1);counts.set(edge.target_id,(counts.get(edge.target_id)??0)+1);}
+ const distance=(id:string)=>{const paths=projection?.roles.get(id);return paths?.length?Math.min(...paths.map(role=>role.path.length)):Infinity;};
+ const role=(id:string)=>projection?.roles.get(id)?.map(item=>item.label).sort((a,b)=>a.localeCompare(b,getLanguage())).join(" · ")??"";
+ return [...people].sort((a,b)=>{
+  let order=0;
+  if(sort==="birth")order=(a.data.birth_date??"9999").localeCompare(b.data.birth_date??"9999");
+  if(sort==="connections")order=(counts.get(b.id)??0)-(counts.get(a.id)??0);
+  if(sort==="kinship")order=distance(a.id)-distance(b.id);
+  if(sort==="role"){const first=role(a.id),second=role(b.id);order=first&&second?first.localeCompare(second,getLanguage()):first?-1:second?1:0;}
+  return order||contactName(a.data).localeCompare(contactName(b.data),getLanguage())||a.id.localeCompare(b.id);
+ });
 }

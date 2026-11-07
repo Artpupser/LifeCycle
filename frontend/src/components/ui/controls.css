@@ -34,3 +34,8 @@
 /* Composite choices use the outer control's border and focus indicator. */
 .lc-input[data-contained] { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .lc-input[data-contained]:focus-visible { outline: none; }
+
+.lc-rating-range::-webkit-slider-runnable-track { height: .5rem; background: linear-gradient(to right, var(--primary) 0 var(--range-progress), var(--border) var(--range-progress) 100%); }
+.lc-rating-range::-moz-range-track { height: .5rem; background: var(--border); }
+.lc-rating-range::-moz-range-progress { height: .5rem; border-radius: 1rem; background: var(--primary); }
+.lc-rating-range::-webkit-slider-thumb { margin-top: -.375rem; }

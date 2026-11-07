@@ -41,7 +41,7 @@ function declaredActions(children:ReactNode,navigate:(path:string)=>void):Contex
   return [{id:String(index),label:props["aria-label"]??textOf(props.children),disabled:props.disabled,danger:props.className?.includes("text-destructive"),run:props.onClick??(()=>navigate(to!))}];
  });
 }
-export function ObjectActions({children,actions=[],label,subject,contribute=false,alias}:{children?:ReactNode;actions?:ContextAction[];label?:string;subject?:LabelSubject;contribute?:boolean;alias?:string}){
+export function ObjectActions({children,actions=[],label,subject,contribute=false,alias,placement="corner"}:{children?:ReactNode;actions?:ContextAction[];label?:string;subject?:LabelSubject;contribute?:boolean;alias?:string;placement?:"corner"|"inline"}){
  useLanguage();
  const [editing,setEditing]=useState(false);
  const navigate=useNavigate();const anchor=useRef<HTMLSpanElement>(null);
@@ -50,13 +50,13 @@ export function ObjectActions({children,actions=[],label,subject,contribute=fals
  const latest=useRef(all);useLayoutEffect(()=>{latest.current=all;});
  useLayoutEffect(()=>{
   const node=anchor.current!;const root=node.closest(subjects)??node;
-  if(root!==node){if(!contribute)root.setAttribute("data-action-menu-root","");node.setAttribute("data-action-menu-anchor",contribute?"contribution":"corner");}
+  if(root!==node){if(!contribute&&placement==="corner")root.setAttribute("data-action-menu-root","");node.setAttribute("data-action-menu-anchor",contribute?"contribution":placement);}
   const group=scopes.get(root)??new Map<HTMLElement,ReadActions>();
   group.set(node,()=>latest.current);scopes.set(root,group);
   const shared=key?(aliases.get(key)??new Map<HTMLElement,ReadActions>()):null;
   if(key&&shared){shared.set(node,()=>latest.current);aliases.set(key,shared);}
-  return()=>{group.delete(node);if(!group.size)root.removeAttribute("data-action-menu-root");shared?.delete(node);if(key&&shared?.size===0)aliases.delete(key);};
- },[key,contribute]);
+  return()=>{group.delete(node);if(![...group.keys()].some(anchor=>anchor.getAttribute("data-action-menu-anchor")==="corner"))root.removeAttribute("data-action-menu-root");shared?.delete(node);if(key&&shared?.size===0)aliases.delete(key);};
+ },[key,contribute,placement]);
  return <span ref={anchor} className={contribute?"contents":"inline-flex items-center"}>{!contribute&&<ActionMenuButton label={label} actions={all} readActions={()=>subjectActions(anchor.current!)?.actions??latest.current}/>}{editing&&subject&&<SubjectLabelEditor subject={subject} close={()=>setEditing(false)}/>}</span>;
 }
 export function ActionMenuProvider({children}:{children:ReactNode}){
