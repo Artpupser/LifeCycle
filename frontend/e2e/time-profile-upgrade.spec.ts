@@ -1,3 +1,5 @@
+import {expectChoiceValue} from "./choice-helpers";
+import {chooseChoice} from "./choice-helpers";
 import {chooseAction} from "./upgrade-helpers";
 import { expect, test } from "@playwright/test";
 import { confirmUi, login } from "./upgrade-helpers";
@@ -9,8 +11,8 @@ test("1.6 recurring events preserve Markdown, reach Today/calendar, and create e
   await page.goto("/countdowns");
   await page.getByRole("button", { name: "Новое событие", exact: true }).click();
   await page.getByLabel("Название события", { exact: true }).fill("Памятная дата 1.6");
-  await page.getByLabel("Категория события", { exact: true }).selectOption("personal");
-  await page.getByLabel("Повторение события", { exact: true }).selectOption("daily");
+  await chooseChoice(page.getByLabel("Категория события", { exact: true }), "personal");
+  await chooseChoice(page.getByLabel("Повторение события", { exact: true }), "daily");
   await page.getByLabel("Описание события", { exact: true }).fill("**Событие Markdown**\n\n<script>alert(1)</script>");
   await page.getByRole("button", { name: "Сохранить событие", exact: true }).click();
   const card = page.locator("article").filter({ has: page.getByRole("heading", { name: "Памятная дата 1.6", exact: true }) });
@@ -20,7 +22,7 @@ test("1.6 recurring events preserve Markdown, reach Today/calendar, and create e
   await chooseAction(page,"Поздравление",card);
   await expect(page.getByLabel("Получатель поздравления", { exact: true })).toHaveValue("");
   await page.getByLabel("Получатель поздравления", { exact: true }).fill("Анна");
-  await page.getByLabel("Стиль поздравления", { exact: true }).selectOption("family");
+  await chooseChoice(page.getByLabel("Стиль поздравления", { exact: true }), "family");
   await page.getByRole("button", { name: "Создать по шаблону", exact: true }).click();
   await expect(page.getByLabel("Текст поздравления", { exact: true })).toHaveValue(/Анна, С любовью/);
   await page.getByLabel("Текст поздравления", { exact: true }).fill("Моё поздравление");
@@ -48,7 +50,7 @@ test("1.7 Pomodoro constructor, snapshots, pause/reload/reset, copying and autom
   await page.getByRole("button", { name: "+ Работа", exact: true }).click();
   await page.getByRole("button", { name: "Удалить интервал 5", exact: true }).click();
   await page.getByRole("button", { name: "Интервал 2 вниз", exact: true }).click();
-  await expect(page.getByLabel("Тип интервала 2", { exact: true })).toHaveValue("w");
+  await expectChoiceValue(page.getByLabel("Тип интервала 2", { exact: true }), "w");
   await page.getByLabel("Повторять всю последовательность", { exact: true }).uncheck();
   await page.getByRole("button", { name: "Сохранить алгоритм", exact: true }).click();
   await page.reload();
@@ -87,7 +89,7 @@ test("1.8 profile keeps life history apart from current data and supports explic
   await page.getByLabel("Регион рождения", { exact: true }).fill("Регион рождения");
   await page.getByLabel("Имя при рождении", { exact: true }).fill("Первое имя");
   await page.getByLabel("Фамилия при рождении", { exact: true }).fill("Первая фамилия");
-  await page.getByLabel("Пол, зарегистрированный при рождении", { exact: true }).selectOption("female");
+  await chooseChoice(page.getByLabel("Пол, зарегистрированный при рождении", { exact: true }), "female");
   await page.getByLabel("Языки, освоенные в детстве", { exact: true }).fill("Русский\nТатарский");
   await page.getByLabel("Порядок рождения среди детей матери", { exact: true }).fill("2");
   await page.getByLabel("Число детей при этом рождении", { exact: true }).fill("2");
@@ -97,8 +99,8 @@ test("1.8 profile keeps life history apart from current data and supports explic
   await page.getByLabel("Первое значимое достижение", { exact: true }).fill("Достижение");
   await page.getByRole("button", { name: "Добавить вредную привычку", exact: true }).click();
   await page.getByLabel("Название привычки 1", { exact: true }).fill("Курение");
-  await page.getByLabel("Есть сейчас · 1", { exact: true }).selectOption("false");
-  await page.getByLabel("Была когда-либо · 1", { exact: true }).selectOption("true");
+  await chooseChoice(page.getByLabel("Есть сейчас · 1", { exact: true }), "false");
+  await chooseChoice(page.getByLabel("Была когда-либо · 1", { exact: true }), "true");
   await page.getByRole("button", { name: "Добавить период 1", exact: true }).click();
   await page.getByLabel("Начало периода 1.1", { exact: true }).fill("2010-01-01");
   await page.getByLabel("Прекращение периода 1.1", { exact: true }).fill("2018-01-01");
@@ -106,14 +108,14 @@ test("1.8 profile keeps life history apart from current data and supports explic
   await page.getByRole("button", { name: "Сохранить профиль", exact: true }).click();
   await expect(page.getByText("Профиль сохранён", { exact: true })).toBeVisible(); await page.reload();
   await expect(page.getByLabel("Языки, освоенные в детстве", { exact: true })).toHaveValue("Русский\nТатарский");
-  await expect(page.getByLabel("Есть сейчас · 1", { exact: true })).toHaveValue("false");
+  await expectChoiceValue(page.getByLabel("Есть сейчас · 1", { exact: true }), "false");
   await page.getByLabel("Имя", { exact: true }).fill("Новое текущее имя");
-  await page.getByLabel("Пол", { exact: true }).selectOption("male");
+  await chooseChoice(page.getByLabel("Пол", { exact: true }), "male");
   await page.getByLabel("Страна проживания", { exact: true }).fill("Новая страна");
   await page.getByRole("button", { name: "Сохранить профиль", exact: true }).click();
   await expect(page.getByText("Профиль сохранён", { exact: true })).toBeVisible(); await page.reload();
   await expect(page.getByLabel("Имя при рождении", { exact: true })).toHaveValue("Первое имя");
-  await expect(page.getByLabel("Пол, зарегистрированный при рождении", { exact: true })).toHaveValue("female");
+  await expectChoiceValue(page.getByLabel("Пол, зарегистрированный при рождении", { exact: true }), "female");
   await expect(page.getByLabel("Первая работа", { exact: true })).toHaveValue("Первая работа");
   await expect(page.getByLabel("Прекращение периода 1.1", { exact: true })).toHaveValue("2018-01-01");
   await confirmUi(page, () => page.getByRole("button", { name: "Удалить период 1.1", exact: true }).click(), false);
@@ -134,7 +136,7 @@ test("1.8 profile keeps life history apart from current data and supports explic
   await expect(page.getByRole("button", { name: "Взять дату рождения из профиля", exact: true })).toHaveCount(0);
   await page.getByLabel("Название события", { exact: true }).fill("Мой день рождения");
   await page.getByLabel("Дата события", { exact: true }).fill("1990-02-28");
-  await page.getByLabel("Повторение события", { exact: true }).selectOption("yearly");
+  await chooseChoice(page.getByLabel("Повторение события", { exact: true }), "yearly");
   await page.getByRole("button", { name: "Сохранить событие", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Мой день рождения", exact: true })).toBeVisible();
   expect(errors).toEqual([]);

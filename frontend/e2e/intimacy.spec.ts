@@ -1,4 +1,6 @@
-import {chooseAction} from "./upgrade-helpers";
+import {expectChoiceValue} from "./choice-helpers";
+import {chooseChoice} from "./choice-helpers";
+import {chooseAction,addCollectionItem} from "./upgrade-helpers";
 import { confirmUi } from "./upgrade-helpers";
 import { expect, test, type Page, type APIRequestContext } from "@playwright/test";
 
@@ -30,22 +32,22 @@ test("mobile private journal persists the full form, multiple daily events, Mark
   await page.setViewportSize({width:390,height:844});
   await login(page,request);
   await page.getByRole("button",{name:"Новое событие",exact:true}).click();
-  await confirmUi(page, async()=>{await page.getByLabel("Тип события",{exact:true}).selectOption("sex");}, true);
+  await confirmUi(page, async()=>{await chooseChoice(page.getByLabel("Тип события",{exact:true}), "sex");}, true);
   await page.getByLabel("Местное время начала",{exact:true}).fill("2026-10-20T12:30");
   await page.getByLabel("Длительность, минут",{exact:true}).fill("25");
   await expect(page.getByLabel("Количество эякуляций",{exact:true})).toHaveCount(0);
-  await page.getByRole("checkbox",{name:"Вибратор",exact:true}).check();
-  await page.getByLabel("Использовалась смазка",{exact:true}).selectOption("false");
-  await page.getByLabel("Была одежда",{exact:true}).selectOption("false");
-  await page.getByRole("checkbox",{name:"Дома",exact:true}).check();
-  await page.getByLabel("Использовались средства защиты",{exact:true}).selectOption("false");
+  await addCollectionItem(page,"Игрушки","Вибратор");
+  await chooseChoice(page.getByLabel("Использовалась смазка",{exact:true}), "false");
+  await chooseChoice(page.getByLabel("Была одежда",{exact:true}), "false");
+  await addCollectionItem(page,"Обстановка","Дома");
+  await chooseChoice(page.getByLabel("Использовались средства защиты",{exact:true}), "false");
   await page.getByLabel("Имя партнёра",{exact:true}).fill("Имя для проверки");
-  await page.getByLabel("Пол партнёра",{exact:true}).selectOption("other");
-  await page.getByLabel("Позы",{exact:true}).fill("Личная запись");
+  await chooseChoice(page.getByLabel("Пол партнёра",{exact:true}), "other");
+  await addCollectionItem(page,"Позы","Личная запись");
   await page.getByLabel("Оральный",{exact:true}).check();
   await page.getByLabel("Вагинальный",{exact:true}).check();
   await page.getByRole("checkbox",{name:"Спокойствие",exact:true}).check();await page.getByRole("checkbox",{name:"Радость",exact:true}).check();
-  await page.getByLabel("Хочу повторить",{exact:true}).selectOption("false");
+  await chooseChoice(page.getByLabel("Хочу повторить",{exact:true}), "false");
   await page.getByLabel("Заметка о событии",{exact:true}).fill("## Личная заметка\n\n**Сохранённый текст**");
   await page.getByLabel("Загрузить изображение",{exact:true}).setInputFiles({name:"private.png",mimeType:"image/png",buffer:Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNQMHAAAAEEAJGibWOuAAAAAElFTkSuQmCC","base64")});
   await expect(page.getByLabel("Заметка о событии",{exact:true})).toHaveValue(/\/api\/media\//);
@@ -56,8 +58,8 @@ test("mobile private journal persists the full form, multiple daily events, Mark
   await expect(page.getByRole("heading",{name:"События (1)",exact:true})).toBeVisible();
   await page.getByRole("button",{name:"Новое событие",exact:true}).click();
   await page.getByLabel("Местное время начала",{exact:true}).fill("2026-10-20T12:30");
-  await page.getByLabel("Источники порно",{exact:true}).fill("Личная запись источника");
-  await page.getByLabel("Ощущения после (Markdown)",{exact:true}).fill("**Сохраняемые ощущения**");
+  await addCollectionItem(page,"Источники порно","Личная запись источника");
+  await page.getByRole("group",{name:"Эмоции после",exact:true}).getByRole("checkbox",{name:"Радость",exact:true}).check();
   await page.getByRole("button",{name:"Сохранить событие",exact:true}).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.reload();
@@ -72,7 +74,7 @@ test("mobile private journal persists the full form, multiple daily events, Mark
   await page.getByRole("button",{name:"Закрыть окно",exact:true}).click();
   await chooseAction(page,"Редактировать",sex);
   await expect(page.getByLabel("Количество эякуляций",{exact:true})).toHaveCount(0);
-  await expect(page.getByLabel("Использовалась смазка",{exact:true})).toHaveValue("false");
+  await expectChoiceValue(page.getByLabel("Использовалась смазка",{exact:true}), "false");
   await expect(page.getByLabel("Оральный",{exact:true})).toBeChecked();
   await page.getByLabel("Длительность, минут",{exact:true}).fill("40");
   await page.getByRole("button",{name:"Сохранить событие",exact:true}).click();
@@ -81,7 +83,7 @@ test("mobile private journal persists the full form, multiple daily events, Mark
   await page.getByLabel("Поиск в интимном журнале",{exact:true}).fill("тип:мастурбация");
   await expect(page.getByRole("heading",{name:"События (1)",exact:true})).toBeVisible();
   await chooseAction(page,"Подробности");
-  await expect(page.getByRole("dialog").getByText("Сохраняемые ощущения",{exact:true})).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("Радость",{exact:true})).toBeVisible();
   await page.getByRole("button",{name:"Закрыть окно",exact:true}).click();
   await expect(stats.getByText("Нет данных",{exact:true})).toBeVisible();
   await page.getByLabel("Поиск в интимном журнале",{exact:true}).fill("");

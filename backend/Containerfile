@@ -1,8 +1,10 @@
 FROM docker.io/library/rust:1.96-slim-bookworm AS build
-WORKDIR /app
-COPY Cargo.toml Cargo.lock ./
-COPY src ./src
-COPY migrations ./migrations
+WORKDIR /app/backend
+ENV CARGO_TARGET_DIR=/app/target
+COPY backend/Cargo.toml backend/Cargo.lock backend/build.rs ./
+COPY backend/src ./src
+COPY backend/migrations ./migrations
+COPY shared /app/shared
 RUN --mount=type=cache,target=/usr/local/cargo/registry --mount=type=cache,target=/app/target cargo build --locked --release && cp /app/target/release/lifecycle-api /app/lifecycle-api
 
 FROM docker.io/library/debian:bookworm-slim

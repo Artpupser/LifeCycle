@@ -1,3 +1,4 @@
+import {Input} from "@/components/ui/input";
 import {SelectionItem} from "@/systems/selection/entities";
 import {SubjectLabels} from "@/systems/labels/functional";
 import {ObjectActions} from "@/systems/actions/action-menu";
@@ -21,7 +22,7 @@ export function TaskCheckbox({ task, occurrence, busy, toggle }: { task: Task; o
   const checked = optimistic?.version === version ? optimistic.checked : saved;
   const unavailable = recurring && (!occurrence || !occurrence.editable);
   if(taskResult(task,occurrence)==="rejected")return <button type="button" className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded border border-muted-foreground/40 text-muted-foreground" aria-label={t("Отменено: {v0}", {v0: task.title})} title={t("Вернуть в работу")} disabled={busy || Boolean(unavailable)} onClick={()=>void toggle(false)}><X className="size-4"/></button>;
-  return <input type="checkbox" className="mt-0.5 size-5 shrink-0 cursor-pointer rounded accent-primary disabled:cursor-default disabled:opacity-40" aria-label={t("Выполнено: {title}",{title:task.title})} title={unavailable ? t("На сегодня нет доступного повторения") : t("Выполнено")} checked={checked} disabled={busy || Boolean(unavailable)} onChange={(event) => { const next = event.target.checked; setOptimistic({ version, checked: next }); void Promise.resolve(toggle(next)).then((ok) => { if (ok === false) setOptimistic(null); }).catch(() => setOptimistic(null)); }} />;
+  return <Input type="checkbox" className="mt-0.5 size-5 shrink-0 cursor-pointer rounded accent-primary disabled:cursor-default disabled:opacity-40" aria-label={t("Выполнено: {title}",{title:task.title})} title={unavailable ? t("На сегодня нет доступного повторения") : t("Выполнено")} checked={checked} disabled={busy || Boolean(unavailable)} onChange={(event) => { const next = event.target.checked; setOptimistic({ version, checked: next }); void Promise.resolve(toggle(next)).then((ok) => { if (ok === false) setOptimistic(null); }).catch(() => setOptimistic(null)); }} />;
 }
 export function TaskCard({ task, occurrence, tags, now, timezone, busy, toggle, edit, remove, children, location, cancel, menuActions, draggable, dragStart, dragOver, drop }: { task: Task; occurrence?: TaskOccurrence; tags: TaskTag[]; now: number; timezone: string; busy: boolean; toggle: (completed: boolean) => Promise<boolean> | void; edit: () => void; remove: () => void; children?: ReactNode; menuActions?:ReactNode; location?: string; cancel?: () => void; draggable?: boolean; dragStart?: React.DragEventHandler<HTMLElement>; dragOver?: React.DragEventHandler<HTMLElement>; drop?: React.DragEventHandler<HTMLElement> }) {
   useLanguage();

@@ -60,7 +60,9 @@ export default tseslint.config(
           const owner=name==="motion"||name.startsWith("motion/")||name==="framer-motion"?"animations":name==="tsparticles"||name.startsWith("@tsparticles/")?"effects":name==="date-holidays"||name.startsWith("date-holidays/")?"holidays":null;
           if(owner&&!context.filename.replaceAll("\\","/").includes(`/src/systems/${owner}/`))context.report({node,message:`Use the centralized ${owner} system.`});
         };
-        return {ImportDeclaration:check,ImportExpression:check};
+        return {ImportDeclaration:check,ImportExpression:check,JSXOpeningElement(node){
+          if(["input","select","textarea","datalist"].includes(node.name?.name)&&!context.filename.replaceAll("\\","/").includes("/src/components/ui/"))context.report({node,message:"Use the shared Input, Textarea or ChoiceField controls."});
+        }};
       },
     }}}},
     rules:{"central-systems/imports":"error"},

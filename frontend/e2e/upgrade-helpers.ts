@@ -50,6 +50,17 @@ export async function selectTags(page:Page,label:string,names:string[]){
  for(const name of names){await input.fill(name);await input.press("Enter");await expect(page.getByRole("checkbox",{name,exact:true})).toBeChecked();await expect(input).toHaveValue("");}
 }
 
+/** Personal collections intentionally start empty; create options through their shared editor. */
+export async function addCollectionItem(page:Page,collection:string,name:string){
+ const group=page.getByRole("group",{name:collection,exact:true});
+ await group.getByRole("button",{name:"Добавить в коллекцию",exact:true}).click();
+ const editor=page.getByRole("dialog",{name:"Новый элемент коллекции",exact:true});
+ await editor.getByLabel("Название",{exact:true}).fill(name);
+ await editor.getByRole("button",{name:"Сохранить",exact:true}).click();
+ await expect(editor).toHaveCount(0);
+ await expect(group.getByRole("checkbox",{name,exact:true})).toBeChecked();
+}
+
 /** Assign the same functional label through its shared adapter in every subject view. */
 export async function shareAiLabel(page:Page,title:string){
  const editor=page.getByRole("region",{name:"Редактор заметки",exact:true});

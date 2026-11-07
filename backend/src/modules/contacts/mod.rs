@@ -1,6 +1,7 @@
 mod domain;
 mod dto;
 mod handlers;
+mod relationships;
 mod repository;
 mod service;
 
@@ -45,6 +46,11 @@ mod tests {
             ..Default::default()
         };
         assert!(c.clean(today).is_ok());
+        let saved = serde_json::to_value(&c).unwrap();
+        assert_eq!(saved["gender"], "unspecified");
+        assert!(
+            serde_json::from_value::<ContactData>(serde_json::json!({"gender":"invalid"})).is_err()
+        );
         assert_eq!(c.tags, vec!["Team"]);
         c.birth_date = Some("2027-01-01".parse().unwrap());
         assert!(c.clean(today).is_err());

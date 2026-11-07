@@ -36,12 +36,27 @@ pub(super) struct PartnerDetails {
 #[serde(default, deny_unknown_fields)]
 pub(super) struct SoloDetails {
     pub(super) porn_sources: Vec<String>,
-    pub(super) feelings_after: String,
+    #[serde(rename = "feelings_after", skip_serializing)]
+    pub(super) legacy_feelings_after: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub(super) struct EntryData {
+    #[serde(default, rename = "feelings_after", skip_serializing)]
+    pub(super) legacy_feelings_after: Vec<String>,
+    #[serde(default)]
+    pub(super) satisfaction_level: Option<u8>,
+    #[serde(default)]
+    pub(super) lubricants: Vec<String>,
+    #[serde(default)]
+    pub(super) contraception: Vec<String>,
+    #[serde(default)]
+    pub(super) emotions_before: Vec<String>,
+    #[serde(default)]
+    pub(super) libido_level: Option<u8>,
+    #[serde(default)]
+    pub(super) planned: Option<bool>,
     pub(super) kind: Kind,
     pub(super) local_start: NaiveDateTime,
     pub(super) timezone: String,
@@ -56,8 +71,8 @@ pub(super) struct EntryData {
     #[serde(default)]
     pub(super) setting: String,
     pub(super) was_clothed: Option<bool>,
-    #[serde(default)]
-    pub(super) emotions: Vec<String>,
+    #[serde(default, alias = "emotions")]
+    pub(super) emotions_after: Vec<String>,
     pub(super) repeat_desired: Option<bool>,
     #[serde(default)]
     pub(super) note: String,
@@ -66,6 +81,23 @@ pub(super) struct EntryData {
 }
 
 impl EntryData {
+    /// Retire old fields without losing private observations from existing ciphertext.
+    pub(super) fn retire_legacy_fields(&mut self) {
+        let mut notes = std::mem::take(&mut self.legacy_feelings_after);
+        if let Some(solo) = self.solo.as_mut() {
+            let text = std::mem::take(&mut solo.legacy_feelings_after);
+            if !text.is_empty() {
+                notes.push(text);
+            }
+        }
+        for text in notes {
+            if !self.note.is_empty() {
+                self.note.push_str("\n\n");
+            }
+            self.note.push_str(&text);
+        }
+    }
+
     pub(super) fn start(&self) -> Result<DateTime<Utc>, ApiError> {
         let zone = self.timezone.parse::<Tz>().map_err(|_| {
             ApiError::validation("Event timezone must be a supported IANA timezone")
@@ -109,7 +141,19 @@ impl EntryData {
         domain::text(&self.setting, 0, 1000)?;
         domain::text(&self.note, 0, 200_000)?;
         validate_list(&self.toys)?;
-        validate_list(&self.emotions)?;
+        validate_list(&self.emotions_before)?;
+        validate_list(&self.emotions_after)?;
+        validate_list(&self.lubricants)?;
+        validate_list(&self.contraception)?;
+        if [self.libido_level, self.satisfaction_level]
+            .into_iter()
+            .flatten()
+            .any(|value| value > 10)
+        {
+            return Err(ApiError::validation(
+                "Journal ratings must be between 0 and 10",
+            ));
+        }
         match self.kind {
             Kind::Sex => {
                 if self.solo.is_some() {
@@ -129,7 +173,7 @@ impl EntryData {
                     if partner
                         .sex_types
                         .iter()
-                        .any(|v| !["anal", "oral", "vaginal", "other"].contains(&v.as_str()))
+                        .any(|v| !crate::modules::labels::fixed_collection_value("sex_type", v))
                     {
                         return Err(ApiError::validation("Unsupported sex type"));
                     }
@@ -143,7 +187,6 @@ impl EntryData {
                 }
                 if let Some(solo) = &self.solo {
                     validate_list(&solo.porn_sources)?;
-                    domain::text(&solo.feelings_after, 0, 5000)?;
                 }
             }
         }
@@ -246,6 +289,7 @@ pub(super) struct Statistics {
     pub(super) lubricant_used: Answers,
     pub(super) protection_used: Answers,
     pub(super) emotions: BTreeMap<String, u64>,
+    pub(super) emotions_before: BTreeMap<String, u64>,
     pub(super) days: BTreeMap<NaiveDate, Day>,
 }
 
@@ -279,8 +323,14 @@ impl Statistics {
         }
         self.repeat_desired.add(data.repeat_desired);
         self.lubricant_used.add(data.lubricant_used);
-        for emotion in &data.emotions {
+        for emotion in &data.emotions_after {
             *self.emotions.entry(emotion.to_lowercase()).or_default() += 1;
+        }
+        for emotion in &data.emotions_before {
+            *self
+                .emotions_before
+                .entry(emotion.to_lowercase())
+                .or_default() += 1;
         }
         self.active_days = self.days.len();
         self.average_duration_minutes = (self.duration_answers > 0)

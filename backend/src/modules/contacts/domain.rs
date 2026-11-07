@@ -3,9 +3,20 @@ use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum Gender {
+    #[default]
+    Unspecified,
+    Female,
+    Male,
+    Other,
+}
+
 #[derive(Clone, Default, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub(crate) struct ContactData {
+    pub gender: Gender,
     pub first_name: String,
     pub last_name: String,
     pub middle_name: String,

@@ -1,0 +1,14 @@
+**
+!backend/
+!backend/**
+!frontend/
+!frontend/**
+!shared/
+!shared/**
+**/node_modules
+**/target
+**/dist
+**/test-results
+**/playwright-report
+**/.env*
+**/.git

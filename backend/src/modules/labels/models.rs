@@ -8,10 +8,30 @@ pub(super) struct Data {
     pub(super) color: String,
     #[serde(default)]
     pub(super) icon: Option<String>,
+    #[serde(default)]
+    pub(super) description: String,
+    #[serde(default)]
+    pub(super) image_id: Option<Uuid>,
+    #[serde(default = "personal")]
+    pub(super) in_collection: bool,
+}
+impl Default for Data {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            color: domain::default_color(),
+            icon: None,
+            description: String::new(),
+            image_id: None,
+            in_collection: true,
+        }
+    }
 }
 
 #[derive(Serialize)]
 pub(super) struct Label {
+    pub(super) in_collection: bool,
+    pub(super) value: Option<String>,
     pub(super) id: Uuid,
     pub(super) name: String,
     pub(super) color: String,
@@ -21,6 +41,27 @@ pub(super) struct Label {
     pub(super) is_system: bool,
     pub(super) repeatable: bool,
     pub(super) revision: i64,
+    pub(super) description: String,
+    pub(super) image_id: Option<Uuid>,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct CollectionDetails {
+    #[serde(default = "personal")]
+    pub(super) in_collection: bool,
+    #[serde(default)]
+    pub(super) description: String,
+    pub(super) image_id: Option<Uuid>,
+}
+impl Default for CollectionDetails {
+    fn default() -> Self {
+        Self {
+            in_collection: true,
+            description: String::new(),
+            image_id: None,
+        }
+    }
 }
 
 #[derive(sqlx::FromRow)]
@@ -53,6 +94,7 @@ pub(super) struct Input {
     pub(super) repeatable: Option<bool>,
     #[serde(default)]
     pub(super) icon: Option<String>,
+    pub(super) details: Option<CollectionDetails>,
 }
 
 #[derive(Deserialize)]
@@ -62,4 +104,7 @@ pub(super) struct Revision {
 
 pub(super) fn tag_kind() -> String {
     "tag".into()
+}
+pub(super) fn personal() -> bool {
+    true
 }

@@ -1,5 +1,6 @@
 /* Every object uses the same corner placement and reserves its title row. */
-[data-action-menu-root] { position: relative; min-height: 3rem; }
+[data-action-menu-root] { min-height: 3rem; }
+[data-action-menu-root]:not(.absolute, .fixed) { position: relative; }
 [data-action-menu-root] > :is(div, header, h1, h2, h3, p, button):first-child,
 [data-action-menu-root].flex > div:first-of-type { padding-inline-end: 3rem; }
 span[data-action-menu-root] { display: inline-flex; min-width: 3rem; }

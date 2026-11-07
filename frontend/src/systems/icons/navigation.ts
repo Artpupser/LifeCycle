@@ -2,6 +2,7 @@ import {t} from "@/systems/i18n/locale";
 export const navigationCatalog=[
   {to:"/history",label:"История действий",icon:"tabler:history"},
   {to:"/labels",label:"Теги и категории",icon:"tabler:tags"},
+  {to:"/collections",label:"Коллекции",icon:"tabler:box-multiple"},
   {to:"/today",label:"Сегодня",icon:"tabler:sun"},
   {to:"/habits",label:"Привычки",icon:"tabler:seedling"},
   {to:"/workouts",label:"Тренировки",icon:"tabler:barbell"},
@@ -11,6 +12,7 @@ export const navigationCatalog=[
   {to:"/notes",label:"Заметки",icon:"tabler:notebook"},
   {to:"/countdowns",label:"Отсчёты",icon:"tabler:hourglass"},
   {to:"/contacts",label:"Контакты",icon:"tabler:address-book"},
+  {to:"/tree",label:"Древо",icon:"tabler:tree"},
   {to:"/pomodoro",label:"Pomodoro",icon:"tabler:clock-play"},
   {to:"/analytics",label:"Аналитика",icon:"tabler:chart-bar"},
   {to:"/ai",label:"AI-помощник",icon:"tabler:brain"},

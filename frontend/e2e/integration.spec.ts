@@ -1,3 +1,5 @@
+import {expectChoiceValue} from "./choice-helpers";
+import {chooseChoice} from "./choice-helpers";
 import { expect, test, type Page } from "@playwright/test";
 
 async function login(page: Page) {
@@ -60,9 +62,9 @@ test("profile timezone and 12/24-hour preferences agree across Today, calendar, 
   const board = await write(page, "POST", "/boards", { name: "Часовые границы" });
   await write(page, "PUT", `/boards/${board.board.id}/items/${task.id}`, { revision: board.board.revision, column_id: board.columns[0].id });
   await page.goto("/settings");
-  await expect(page.getByLabel("Формат времени", { exact: true })).toHaveValue("24h");
+  await expectChoiceValue(page.getByLabel("Формат времени", { exact: true }), "24h");
   await page.getByLabel("Часовой пояс", { exact: true }).fill("America/Los_Angeles");
-  await page.getByLabel("Формат времени", { exact: true }).selectOption("12h");
+  await chooseChoice(page.getByLabel("Формат времени", { exact: true }), "12h");
   await page.getByRole("button", { name: "Сохранить настройки", exact: true }).click();
   await expect(page.getByText("Настройки сохранены", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Сегодня", exact: true }).click();
@@ -74,7 +76,7 @@ test("profile timezone and 12/24-hour preferences agree across Today, calendar, 
   await page.getByRole("link", { name: "Задачи", exact: true }).click();
   await page.goto(`/tasks?board=${board.board.id}`);
   await page.getByRole("button", { name: "Gantt", exact: true }).click();
-  await page.getByLabel("Масштаб Gantt", { exact: true }).selectOption("fortnight");
+  await chooseChoice(page.getByLabel("Масштаб Gantt", { exact: true }), "fortnight");
   await page.getByLabel("Начало шкалы доски", { exact: true }).fill("2026-10-28");
   const svg = page.getByRole("img", { name: /Диаграмма Ганта/ });
   const bar = svg.locator("rect[rx]");
@@ -87,8 +89,8 @@ test("profile timezone and 12/24-hour preferences agree across Today, calendar, 
   })).toBeCloseTo(0, 4);
   await page.getByRole("link", { name: "Настройки", exact: true }).click();
   await page.reload();
-  await expect(page.getByLabel("Формат времени", { exact: true })).toHaveValue("12h");
-  await page.getByLabel("Формат времени", { exact: true }).selectOption("24h");
+  await expectChoiceValue(page.getByLabel("Формат времени", { exact: true }), "12h");
+  await chooseChoice(page.getByLabel("Формат времени", { exact: true }), "24h");
   await page.getByRole("button", { name: "Сохранить настройки", exact: true }).click();
   await expect(page.getByText("Настройки сохранены", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Сегодня", exact: true }).click();

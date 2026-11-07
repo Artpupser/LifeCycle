@@ -1,3 +1,5 @@
+import {expectChoiceValue} from "./choice-helpers";
+import {chooseChoice} from "./choice-helpers";
 import {chooseAction} from "./upgrade-helpers";
 import { confirmUi } from "./upgrade-helpers";
 import { expect, test, type Page } from "@playwright/test";
@@ -64,7 +66,7 @@ test("unified tasks use colored tags, completion and horizontally scrolling boar
   await working.getByLabel("Выполнено: Первая задача", { exact: true }).uncheck();
   await column.getByLabel("Настройки колонки Проверка", { exact: true }).click();
   await chooseAction(page,"Настроить колонку",column);
-  await page.getByLabel("Куда перенести задачи при удалении", { exact: true }).selectOption({ label: "В работе" });
+  await chooseChoice(page.getByLabel("Куда перенести задачи при удалении", { exact: true }), { label: "В работе" });
   await confirmUi(page, async()=>{await page.getByRole("button", { name: "Удалить колонку", exact: true }).click();}, true);
   await expect(column).toHaveCount(0); await expect(working.locator("article")).toHaveCount(2);
   await boardMenu(page); await chooseAction(page,"Переименовать доску");
@@ -109,11 +111,11 @@ test("large Gantt moves and resizes intervals, expands and uses the timezone fro
   expect(response.status()).toBe(201); const task = await response.json() as { id: string };
   await createBoard(page, "Временная шкала");
   await boardMenu(page); await chooseAction(page,"Добавить существующую задачу");
-  await page.getByLabel("Существующая задача", { exact: true }).selectOption(task.id);
+  await chooseChoice(page.getByLabel("Существующая задача", { exact: true }), task.id);
   await page.getByRole("button", { name: "Добавить на доску", exact: true }).click();
   await expect(page.locator("article")).toHaveCount(1);
   await page.getByRole("button", { name: "Gantt", exact: true }).click();
-  await page.getByLabel("Масштаб Gantt", { exact: true }).selectOption("day");
+  await chooseChoice(page.getByLabel("Масштаб Gantt", { exact: true }), "day");
   const viewport = page.getByLabel("Рабочая область Gantt", { exact: true });
   expect((await viewport.boundingBox())!.height).toBeGreaterThan(350);
   const normalWidth = (await viewport.boundingBox())!.width;
@@ -148,7 +150,7 @@ test("large Gantt moves and resizes intervals, expands and uses the timezone fro
   await page.getByLabel("Время конца", { exact: true }).fill("00:45");
   await page.getByRole("button", { name: "Сохранить планирование", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0); const boardUrl = page.url();
-  await page.reload(); await expect(page.getByLabel("Масштаб Gantt", { exact: true })).toHaveValue("day");
+  await page.reload(); await expectChoiceValue(page.getByLabel("Масштаб Gantt", { exact: true }), "day");
   await page.getByRole("link", { name: "Настройки", exact: true }).click();
   await page.getByLabel("Часовой пояс", { exact: true }).fill("Europe/Moscow");
   await page.getByRole("button", { name: "Сохранить настройки", exact: true }).click();
@@ -201,14 +203,14 @@ test("quick creation, personalized drag columns, priority grouping, cancellation
   await expect(card).toBeVisible();await expect(page.getByLabel("Название новой задачи",{exact:true})).toHaveValue("");
   await expect(card.getByRole("combobox")).toHaveCount(0);
   await card.getByRole("button",{name:"Быстро и удобно",exact:true}).click();
-  await page.getByLabel("Приоритет",{exact:true}).selectOption("urgent");
+  await chooseChoice(page.getByLabel("Приоритет",{exact:true}), "urgent");
   await page.getByLabel("Быстрый выбор даты: plan-start-date",{exact:true}).click();
-  await page.getByRole("dialog").getByRole("button",{name:"Сегодня",exact:true}).click();
+  await page.getByRole("dialog").getByRole("menuitem",{name:"Сегодня",exact:true}).click();
   const today=new Date().toISOString().slice(0,10);
   await expect(page.getByLabel("Дата начала",{exact:true})).toHaveValue(today);
   await expect(page.getByLabel("Дата конца",{exact:true})).toHaveValue(today);
   await page.getByLabel("Быстрый выбор времени: plan-start-time",{exact:true}).click();
-  await page.getByRole("button",{name:"Утро · 09:00",exact:true}).click();
+  await page.getByRole("menuitem",{name:"Утро · 09:00",exact:true}).click();
   await expect(page.getByLabel("Время конца",{exact:true})).toHaveValue("10:00");
   await page.getByRole("button",{name:"Сохранить задачу",exact:true}).click();
   await expect(card).toHaveCSS("border-left-color","rgb(220, 38, 38)");

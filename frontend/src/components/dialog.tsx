@@ -3,11 +3,14 @@ import { t, useLanguage } from "@/systems/i18n/locale";
 import { X } from "@/components/icons";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Button } from "./ui/button";
+import {SaveHeaderContext,useSaveHeader} from "./ui/save-context";
 
 export function Dialog({ title, onClose, children, role = "dialog" }: { role?: "dialog" | "alertdialog"; title: string; onClose: () => void; children: ReactNode }) {
   useLanguage();
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const {target,count,register,setTarget}=useSaveHeader();
+  const save={target,count,register};
   useEffect(() => { const dialog = ref.current; dialog?.showModal(); return () => dialog?.close(); }, []);
-  return <dialog role={role} ref={ref} aria-labelledby={titleId} onCancel={(event) => { event.preventDefault(); onClose(); }} className="m-auto max-h-[90svh] w-[min(48rem,calc(100%-2rem))] overflow-y-auto rounded-2xl border border-border bg-card p-0 text-foreground shadow-2xl backdrop:bg-black/65"><div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-border bg-card px-6 py-4"><h2 id={titleId} className="text-lg font-semibold">{title}</h2><Button variant="outline" size="sm" aria-label={t("Закрыть окно")} onClick={onClose}><X aria-hidden="true" /></Button></div><AnimatedSurface kind="dialog" className="p-6">{children}</AnimatedSurface></dialog>;
+  return <SaveHeaderContext value={save}><dialog role={role} ref={ref} aria-labelledby={titleId} onCancel={(event) => { event.preventDefault(); onClose(); }} className="m-auto max-h-[90svh] w-[min(48rem,calc(100%-2rem))] overflow-hidden rounded-2xl border border-border bg-card p-0 text-foreground shadow-2xl backdrop:bg-black/65"><div className="flex max-h-[90svh] flex-col"><div className="z-30 flex shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-6 py-4"><h2 id={titleId} className="min-w-0 break-words text-lg font-semibold">{title}</h2><div className="flex shrink-0 items-center gap-2"><div ref={setTarget}/><Button variant="outline" size="icon" className="rounded-full" aria-label={t("Закрыть окно")} onClick={onClose}><X aria-hidden="true" /></Button></div></div><AnimatedSurface kind="dialog" className="min-h-0 overflow-y-auto p-6">{children}</AnimatedSurface></div></dialog></SaveHeaderContext>;
 }

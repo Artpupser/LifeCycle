@@ -31,16 +31,24 @@ pub(super) fn decode(s: &AppState, user: Uuid, row: Row) -> Result<Label, ApiErr
         format!("label:{user}:{}", row.id).as_bytes(),
     )?)
     .map_err(|_| ApiError::internal())?;
+    let description = super::catalog::fixed_entry(&row.kind, &data.name)
+        .map(|entry| entry.description.clone())
+        .unwrap_or(data.description);
+    let icon = super::catalog::fixed_icon(&row.kind, &data.name).or(data.icon);
     Ok(Label {
+        in_collection: data.in_collection,
+        value: super::catalog::stored_value(&row.kind, &data.name),
         id: row.id,
         name: data.name,
         color: data.color,
         kind: row.kind,
-        icon: data.icon,
+        icon,
         function_key: row.function_key,
         is_system: row.is_system,
         repeatable: row.repeatable,
         revision: row.revision,
+        description,
+        image_id: data.image_id,
     })
 }
 
@@ -68,13 +76,28 @@ pub(super) async fn register_kind(
     kind: &str,
     names: &[String],
 ) -> Result<(), ApiError> {
+    register_with_visibility(s, db, user, kind, names, true).await
+}
+pub(crate) async fn register_with_visibility(
+    s: &AppState,
+    db: &mut PgConnection,
+    user: Uuid,
+    kind: &str,
+    names: &[String],
+    personal: bool,
+) -> Result<(), ApiError> {
     lock(db, user).await?;
-    for name in names {
+    for value in names {
+        let name = super::catalog::fixed_entry(kind, value)
+            .map(|entry| entry.name.as_str())
+            .unwrap_or(value);
         let id = Uuid::new_v4();
         let data = Data {
             name: name.trim().into(),
             color: domain::default_color(),
             icon: None,
+            in_collection: personal,
+            ..Data::default()
         };
         if data.name.is_empty() {
             continue;
@@ -118,6 +141,7 @@ pub(super) async fn sync(s: &AppState, db: &mut PgConnection, user: Uuid) -> Res
             name: name.clone(),
             color,
             icon: None,
+            ..Data::default()
         };
         sqlx::query("INSERT INTO app.labels(id,user_id,kind,name_key,encrypted_data) VALUES($1,$2,'tag',$3,$4) ON CONFLICT(user_id,kind,name_key) DO UPDATE SET encrypted_data=EXCLUDED.encrypted_data").bind(id).bind(user).bind(key(s,user,"tag",&name)).bind(encode(s,user,id,&data)?).execute(&mut *db).await?;
     }
@@ -131,6 +155,18 @@ pub(super) async fn sync(s: &AppState, db: &mut PgConnection, user: Uuid) -> Res
         register(s, db, user, &c.data.tags).await?;
         register_kind(s, db, user, "category", &c.data.categories).await?;
     }
+    let synced: bool =
+        sqlx::query_scalar("SELECT collection_labels_synced FROM app.users WHERE id=$1")
+            .bind(user)
+            .fetch_one(&mut *db)
+            .await?;
+    if !synced {
+        crate::modules::intimacy::sync_collection_labels(s, db, user).await?;
+        sqlx::query("UPDATE app.users SET collection_labels_synced=true WHERE id=$1")
+            .bind(user)
+            .execute(&mut *db)
+            .await?;
+    }
     Ok(())
 }
 
@@ -141,7 +177,7 @@ pub(super) async fn propagate(
     label: &Label,
     replacement: Option<&str>,
 ) -> Result<(), ApiError> {
-    if ["toy", "emotion", "setting"].contains(&label.kind.as_str()) {
+    if super::catalog::collection_expandable(&label.kind).is_some() {
         return crate::modules::intimacy::rename_collection(
             s,
             db,

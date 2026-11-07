@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { parseContactFile, parseVcards } from "./import";
 import { contactMatches, emptyContact, mergeImported } from "./types";
 describe("contact import", () => {
+  it("imports explicit gender without guessing and preserves known gender when an import omits it",()=>{
+    const card=parseVcards("BEGIN:VCARD\nVERSION:4.0\nFN:Anna\nGENDER:F\nEND:VCARD").contacts[0];expect(card.gender).toBe("female");
+    const old={...emptyContact(),first_name:"Anna",gender:"female" as const};expect(mergeImported(old,emptyContact()).gender).toBe("female");
+    expect(parseContactFile(JSON.stringify({version:1,contacts:[old]})).contacts[0].gender).toBe("female");
+    expect(()=>parseContactFile(JSON.stringify({version:1,contacts:[{...old,gender:"invalid"}]}))).toThrow();
+  });
   it("reads folded vCards, escaped names, multiple phones and leap birthdays", () => {
     const { contacts, warnings } = parseVcards("BEGIN:VCARD\r\nVERSION:4.0\r\nN:Иванова;Анна;Петровна;;\r\nTEL;VALUE=uri:tel:+79001234567\r\nTEL:+79007654321\r\nBDAY:20000229\r\nNOTE:Первая\\nвторая\r\n строка\r\nCATEGORIES:Семья,Коллеги\\, друзья\r\nUID:stable-id\r\nEND:VCARD");
     expect(warnings).toEqual([]); expect(contacts[0]).toMatchObject({ first_name: "Анна", last_name: "Иванова", middle_name: "Петровна", birth_date: "2000-02-29", description: "Первая\nвтораястрока", source_keys: ["vcard:stable-id"], categories: ["Семья", "Коллеги, друзья"] });

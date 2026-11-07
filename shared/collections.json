@@ -1,0 +1,248 @@
+[
+  {
+    "id": "toy",
+    "name": "Игрушки",
+    "expandable": true,
+    "icon": "tabler:puzzle",
+    "entries": []
+  },
+  {
+    "id": "setting",
+    "name": "Обстановка",
+    "expandable": true,
+    "icon": "tabler:armchair",
+    "entries": []
+  },
+  {
+    "id": "position",
+    "name": "Позы",
+    "expandable": true,
+    "icon": "tabler:stretching",
+    "entries": []
+  },
+  {
+    "id": "porn_source",
+    "name": "Источники порно",
+    "expandable": true,
+    "icon": "tabler:books",
+    "entries": []
+  },
+  {
+    "id": "lubricant",
+    "name": "Лубриканты",
+    "expandable": false,
+    "icon": "tabler:droplet",
+    "entries": [
+      {
+        "value": "water_based",
+        "name": "На водной основе",
+        "description": "Смазка с водой в основе; обычно совместима с латексными презервативами.",
+        "icon": "tabler:droplet"
+      },
+      {
+        "value": "silicone_based",
+        "name": "На силиконовой основе",
+        "description": "Смазка на основе силикона; совместимость с игрушками проверяется по инструкции производителя.",
+        "icon": "tabler:droplets"
+      },
+      {
+        "value": "oil_based",
+        "name": "На масляной основе",
+        "description": "Смазка на основе масел; может повреждать латексные презервативы.",
+        "icon": "tabler:bottle"
+      },
+      {
+        "value": "hybrid",
+        "name": "Гибридный лубрикант",
+        "description": "Смазка со смешанной основой, например водно-силиконовой; состав указан на упаковке.",
+        "icon": "tabler:blend-mode"
+      }
+    ]
+  },
+  {
+    "id": "contraception",
+    "name": "Контрацепция",
+    "expandable": false,
+    "icon": "tabler:shield-check",
+    "entries": [
+      {
+        "value": "external_condom",
+        "name": "Наружный презерватив",
+        "description": "Барьерный чехол на пенис; препятствует попаданию спермы.",
+        "icon": "tabler:shield-check"
+      },
+      {
+        "value": "internal_condom",
+        "name": "Внутренний презерватив",
+        "description": "Барьерное средство, помещаемое внутрь влагалища.",
+        "icon": "tabler:shield-half"
+      },
+      {
+        "value": "combined_pill",
+        "name": "Комбинированные таблетки",
+        "description": "Таблетки с эстрогеном и прогестогеном.",
+        "icon": "tabler:pills"
+      },
+      {
+        "value": "progestogen_pill",
+        "name": "Прогестиновые таблетки",
+        "description": "Гормональные таблетки без эстрогена.",
+        "icon": "tabler:pill"
+      },
+      {
+        "value": "patch",
+        "name": "Контрацептивный пластырь",
+        "description": "Накожный пластырь, выделяющий контрацептивные гормоны.",
+        "icon": "tabler:bandage"
+      },
+      {
+        "value": "ring",
+        "name": "Вагинальное кольцо",
+        "description": "Гормональное кольцо, помещаемое во влагалище.",
+        "icon": "tabler:circle"
+      },
+      {
+        "value": "implant",
+        "name": "Контрацептивный имплант",
+        "description": "Небольшой гормональный стержень под кожей плеча.",
+        "icon": "tabler:line"
+      },
+      {
+        "value": "injection",
+        "name": "Контрацептивная инъекция",
+        "description": "Инъекционный гормональный метод контрацепции.",
+        "icon": "tabler:vaccine"
+      },
+      {
+        "value": "copper_iud",
+        "name": "Медная ВМС",
+        "description": "Внутриматочное средство с медью без гормонов.",
+        "icon": "tabler:letter-t"
+      },
+      {
+        "value": "hormonal_ius",
+        "name": "Гормональная ВМС",
+        "description": "Внутриматочная система, выделяющая прогестоген.",
+        "icon": "tabler:anchor"
+      },
+      {
+        "value": "diaphragm",
+        "name": "Диафрагма или колпачок",
+        "description": "Барьер, закрывающий шейку матки; используется со спермицидом.",
+        "icon": "tabler:umbrella"
+      },
+      {
+        "value": "sterilisation",
+        "name": "Стерилизация",
+        "description": "Хирургический метод: вазэктомия или операция на маточных трубах.",
+        "icon": "tabler:medical-cross"
+      },
+      {
+        "value": "fertility_awareness",
+        "name": "Распознавание фертильности",
+        "description": "Метод, основанный на наблюдении признаков фертильного периода цикла.",
+        "icon": "tabler:calendar-heart"
+      }
+    ]
+  },
+  {
+    "id": "emotion",
+    "name": "Эмоции",
+    "expandable": false,
+    "icon": "tabler:mood-smile",
+    "entries": [
+      {
+        "value": "Удовольствие",
+        "name": "Удовольствие",
+        "description": "Приятное удовлетворение от переживания.",
+        "icon": "twemoji:smiling-face-with-heart-eyes"
+      },
+      {
+        "value": "Расслабление",
+        "name": "Расслабление",
+        "description": "Ощущение отдыха и уменьшения напряжения.",
+        "icon": "twemoji:relieved-face"
+      },
+      {
+        "value": "Радость",
+        "name": "Радость",
+        "description": "Светлое, приятное эмоциональное состояние.",
+        "icon": "twemoji:grinning-face"
+      },
+      {
+        "value": "Близость",
+        "name": "Близость",
+        "description": "Ощущение связи и доверия.",
+        "icon": "twemoji:people-hugging"
+      },
+      {
+        "value": "Нежность",
+        "name": "Нежность",
+        "description": "Мягкое, заботливое отношение.",
+        "icon": "twemoji:smiling-face-with-hearts"
+      },
+      {
+        "value": "Возбуждение",
+        "name": "Возбуждение",
+        "description": "Ощущение эмоционального или телесного подъёма.",
+        "icon": "twemoji:fire"
+      },
+      {
+        "value": "Спокойствие",
+        "name": "Спокойствие",
+        "description": "Ощущение внутреннего равновесия.",
+        "icon": "twemoji:smiling-face-with-halo"
+      },
+      {
+        "value": "Усталость",
+        "name": "Усталость",
+        "description": "Ощущение потребности в отдыхе.",
+        "icon": "twemoji:sleeping-face"
+      },
+      {
+        "value": "Смущение",
+        "name": "Смущение",
+        "description": "Ощущение неловкости или застенчивости.",
+        "icon": "twemoji:flushed-face"
+      },
+      {
+        "value": "Разочарование",
+        "name": "Разочарование",
+        "description": "Переживание несоответствия ожиданиям.",
+        "icon": "twemoji:disappointed-face"
+      }
+    ]
+  },
+  {
+    "id": "sex_type",
+    "name": "Виды секса",
+    "expandable": false,
+    "icon": "tabler:gender-bigender",
+    "entries": [
+      {
+        "value": "anal",
+        "name": "Анальный",
+        "description": "Сексуальная активность с проникновением пениса, пальцев или игрушки в анус.",
+        "icon": "tabler:arrow-down"
+      },
+      {
+        "value": "oral",
+        "name": "Оральный",
+        "description": "Стимуляция гениталий или анальной области ртом, губами или языком.",
+        "icon": "tabler:message-heart"
+      },
+      {
+        "value": "vaginal",
+        "name": "Вагинальный",
+        "description": "Сексуальная активность с проникновением пениса, пальцев или игрушки во влагалище.",
+        "icon": "tabler:gender-female"
+      },
+      {
+        "value": "other",
+        "name": "Другой",
+        "description": "Другие формы: например взаимная ручная стимуляция или трение без проникновения.",
+        "icon": "tabler:dots"
+      }
+    ]
+  }
+]

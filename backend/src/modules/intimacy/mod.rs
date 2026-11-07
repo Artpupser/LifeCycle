@@ -8,3 +8,4 @@ mod tests;
 pub(crate) use models::AnalyticsSummary;
 pub use routes::routes;
 pub(crate) use service::{analytics_summary, analytics_summary_shared, rename_collection};
+pub(crate) use service::sync_collection_labels;

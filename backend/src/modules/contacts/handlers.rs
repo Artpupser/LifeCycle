@@ -19,6 +19,7 @@ use uuid::Uuid;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
+        .merge(super::relationships::routes())
         .route("/api/contacts", get(list).post(create))
         .route("/api/contacts/import", post(import))
         .route("/api/contacts/labels", post(labels))

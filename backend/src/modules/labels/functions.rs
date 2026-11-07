@@ -33,6 +33,7 @@ pub(super) async fn seed(s: &AppState, db: &mut PgConnection, user: Uuid) -> Res
             name: name.into(),
             color: domain::default_color(),
             icon: Some(icon.into()),
+            ..Data::default()
         };
         sqlx::query("INSERT INTO app.labels(id,user_id,kind,function_key,name_key,encrypted_data,is_system,repeatable) VALUES($1,$2,'functional',$3,$4,$5,true,$6) ON CONFLICT DO NOTHING")
         .bind(id).bind(user).bind(function).bind(key(s,user,"functional",name)).bind(encode(s,user,id,&data)?).bind(function!="ai_access").execute(&mut *db).await?;

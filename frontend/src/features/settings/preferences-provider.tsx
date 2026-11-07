@@ -28,6 +28,12 @@ export function PreferencesProvider({ initial, children }: { initial: Settings; 
     apply(); media.addEventListener("change", apply);
     return () => { media.removeEventListener("change", apply); delete root.dataset.theme; Object.keys(themeStyle(themes.light)).forEach(key=>root.style.removeProperty(key)); root.style.removeProperty("color-scheme"); };
   }, [settings.theme,settings.custom_theme]);
-  useEffect(()=>{void setLanguage(settings.language).catch(()=>notify(t("Не удалось загрузить язык. Обновите страницу и повторите выбор."),"error"));},[settings.language]);
+  useEffect(()=>{
+    let active=true;
+    void setLanguage(settings.language).then(result=>{
+      if(active&&result.applied&&result.fallback)notify(t("Перевод для сохранённого языка недоступен. Используется английский."),"info");
+    }).catch(()=>{if(active)notify(t("Не удалось загрузить язык. Обновите страницу и повторите выбор."),"error");});
+    return()=>{active=false;};
+  },[settings.language]);
   return <PreferencesContext value={{ settings, updateSettings }}><LabelProvider><SoundProvider preferences={settings}>{children}</SoundProvider></LabelProvider></PreferencesContext>;
 }

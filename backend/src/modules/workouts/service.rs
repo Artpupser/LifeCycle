@@ -33,15 +33,7 @@ pub(crate) async fn save_exercise_in(
     v.validate()?;
     tasks::lock_tasks(tx, user).await?;
     for image in &v.images {
-        let exists: bool =
-            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.media WHERE user_id=$1 AND id=$2)")
-                .bind(user)
-                .bind(image)
-                .fetch_one(&mut *tx)
-                .await?;
-        if !exists {
-            return Err(ApiError::validation("Select an owned uploaded image"));
-        }
+        crate::modules::media::ensure_owned(tx, user, *image).await?;
     }
     if !create {
         let old: DbJson<Exercise> =

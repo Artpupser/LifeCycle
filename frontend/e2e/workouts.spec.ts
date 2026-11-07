@@ -1,3 +1,4 @@
+import {chooseChoice} from "./choice-helpers";
 import {chooseAction} from "./upgrade-helpers";
 import { confirmUi } from "./upgrade-helpers";
 import { expect, test, type Page, type APIRequestContext } from "@playwright/test";
@@ -56,7 +57,7 @@ test("mobile workout builder persists exercises, progression and Today completio
   await page.getByRole("link", { name: "Привычки", exact: true }).first().click();
   await page.getByRole("button", { name: "Новая привычка", exact: true }).click();
   await page.getByLabel("Название привычки", { exact: true }).fill("Тренировка дня");
-  await page.getByLabel("Тренировка привычки", { exact: true }).selectOption({ label: "Силовая браузера" });
+  await chooseChoice(page.getByLabel("Тренировка привычки", { exact: true }), { label: "Силовая браузера" });
   await page.getByRole("button", { name: "Сохранить привычку", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("link", { name: "Сегодня", exact: true }).click();
@@ -98,7 +99,7 @@ test("timed workout checks actual expiry, round rests and cancellation after rel
   await page.getByRole("link", { name: "Тренировки", exact: true }).click();
   await page.getByRole("button", { name: "Новое упражнение", exact: true }).click();
   await page.getByLabel("Название упражнения", { exact: true }).fill("Планка браузера");
-  await page.getByLabel("Тип упражнения", { exact: true }).selectOption("duration");
+  await chooseChoice(page.getByLabel("Тип упражнения", { exact: true }), "duration");
   await page.getByRole("button", { name: "Сохранить упражнение", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: "Новая тренировка", exact: true }).click();

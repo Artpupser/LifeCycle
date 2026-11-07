@@ -1,10 +1,11 @@
+import {ChoiceField} from "@/components/ui/choice-picker";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Dialog } from "@/components/dialog";
 import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
-import { Input, Select, Textarea } from "@/components/ui/input";
+import {Input,Textarea} from "@/components/ui/input";
 import type { AiConfig, Chat, Preview, Turn } from "@/features/ai/types";
 import { usePreferences } from "@/features/settings/preferences-context";
 import { useResource } from "@/hooks/use-resource";
@@ -66,7 +67,7 @@ export function GreetingDialog({ close, localRecipient = "" }: { close: () => vo
     <fieldset disabled={busy || Boolean(pending)} className="space-y-4" onChange={() => { setPreview(null); setCopied(false); }}>
       <FormField id="greeting-name" label={t("Получатель поздравления")}><Input id="greeting-name" maxLength={200} value={name} onChange={e => setName(e.target.value)} /></FormField>
       <FormField id="greeting-occasion" label={t("Повод")}><Input id="greeting-occasion" maxLength={200} value={occasion} onChange={e => setOccasion(e.target.value)} /></FormField>
-      <FormField id="greeting-style" label={t("Стиль поздравления")}><Select id="greeting-style" value={style} onChange={e => setStyle(e.target.value as keyof typeof styles)}>{Object.entries(styles).map(([key, label]) => <option key={key} value={key}>{t(label)}</option>)}</Select></FormField>
+      <FormField id="greeting-style" label={t("Стиль поздравления")}><ChoiceField id="greeting-style" value={style} change={next => setStyle(next as keyof typeof styles)}>{Object.entries(styles).map(([key, label]) => <option key={key} value={key}>{t(label)}</option>)}</ChoiceField></FormField>
       <FormField id="greeting-context" label={t("Разрешённые сведения и пожелания")}><Textarea id="greeting-context" maxLength={4000} value={context} onChange={e => setContext(e.target.value)} /></FormField>
     </fieldset>
     {localRecipient && <p className="text-xs text-muted-foreground">{t("Локальный шаблон подставит имя получателя из события. В AI-форму сведения не подставляются.")}</p>}

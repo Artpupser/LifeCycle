@@ -1,3 +1,4 @@
+import {chooseChoice} from "./choice-helpers";
 import {chooseAction,selectTags} from "./upgrade-helpers";
 import { expect, test } from "@playwright/test";
 import { confirmUi, login } from "./upgrade-helpers";
@@ -93,7 +94,7 @@ test("2.2 birthday links synchronize, suspend, unlink and preserve private local
   await page.getByRole("button", { name: "Подтвердить удаление контакта", exact: true }).click();
   await expect(page.locator("main").getByRole("alert")).toContainText("Контакт изменился в другом окне");
   await page.reload(); await chooseAction(page,"Удалить контакт");
-  await page.getByRole("combobox",{name:"Что сделать со связанными событиями",exact:true}).selectOption("keep");
+  await chooseChoice(page.getByRole("radiogroup",{name:"Что сделать со связанными событиями",exact:true}), "keep");
   await page.getByRole("button", { name: "Подтвердить удаление контакта", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Новое имя", exact: true })).toHaveCount(0);
   await page.goto("/countdowns"); await expect(page.locator("article")).toHaveCount(1);

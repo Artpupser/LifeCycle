@@ -6,3 +6,4 @@ mod service;
 #[cfg(test)]
 mod tests;
 pub use routes::routes;
+pub(crate) use service::ensure_owned;

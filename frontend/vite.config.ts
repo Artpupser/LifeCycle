@@ -6,6 +6,6 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
-  server: { port: 5173, strictPort: true, proxy: { "/api": "http://127.0.0.1:8080" } },
+  server: { port: 5173, strictPort: true, fs: { allow: [fileURLToPath(new URL(".", import.meta.url)), fileURLToPath(new URL("../shared", import.meta.url))] }, proxy: { "/api": "http://127.0.0.1:8080" } },
   test: { include: ["src/**/*.test.ts"] },
 });

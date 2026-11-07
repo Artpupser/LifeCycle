@@ -1,6 +1,23 @@
 use super::models::MAX_BYTES;
 use crate::shared::errors::ApiError;
 
+pub(crate) async fn ensure_owned(
+    db: &mut sqlx::PgConnection,
+    user: uuid::Uuid,
+    image: uuid::Uuid,
+) -> Result<(), ApiError> {
+    let exists: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.media WHERE user_id=$1 AND id=$2)")
+            .bind(user)
+            .bind(image)
+            .fetch_one(db)
+            .await?;
+    if !exists {
+        return Err(ApiError::validation("Select an owned uploaded image"));
+    }
+    Ok(())
+}
+
 pub(super) fn verify_image(mime: &str, bytes: &[u8]) -> Result<(), ApiError> {
     let valid = match mime {
         "image/png" => {

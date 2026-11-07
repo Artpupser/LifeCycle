@@ -1,3 +1,4 @@
+import {SaveButton,SaveForm} from "@/components/ui/save";
 import {EntitySelectionArea,SelectionItem} from "@/systems/selection/entities";
 import {SelectionGesture} from "@/systems/selection/gestures";
 import {useSelection} from "@/systems/selection/state";
@@ -68,5 +69,5 @@ function FolderEditor({ initial, saved, close }: { initial: { id?: string; name:
     catch (failure) { setError(errorMessage(failure)); }
     finally { setBusy(false); }
   }
-  return <Dialog title={initial.id ? t("Редактировать папку") : t("Новая папка")} onClose={close}><form className="space-y-5" onSubmit={(event) => void submit(event)}><FormField id="folder-name" label={t("Название папки")}><Input id="folder-name" required autoFocus maxLength={100} value={value.name} onChange={(event) => setValue({ ...value, name: event.target.value })} /></FormField><FormField id="folder-color" label={t("Цвет папки")}><Input id="folder-color" type="color" value={value.color} onChange={(event) => setValue({ ...value, color: event.target.value })} /></FormField>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<Button type="submit" disabled={busy}>{busy ? t("Сохраняем…") : t("Сохранить папку")}</Button></form></Dialog>;
+  return <Dialog title={initial.id ? t("Редактировать папку") : t("Новая папка")} onClose={close}><SaveForm className="space-y-5" onSubmit={(event) => void submit(event)}><FormField id="folder-name" label={t("Название папки")}><Input id="folder-name" required autoFocus maxLength={100} value={value.name} onChange={(event) => setValue({ ...value, name: event.target.value })} /></FormField><FormField id="folder-color" label={t("Цвет папки")}><Input id="folder-color" type="color" value={value.color} onChange={(event) => setValue({ ...value, color: event.target.value })} /></FormField>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<SaveButton type="submit" disabled={busy}>{busy ? t("Сохраняем…") : t("Сохранить папку")}</SaveButton></SaveForm></Dialog>;
 }

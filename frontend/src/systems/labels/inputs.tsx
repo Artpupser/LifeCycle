@@ -1,9 +1,10 @@
+import {ChoiceInput,ChoiceField} from "@/components/ui/choice-picker";
 import {toggleKeys} from "@/systems/selection/state";
 import {AppIcon} from "@/systems/icons/app-icon";
 import { useLabelCatalog } from "./context";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { useId, useState, type ChangeEvent } from "react";
-import { Input, Select, Textarea } from "@/components/ui/input";
+import {Input,Textarea} from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/form-field";
 import { ErrorState, LoadingState } from "@/components/resource-state";
@@ -49,12 +50,12 @@ export function LabelInput({ id, label, value, change, suggestions = [], single 
   const Component = multiline ? Textarea : Input;
   if (!single && !freeform) return <TagSelection id={id} label={label} required={required} value={labels} change={next=>change(multiline?next.join("\n"):formatLabels(next))} tags={normalizeLabels(available).map(name=>({name}))}/>;
   return <div className="space-y-2">
-    <Component id={id} aria-label={t(label)} required={required} maxLength={single ? 128 : 3900}
-      list={!multiline && available.length ? `${id}-suggestions` : undefined} value={value}
+    {!multiline&&available.length>0?<ChoiceInput id={id??"label-input"} value={value} displayValue={value} changeText={change} choose={change} options={normalizeLabels(available).map(item=>({value:single?item:formatLabels([item]),label:item}))} title={t("Выберите метку")} searchLabel={t("Поиск меток")} empty={t("Метки не найдены")} inputProps={{"aria-label":t(label),required,maxLength:single?128:3900,"aria-invalid":Boolean(error),"aria-describedby":error?`${id}-error`:undefined,ref:element=>element?.setCustomValidity(error)}}/>:<Component id={id} aria-label={t(label)} required={required} maxLength={single ? 128 : 3900}
+      value={value}
       aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined}
       ref={(element: HTMLInputElement | HTMLTextAreaElement | null) => { element?.setCustomValidity(error); }}
-      onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => change(event.target.value)} />
-    {available.length > 0 && <datalist id={`${id}-suggestions`}>{normalizeLabels(available).map(item => <option key={item} value={single||multiline?item:formatLabels([item])} />)}</datalist>}
+      onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => change(event.target.value)} />}
+
     {error && <p id={`${id}-error`} role="status" className="text-xs text-destructive">{error}</p>}
   </div>;
 }
@@ -90,13 +91,13 @@ export function TagSelection({ value, change, tags = [], id, label, required = f
     },registry.retry);
   }
   return <div className="space-y-3">
-    <div className="flex flex-wrap items-center gap-2">{functionalCreated&&<Select aria-label={t("Вид метки")} className="w-auto" value={creationKind} disabled={unavailable} onChange={event=>setCreationKind(event.target.value as "tag"|"functional")}><option value="tag">{t("Тег")}</option><option value="functional">{t("Функциональная метка")}</option></Select>}<Input id={inputId} aria-label={label??(!id?t("Найти или создать метку"):undefined)} placeholder={t("Найти или создать метку")} className="min-w-40 flex-1" value={draft} disabled={disabled} aria-disabled={action.busy} maxLength={128} aria-invalid={!!(invalid||nameError)} aria-describedby={invalid||nameError?`${inputId}-error`:undefined} ref={element=>element?.setCustomValidity(invalid||nameError||(action.busy?t("Сохранение…"):""))} onChange={event=>{if(!action.busy)setDraft(event.target.value);}} onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();void add();}}}/><Button disabled={unavailable||!name||!!nameError||(creationKind==="tag"&&value.length>=30)} onClick={()=>void add()}>{t("Добавить метку")}</Button></div>
+    <div className="flex flex-wrap items-center gap-2">{functionalCreated&&<ChoiceField aria-label={t("Вид метки")} className="w-auto" value={creationKind} disabled={unavailable} change={next=>setCreationKind(next as "tag"|"functional")}><option value="tag">{t("Тег")}</option><option value="functional">{t("Функциональная метка")}</option></ChoiceField>}<Input id={inputId} aria-label={label??(!id?t("Найти или создать метку"):undefined)} placeholder={t("Найти или создать метку")} className="min-w-40 flex-1" value={draft} disabled={disabled} aria-disabled={action.busy} maxLength={128} aria-invalid={!!(invalid||nameError)} aria-describedby={invalid||nameError?`${inputId}-error`:undefined} ref={element=>element?.setCustomValidity(invalid||nameError||(action.busy?t("Сохранение…"):""))} onChange={event=>{if(!action.busy)setDraft(event.target.value);}} onKeyDown={event=>{if(event.key==="Enter"){event.preventDefault();void add();}}}/><Button disabled={unavailable||!name||!!nameError||(creationKind==="tag"&&value.length>=30)} onClick={()=>void add()}>{t("Добавить метку")}</Button></div>
     {functionalCreated&&creationKind==="functional"&&<Cardinality value={repeatable} change={setRepeatable} disabled={unavailable}/> }
     <div className="flex max-h-52 flex-wrap gap-3 overflow-y-auto">{names.filter(item=>!name||key(item).includes(key(name))||value.some(selected=>key(selected)===key(item))).map(item=>{
       const same=(candidate:string)=>key(candidate)===key(item);
       const selected=value.some(same);
       const option=options.find(option=>same(option.name));
-      return <label key={key(item)} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selected} disabled={unavailable||(!selected&&value.length>=30)} onChange={event=>change(toggleKeys(value,item,event.target.checked,key))}/><TagChip name={item} color={option?.color} icon={option?.icon}/></label>;
+      return <label key={key(item)} className="flex items-center gap-2 text-sm"><Input type="checkbox" checked={selected} disabled={unavailable||(!selected&&value.length>=30)} onChange={event=>change(toggleKeys(value,item,event.target.checked,key))}/><TagChip name={item} color={option?.color} icon={option?.icon}/></label>;
     })}</div>
     {registry.resource.status==="loading"&&!names.length&&<LoadingState/>}
     {registry.resource.status==="error"&&<ErrorState message={registry.resource.message} retry={registry.retry}/>}
@@ -110,9 +111,9 @@ export function LabelManager({ labels, busy, rename, remove, label = t("Метк
   const [name, setName] = useState("");
   const [replacement, setReplacement] = useState("");
   return <div className="space-y-4">
-    <Select aria-label={t(label)} value={name} disabled={busy} onChange={event => { setName(event.target.value); setReplacement(event.target.value); }}>
+    <ChoiceField aria-label={t(label)} value={name} disabled={busy} change={next => { setName(next); setReplacement(next); }}>
       <option value="">{t("Выберите метку")}</option>{normalizeLabels(labels).sort().map(item => <option key={item}>{item}</option>)}
-    </Select>
+    </ChoiceField>
     <FormField id="label-replacement" label={t("Новое название метки")}><LabelInput id="label-replacement" single value={replacement} change={setReplacement} /></FormField>
     <div className="flex flex-wrap gap-2">
       <Button disabled={busy || !name || !replacement.trim() || [...replacement.trim()].length > 64} onClick={() => rename(name, replacement.trim())}>{t("Переименовать метку")}</Button>
@@ -121,4 +122,4 @@ export function LabelManager({ labels, busy, rename, remove, label = t("Метк
   </div>;
 }
 
-export function Cardinality({value,change,disabled=false}:{value:boolean;change:(value:boolean)=>void;disabled?:boolean}){useLanguage();const id=useId();return <FormField id={id} label={t("Кратность метки")}><Select id={id} value={value?"multiple":"single"} disabled={disabled} onChange={event=>change(event.target.value==="multiple")}><option value="single">{t("Единоразовая")}</option><option value="multiple">{t("Многоразовая")}</option></Select></FormField>;}
+export function Cardinality({value,change,disabled=false}:{value:boolean;change:(value:boolean)=>void;disabled?:boolean}){useLanguage();const id=useId();return <FormField id={id} label={t("Кратность метки")}><ChoiceField id={id} value={value?"multiple":"single"} disabled={disabled} change={next=>change(next==="multiple")}><option value="single">{t("Единоразовая")}</option><option value="multiple">{t("Многоразовая")}</option></ChoiceField></FormField>;}

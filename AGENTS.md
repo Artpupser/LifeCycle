@@ -43,4 +43,4 @@ Do not claim unexecuted tests have passed.
 
 # Protected files
 
-Do not modify: `project/ideas.md`, `project/prompts.md`, `project/plugins.md`, `project/help.md`, `README.md`
+Do not modify: `project/ideas.md`, `project/prompts.md`, `project/plugins.md`, `project/help.md`, `README.md` `.git/`

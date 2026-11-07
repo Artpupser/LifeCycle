@@ -1,3 +1,5 @@
+import {expectChoiceValue} from "./choice-helpers";
+import {chooseChoice} from "./choice-helpers";
 import { expect, test } from "@playwright/test";
 
 test("email login, saved questionnaire and preferences, session restore and logout", async ({ page, request }) => {
@@ -31,17 +33,17 @@ test("email login, saved questionnaire and preferences, session restore and logo
   await page.getByLabel("Дата рождения", { exact: true }).fill("1995-06-15");
   await page.getByLabel("Заболевания", { exact: true }).fill("Первая запись\nВторая запись");
   await page.getByLabel("Количество друзей", { exact: true }).fill("0");
-  await page.getByLabel("Есть семья", { exact: true }).selectOption("false");
+  await chooseChoice(page.getByLabel("Есть семья", { exact: true }), "false");
   await page.getByRole("button", { name: "Сохранить профиль", exact: true }).click();
   await expect(page.getByText("Профиль сохранён", { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Псевдоним", { exact: true })).toHaveValue("Мой ритм");
   await expect(page.getByLabel("Количество друзей", { exact: true })).toHaveValue("0");
-  await expect(page.getByLabel("Есть семья", { exact: true })).toHaveValue("false");
+  await expectChoiceValue(page.getByLabel("Есть семья", { exact: true }), "false");
   await expect(page.getByLabel("Заболевания", { exact: true })).toHaveValue("Первая запись\nВторая запись");
 
   await page.getByRole("link", { name: "Настройки", exact: true }).click();
-  await page.getByLabel("Тема", { exact: true }).selectOption("light");
+  await chooseChoice(page.getByLabel("Тема", { exact: true }), "light");
   await page.getByLabel("Часовой пояс", { exact: true }).fill("Europe/Moscow");
   await page.getByRole("button", { name: "Сохранить настройки", exact: true }).click();
   await expect(page.getByText("Настройки сохранены", { exact: true })).toBeVisible();

@@ -1,3 +1,6 @@
+import {ChoiceField} from "@/components/ui/choice-picker";
+import {ZodiacBadge} from "@/systems/icons/zodiac-badge";
+import {SaveButton,SaveForm} from "@/components/ui/save";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { CountryInput } from "@/systems/phone/country-input";
 import { LoaderCircle, Save, UserRound } from "@/components/icons";
@@ -6,7 +9,7 @@ import { FormField } from "@/components/form-field";
 import { ErrorState, LoadingState } from "@/components/resource-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input, Select, Textarea } from "@/components/ui/input";
+import {Input,Textarea} from "@/components/ui/input";
 import { useResource } from "@/hooks/use-resource";
 import { api, errorMessage } from "@/lib/api";
 import { usePreferences } from "@/features/settings/preferences-context";
@@ -22,7 +25,7 @@ function Section({ title, description, children }: { title: string; description:
 
 function OptionalBoolean({ id, label, value, onChange }: { id: string; label: string; value: boolean | null; onChange: (value: boolean | null) => void }) {
   useLanguage();
-  return <FormField id={id} label={t(label)}><Select id={id} value={value === null ? "" : String(value)} onChange={(event) => onChange(event.target.value === "" ? null : event.target.value === "true")}><option value="">{t("Не указано")}</option><option value="true">{t("Да")}</option><option value="false">{t("Нет")}</option></Select></FormField>;
+  return <FormField id={id} label={t(label)}><ChoiceField id={id} value={value === null ? "" : String(value)} change={(next) => onChange(next === "" ? null : next === "true")}><option value="">{t("Не указано")}</option><option value="true">{t("Да")}</option><option value="false">{t("Нет")}</option></ChoiceField></FormField>;
 }
 
 function ProfileEditor({ initial }: { initial: Profile }) {
@@ -64,16 +67,16 @@ function ProfileEditor({ initial }: { initial: Profile }) {
 
   const medicalFields: { key: MedicalKey; label: string }[] = [{ key: "conditions", label: t("Заболевания") }, { key: "daily_medications", label: t("Лекарства на ежедневной основе") }, { key: "past_medications", label: t("Лекарства, которые принимали раньше") }, { key: "surgeries", label: t("Перенесённые операции") }];
 
-  return <form onSubmit={(event) => void submit(event)} className="space-y-6">
+  return <SaveForm onSubmit={(event) => void submit(event)} className="space-y-6">
     <fieldset disabled={pending} className="min-w-0 space-y-6">
       <Section title={t("Основное")} description={t("Все поля анкеты необязательны. Заполняйте только то, что хотите сохранить в своём профиле.")}>
         {textField("nickname", t("Псевдоним"), 80)}{textField("name", t("Имя"), 80)}
         <FormField id="profile-email" label={t("Электронная почта")} hint={t("Адрес, который используется для входа.")}><Input id="profile-email" type="email" value={user?.email ?? ""} readOnly aria-describedby="profile-email-hint" /></FormField>
-        <FormField id="gender" label={t("Пол")}><Select id="gender" value={draft.gender} onChange={(event) => update("gender", event.target.value as Profile["gender"])}><option value="unspecified">{t("Не указан")}</option><option value="female">{t("Женский")}</option><option value="male">{t("Мужской")}</option><option value="other">{t("Другое")}</option></Select></FormField>
+        <FormField id="gender" label={t("Пол")}><ChoiceField id="gender" value={draft.gender} change={(next) => update("gender", next as Profile["gender"])}><option value="unspecified">{t("Не указан")}</option><option value="female">{t("Женский")}</option><option value="male">{t("Мужской")}</option><option value="other">{t("Другое")}</option></ChoiceField></FormField>
         {textField("residence_country", t("Страна проживания"))}
       </Section>
       <Section title={t("Рождение и происхождение")} description={t("Исторические сведения хранятся отдельно от текущего имени, пола и страны проживания. Их можно исправить или очистить явно.")}>
-        <FormField id="birth_date" label={t("Дата рождения")}><Input id="birth_date" type="date" min="1900-01-01" max={today} value={draft.birth_date ?? ""} onChange={event => update("birth_date", event.target.value || null)} /></FormField>
+        <FormField id="birth_date" label={t("Дата рождения")}><Input id="birth_date" type="date" min="1900-01-01" max={today} value={draft.birth_date ?? ""} onChange={event => update("birth_date", event.target.value || null)} /><ZodiacBadge birthDate={draft.birth_date}/></FormField>
         {textField("birth_country", t("Страна рождения"))}
         <OriginFields value={draft.origin} change={origin => update("origin", origin)} />
       </Section>
@@ -101,13 +104,13 @@ function ProfileEditor({ initial }: { initial: Profile }) {
         {draft.gender !== "male" && <>{textField("breast_size", t("Размер груди"))}<OptionalBoolean id="pregnant" label={t("Беременность")} value={draft.pregnant} onChange={(value) => update("pregnant", value)} /></>}
       </Section>
     </fieldset>
-    <div className="sticky bottom-3 z-10 rounded-2xl border border-border bg-card/95 p-4 shadow-xl backdrop-blur-sm">
+    <div className="rounded-xl border border-border bg-card p-3">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="text-sm" aria-live="polite">{error ? <span className="text-destructive" role="alert">{error}</span> : success ? <span className="text-primary">{t("Профиль сохранён")}</span> : <span className="text-muted-foreground">{dirty ? t("Есть несохранённые изменения") : t("Все изменения сохранены")}</span>}</div>
-        <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={pending || !dirty} onClick={() => { setDraft(saved); setError(null); setSuccess(false); }}>{t("Отменить")}</Button><Button type="submit" disabled={pending || !dirty}>{pending ? <LoaderCircle className="" aria-hidden="true" /> : <Save aria-hidden="true" />}{pending ? t("Сохраняем…") : t("Сохранить профиль")}</Button></div>
+        <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={pending || !dirty} onClick={() => { setDraft(saved); setError(null); setSuccess(false); }}>{t("Отменить")}</Button><SaveButton type="submit" disabled={pending || !dirty}>{pending ? <LoaderCircle className="" aria-hidden="true" /> : <Save aria-hidden="true" />}{pending ? t("Сохраняем…") : t("Сохранить профиль")}</SaveButton></div>
       </div>
     </div>
-  </form>;
+  </SaveForm>;
 }
 
 export function ProfilePage() {

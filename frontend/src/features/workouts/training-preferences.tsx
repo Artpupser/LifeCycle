@@ -1,3 +1,4 @@
+import {SaveButton,SaveForm} from "@/components/ui/save";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { useState, type FormEvent } from "react";
 import { FormField } from "@/components/form-field";
@@ -36,11 +37,11 @@ function PreferencesForm({ initial, saved }: { initial: Preferences; saved: (val
       setStale(failure instanceof ApiError && failure.code === "workout_preferences_stale");
     } finally { setBusy(false); }
   }
-  return <form onSubmit={(event) => void submit(event)} className="space-y-4" aria-label={t("Цели и условия тренировок")}>
+  return <SaveForm onSubmit={(event) => void submit(event)} className="space-y-4" aria-label={t("Цели и условия тренировок")}>
     <div className="grid gap-4 lg:grid-cols-3">{fields.map(([key, label, placeholder]) => <FormField key={key} id={`training-${key}`} label={t(label)}><Textarea id={`training-${key}`} maxLength={2000} disabled={busy} value={value.data[key] ?? ""} placeholder={t(placeholder)} className="min-h-28" onChange={(event) => { setDraft({ revision: value.revision, data: { ...value.data, [key]: event.target.value } }); setSuccess(false); }} /></FormField>)}</div>
-    <div className="flex flex-wrap items-center gap-3"><Button type="submit" disabled={busy || !dirty}>{busy ? t("Сохранение…") : t("Сохранить цели и условия")}</Button>{success && !dirty && <p role="status" className="text-sm text-muted-foreground">{t("Цели и условия сохранены.")}</p>}</div>
+    <div className="flex flex-wrap items-center gap-3"><SaveButton type="submit" disabled={busy || !dirty}>{busy ? t("Сохранение…") : t("Сохранить цели и условия")}</SaveButton>{success && !dirty && <p role="status" className="text-sm text-muted-foreground">{t("Цели и условия сохранены.")}</p>}</div>
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}{stale && <Button variant="outline" onClick={async () => { try { const next = await api<Preferences>("/workouts/preferences"); saved(next); setDraft(null); setError(null); setStale(false); } catch (failure) { setError(errorMessage(failure)); } }}>{t("Загрузить сохранённые данные")}</Button>}
-  </form>;
+  </SaveForm>;
 }
 
 export function TrainingPreferences() {

@@ -17,6 +17,12 @@ export class ApiError extends Error {
 }
 
 export function apiErrorMessage(status: number, code: string) {
+  if(code==="contact_relationship_self")return t("Нельзя связать контакт с самим собой.");
+  if(code==="contact_relationship_duplicate")return t("Такая связь уже существует.");
+  if(code==="contact_relationship_cycle")return t("Связь создаёт цикл предков. Проверьте направление родитель → ребёнок.");
+  if(code==="contact_relationship_family_conflict")return t("Предок и потомок не могут быть одновременно братьями, сёстрами или партнёрами.");
+  if(code==="contact_relationship_limit")return t("Достигнут лимит 2000 связей контактов.");
+  if(code==="contact_relationship_stale")return t("Связь изменилась. Обновите древо перед повторным действием.");
   if (code === "contact_birthday_exists") return t("У контакта уже есть связанный день рождения. Используйте существующее событие, чтобы не создавать дубль.");
   if (code === "event_contact_locked") return t("Для сохранения самостоятельного события сначала нажмите «Отвязать контакт» в его карточке.");
   if (code === "contact_stale") return t("Контакт изменился в другом окне. Обновите список и откройте актуальную запись; введённые данные остались в форме.");
@@ -100,6 +106,7 @@ export async function api<T>(path: string, options: { method?: "GET" | "POST" | 
   if(options.method==="POST"&&(/^\/tasks\/[^/]+\/occurrences\/[^/]+$/.test(path)||/^\/habits\/[^/]+\/marks\/[^/]+$/.test(path))){const status=(result as {status?:string}|null)?.status;if(status)feedbackEvents.dispatchEvent(new CustomEvent("task-result",{detail:{status}}));}
   if(options.method&&options.method!=="GET"&&/^\/(labels|task-tags|notes|contacts|countdowns|workouts|exercises)(\/|$)/.test(path))revalidateResource("/labels");
   if(options.method&&options.method!=="GET"&&(path.startsWith("/labels")||/\/ai-access$/.test(path))){revalidateResource("/labels/values");revalidateResource("/labels/subject-tags");}
+  if(options.method&&options.method!=="GET"&&/^\/contacts(?:\/|$)/.test(path)){revalidateResource("/contacts");revalidateResource("/contacts/relationships");revalidateResource("/countdowns");}
   const effect=mutationEffect(path,options.method??"GET",options.body,result);
   if(effect)showEffect(effect,origin);
   return result;

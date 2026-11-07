@@ -1,3 +1,5 @@
+import {expectChoiceValue} from "./choice-helpers";
+import {chooseChoice} from "./choice-helpers";
 import {chooseAction,selectTags} from "./upgrade-helpers";
 import {expect, test, type Page} from "@playwright/test";
 import type {Settings} from "../src/features/settings/types";
@@ -44,12 +46,12 @@ test("contacts use one search, normalized tags and queued deletion choices with 
   await expect(page.locator("main select")).toHaveCount(0);
   await chooseAction(page,"Удалить контакт");
   const confirmation=page.getByRole("alertdialog");
-  await expect(confirmation.getByRole("combobox")).toHaveValue("keep");
+  await expectChoiceValue(confirmation.getByRole("radiogroup"), "keep");
   await page.keyboard.press("Escape");
   expect(deleted).toEqual([]);
   await expect(confirmation).toHaveCount(0);
   await chooseAction(page,"Удалить контакт");
-  await confirmation.getByRole("combobox").selectOption("delete");
+  await chooseChoice(confirmation.getByRole("radiogroup"), "delete");
   await confirmation.getByRole("button",{name:"Подтвердить удаление контакта",exact:true}).click();
   await expect(page.getByText("Контакт удалён.",{exact:true})).toBeVisible();
   expect(deleted).toEqual([{revision:1,events:"delete"}]);

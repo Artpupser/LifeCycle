@@ -1,0 +1,36 @@
+/* Shared field geometry and states. Motion timing belongs to systems/animations. */
+.lc-input, .lc-textarea {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: .75rem;
+  background: var(--background);
+  color: var(--foreground);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--foreground) 4%, transparent);
+}
+.lc-input:hover:not(:disabled):not(:read-only), .lc-textarea:hover:not(:disabled):not(:read-only) { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
+.lc-input:focus-visible, .lc-textarea:focus-visible { border-color: var(--primary); outline: 2px solid color-mix(in srgb, var(--primary) 35%, transparent); outline-offset: 2px; }
+.lc-input[aria-invalid="true"], .lc-input:user-invalid, .lc-textarea[aria-invalid="true"], .lc-textarea:user-invalid { border-color: var(--destructive); }
+.lc-input:disabled, .lc-textarea:disabled { cursor: not-allowed; opacity: .55; box-shadow: none; }
+.lc-input:read-only, .lc-textarea:read-only { background: color-mix(in srgb, var(--muted) 35%, var(--background)); }
+.lc-textarea { field-sizing: content; max-height: 28rem; resize: vertical; }
+.lc-toggle { appearance: none; border: 1.5px solid var(--muted-foreground); background: var(--background); cursor: pointer; }
+.lc-toggle:checked { border-color: var(--primary); }
+.lc-toggle[type="checkbox"]:checked { background: var(--primary); }
+.lc-toggle:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+.lc-toggle:disabled { cursor: not-allowed; opacity: .5; }
+.lc-range { appearance: none; background: transparent; cursor: pointer; }
+.lc-range:disabled { cursor: not-allowed; opacity: .5; }
+.lc-range:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: .75rem; }
+.lc-range::-webkit-slider-runnable-track { height: .375rem; border-radius: 1rem; background: var(--muted); }
+.lc-range::-moz-range-track { height: .375rem; border-radius: 1rem; background: var(--muted); }
+.lc-range::-webkit-slider-thumb { appearance: none; width: 1.25rem; height: 1.25rem; margin-top: -.4375rem; border-radius: 50%; border: 2px solid var(--background); background: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.lc-range::-moz-range-thumb { width: 1rem; height: 1rem; border-radius: 50%; border: 2px solid var(--background); background: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+@media (forced-colors: active) {
+ .lc-toggle { appearance: auto; }
+ .lc-toggle + [data-toggle-mark] { display: none; }
+ .lc-range { appearance: auto; }
+}
+
+/* Composite choices use the outer control's border and focus indicator. */
+.lc-input[data-contained] { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.lc-input[data-contained]:focus-visible { outline: none; }

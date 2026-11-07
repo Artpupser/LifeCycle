@@ -1,8 +1,8 @@
-import {afterEach,expect,it} from "vitest";
+import {afterEach,expect,it,vi} from "vitest";
 import {createElement} from "react";
 import {renderToStaticMarkup} from "react-dom/server";
 import {english} from "./messages";
-import {getLocale,setLanguage,t} from "./locale";
+import {getLanguage,getLocale,setLanguage,t,resolveLanguage,languageName} from "./locale";
 import {recurrenceLabels} from "@/features/countdowns/types";
 import {dateTimeLabel} from "@/lib/dates";
 import {Markdown} from "@/components/markdown";
@@ -18,4 +18,17 @@ it("never translates user Markdown and preserves interpolation values",async()=>
 });
 it("the English catalog preserves every interpolation placeholder",()=>{
  for(const [source,translation]of Object.entries(english))expect([...translation.matchAll(/\{\w+\}/g)].map(match=>match[0]).sort(),source).toEqual([...source.matchAll(/\{\w+\}/g)].map(match=>match[0]).sort());
+});
+it("resolves regional languages and falls back to English for unavailable translations",async()=>{
+ expect(resolveLanguage("ru-RU")).toEqual({language:"ru",fallback:false});
+ expect(resolveLanguage("EN_us")).toEqual({language:"en",fallback:false});
+ for(const code of ["de","fr-CA","zz",""])expect(resolveLanguage(code)).toEqual({language:"en",fallback:true});
+ expect(languageName("de")).toBe("Немецкий");
+ expect(await setLanguage("de-DE")).toMatchObject({language:"en",fallback:true,applied:true});
+ expect(getLanguage()).toBe("en");expect(t("Настройки")).toBe("Settings");
+});
+it("a newer language selection supersedes an earlier asynchronous fallback",async()=>{
+ vi.resetModules();const isolated=await import("./locale");
+ const first=isolated.setLanguage("de");const second=isolated.setLanguage("ru");
+ expect(await first).toMatchObject({applied:false});await second;expect(isolated.getLanguage()).toBe("ru");
 });

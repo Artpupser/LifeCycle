@@ -1,3 +1,4 @@
+import {chooseChoice} from "./choice-helpers";
 import {chooseAction,selectTags} from "./upgrade-helpers";
 import { confirmUi, quickNote } from "./upgrade-helpers";
 import { expect, test, type Page, type APIRequestContext } from "@playwright/test";
@@ -30,7 +31,7 @@ test("notes persist Markdown and private uploaded images across editing and fold
   await quickNote(page,"Заметка из браузера");await page.getByRole("button",{name:"Заметка из браузера",exact:true}).click();
   const editor=page.getByRole("region",{name:"Редактор заметки",exact:true});
   await page.getByRole("tab",{name:"Характеристики",exact:true}).click();
-  await page.getByLabel("Папка",{exact:true}).selectOption({label:"Идеи браузера"});
+  await chooseChoice(page.getByLabel("Папка",{exact:true}), {label:"Идеи браузера"});
   await page.getByRole("tab",{name:"Содержание",exact:true}).click();
   await selectTags(page,"Теги заметки",["browser","markdown"]);
   await page.getByLabel("Содержание",{exact:true}).fill('# Проверка Markdown\n\n**Сохранённый текст**\n\n<script>window.markdownInjected = true</script>\n\n[Опасная ссылка](javascript:alert(1))\n\n![Внешняя картинка](https://example.org/tracking.png)');
@@ -75,7 +76,7 @@ test("recurring task connects list, Kanban, Gantt, Today and calendar without sh
   await page.getByLabel("Дата начала", { exact: true }).fill(today);
   await page.getByLabel("Время начала", { exact: true }).fill("09:15");
   await page.getByRole("dialog").locator("summary").filter({hasText:"Повторение"}).click();
-  await page.getByLabel("Повторять", { exact: true }).selectOption("interval");
+  await chooseChoice(page.getByLabel("Повторять", { exact: true }), "interval");
   await page.getByLabel("Каждые N дней", { exact: true }).fill("2");
   await page.getByRole("button", { name: "Сохранить задачу", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -132,9 +133,9 @@ test("countdown edits and persisted Pomodoro pause, resume and cancellation work
   await page.getByRole("link", { name: "Отсчёты", exact: true }).click();
   await page.getByRole("button", { name: "Новое событие", exact: true }).click();
   await page.getByLabel("Название события", { exact: true }).fill("Ежегодный праздник");
-  await page.getByLabel("Категория события", { exact: true }).selectOption("birthday");
+  await chooseChoice(page.getByLabel("Категория события", { exact: true }), "birthday");
   await page.getByLabel("Дата события", { exact: true }).fill("2000-12-31");
-  await page.getByLabel("Повторение события", { exact: true }).selectOption("yearly");
+  await chooseChoice(page.getByLabel("Повторение события", { exact: true }), "yearly");
   await page.getByRole("button", { name: "Сохранить событие", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Ежегодный праздник", exact: true })).toBeVisible();
   await expect(page.getByText("Каждый год", { exact: true })).toBeVisible();

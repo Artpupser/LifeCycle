@@ -1,3 +1,4 @@
+import {chooseChoice} from "./choice-helpers";
 import {chooseAction,selectTags} from "./upgrade-helpers";
 import {expect,test,type Page} from "@playwright/test";
 import {emptyContact} from "../src/features/contacts/types";
@@ -49,7 +50,7 @@ test("independent birthday shows both ages and saves enum categories and multipl
  const {state,errors}=await setup(page);await page.goto("/countdowns");
  const card=page.locator("article");await expect(card).toContainText("Сейчас: 25 лет");await expect(card).toContainText("Будет: 26 лет");
  await chooseAction(page,"Изменить",card);
- const category=page.getByLabel("Категория события",{exact:true});await expect(category).toHaveJSProperty("tagName","SELECT");await category.selectOption("personal");
+ const category=page.getByLabel("Категория события",{exact:true});await expect(category).toHaveAttribute("aria-haspopup","dialog");await chooseChoice(category, "personal");
  await page.getByRole("checkbox",{name:"Старый",exact:true}).uncheck();
  await selectTags(page,"Теги события",["Дом, Семья"]);
  await expect(page.getByRole("checkbox",{name:"Дом, Семья",exact:true})).toHaveCount(1);
@@ -62,12 +63,12 @@ test("global labels rename across features and create reusable category choices"
  const {state,errors}=await setup(page);await page.goto("/labels");
  await chooseAction(page,"Редактировать",page.locator('li[data-action-subject="label"]').filter({hasText:"Старый"}));await page.getByLabel("Название метки Старый",{exact:true}).fill("Общий");await page.getByRole("button",{name:"Сохранить метку",exact:true}).click();
  await expect.poll(()=>state.contact.data.tags).toEqual(["Общий"]);await expect.poll(()=>state.event.tags).toEqual(["Общий"]);await expect(page.getByRole("dialog")).toHaveCount(0);
- await page.getByLabel("Новая метка",{exact:true}).fill("Путешествие");await page.getByLabel("Вид метки",{exact:true}).selectOption("category");await page.getByRole("button",{name:"Создать метку",exact:true}).click();
+ await page.getByLabel("Новая метка",{exact:true}).fill("Путешествие");await chooseChoice(page.getByLabel("Вид метки",{exact:true}), "category");await page.getByRole("button",{name:"Создать метку",exact:true}).click();
  await expect(page.locator('li[data-action-subject="label"]').filter({hasText:"Путешествие"})).toBeVisible();
  await page.getByRole("navigation",{name:"Главная навигация",exact:true}).locator('a[href="/countdowns"]').click();
  await chooseAction(page,"Изменить",page.locator("article"));
  await expect(page.getByRole("checkbox",{name:"Общий",exact:true})).toBeChecked();
- await page.getByLabel("Категория события",{exact:true}).selectOption(`custom:${categoryId}`);await page.getByRole("button",{name:"Сохранить событие",exact:true}).click();
+ await chooseChoice(page.getByLabel("Категория события",{exact:true}), `custom:${categoryId}`);await page.getByRole("button",{name:"Сохранить событие",exact:true}).click();
  await expect(page.locator("article")).toContainText("Путешествие");expect(errors).toEqual([]);
 });
 

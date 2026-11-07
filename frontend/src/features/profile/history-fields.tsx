@@ -1,16 +1,17 @@
+import {ChoiceField} from "@/components/ui/choice-picker";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { CountryInput } from "@/systems/phone/country-input";
 import { Plus, Trash2 } from "@/components/icons";
 import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
-import { Input, Select, Textarea } from "@/components/ui/input";
+import {Input,Textarea} from "@/components/ui/input";
 import { confirmAction } from "@/lib/feedback";
 import type { Firsts, HarmfulHabit, ProfileDraft } from "./types";
 
 export function OriginFields({ value, change }: { value: ProfileDraft["origin"]; change: (value: ProfileDraft["origin"]) => void }) {
   useLanguage();
   return <>{([["region", t("Регион рождения")], ["given_name", t("Имя при рождении")], ["surname", t("Фамилия при рождении")], ["patronymic", t("Отчество при рождении")]] as const).map(([key, label]) => <FormField key={key} id={`origin-${key}`} label={t(label)}><Input id={`origin-${key}`} maxLength={100} value={value[key]} onChange={e => change({ ...value, [key]: e.target.value })} /></FormField>)}
-    <FormField id="origin-sex" label={t("Пол, зарегистрированный при рождении")}><Select id="origin-sex" value={value.sex} onChange={e => change({ ...value, sex: e.target.value as typeof value.sex })}><option value="">{t("Не указано")}</option><option value="female">{t("Женский")}</option><option value="male">{t("Мужской")}</option><option value="intersex">{t("Интерсекс")}</option><option value="other">{t("Другое")}</option><option value="unspecified">{t("Не определён")}</option></Select></FormField>
+    <FormField id="origin-sex" label={t("Пол, зарегистрированный при рождении")}><ChoiceField id="origin-sex" value={value.sex} change={next => change({ ...value, sex: next as typeof value.sex })}><option value="">{t("Не указано")}</option><option value="female">{t("Женский")}</option><option value="male">{t("Мужской")}</option><option value="intersex">{t("Интерсекс")}</option><option value="other">{t("Другое")}</option><option value="unspecified">{t("Не определён")}</option></ChoiceField></FormField>
     <FormField id="origin-languages" label={t("Языки, освоенные в детстве")} hint={t("Один язык на строку, до 20 языков.")}><Textarea id="origin-languages" maxLength={1619} value={value.childhood_languages} onChange={e => change({ ...value, childhood_languages: e.target.value })} /></FormField>
     <FormField id="origin-order" label={t("Порядок рождения среди детей матери")}><Input id="origin-order" type="number" min={1} max={100} value={value.maternal_birth_order ?? ""} placeholder={t("Не указано")} onChange={e => change({ ...value, maternal_birth_order: Number.isNaN(e.target.valueAsNumber) ? null : e.target.valueAsNumber })} /></FormField>
     <FormField id="origin-multiple" label={t("Число детей при этом рождении")} hint={t("1 — одиночное рождение, 2 — двойня, 3 — тройня.")}><Input id="origin-multiple" type="number" min={1} max={20} value={value.multiple_birth_count ?? ""} placeholder={t("Не указано")} onChange={e => change({ ...value, multiple_birth_count: Number.isNaN(e.target.valueAsNumber) ? null : e.target.valueAsNumber })} /></FormField>
@@ -24,7 +25,7 @@ export function FirstFields({ value, change, year }: { value: Firsts; change: (v
 }
 function TriState({ id, label, value, change }: { id: string; label: string; value: boolean | null; change: (value: boolean | null) => void }) {
   useLanguage();
-  return <FormField id={id} label={t(label)}><Select id={id} value={value === null ? "" : String(value)} onChange={e => change(e.target.value === "" ? null : e.target.value === "true")}><option value="">{t("Не указано")}</option><option value="true">{t("Да")}</option><option value="false">{t("Нет")}</option></Select></FormField>;
+  return <FormField id={id} label={t(label)}><ChoiceField id={id} value={value === null ? "" : String(value)} change={next => change(next === "" ? null : next === "true")}><option value="">{t("Не указано")}</option><option value="true">{t("Да")}</option><option value="false">{t("Нет")}</option></ChoiceField></FormField>;
 }
 export function HarmfulHabitsFields({ value, change, today }: { value: HarmfulHabit[]; change: (value: HarmfulHabit[]) => void; today: string }) {
   useLanguage();

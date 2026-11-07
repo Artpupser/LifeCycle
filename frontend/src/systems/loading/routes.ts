@@ -1,5 +1,7 @@
 import {lazy} from "react";
 const importers={
+ "/tree":()=>import("@/features/contacts/tree-page").then(m=>({default:m.TreePage})),
+ "/collections":()=>import("@/systems/labels/collections-page").then(m=>({default:m.CollectionsPage})),
  "/history":()=>import("@/systems/history/history-page").then(m=>({default:m.HistoryPage})),
  "/labels":()=>import("@/systems/labels/labels-page").then(m=>({default:m.LabelsPage})),
  "/ai":()=>import("@/features/ai/ai-page").then(m=>({default:m.AiPage})),

@@ -1,8 +1,10 @@
+import {ChoiceField} from "@/components/ui/choice-picker";
+import {SaveButton,SaveForm} from "@/components/ui/save";
 import {Children, useContext, useState, type ReactNode} from "react";
 import {cn} from "@/lib/utils";
 import {Dialog} from "@/components/dialog";
 import {Button} from "@/components/ui/button";
-import {Input, Select} from "@/components/ui/input";
+import {Input} from "@/components/ui/input";
 import {FormField} from "@/components/form-field";
 import {ErrorState, LoadingState} from "@/components/resource-state";
 import {createPortal} from "react-dom";
@@ -89,7 +91,7 @@ function CostValueEditor({path, label, initial, saved, cancel}: {path: string; l
   const name = labelName(label);
   const amountId = `label-amount-${initial?.id ?? label.id}`;
   const currencyId = `label-currency-${initial?.id ?? label.id}`;
-  return <form className="space-y-3 rounded-xl border border-border p-3" onSubmit={event => {
+  return <SaveForm className="space-y-3 rounded-xl border border-border p-3" onSubmit={event => {
     event.preventDefault();
     if (!value) return;
     void action.run(() => api(path, {method: initial ? "PUT" : "POST", body: {label_id: label.id, value, ...(initial ? {assignment_id: initial.id, revision: initial.revision} : {})}}), () => {setEditing(false); saved();});
@@ -97,7 +99,7 @@ function CostValueEditor({path, label, initial, saved, cancel}: {path: string; l
     <div className="flex flex-wrap items-start gap-2"><button type="button" className="min-w-0 max-w-full rounded-md" onClick={() => setEditing(!editing)} aria-expanded={editing}><TagChip name={initial ? `${name}: ${initial.value.amount} ${initial.value.currency}` : name} color={label.color} icon={label.icon}/></button>
       {initial && <Button className="ml-auto" size="sm" variant="ghost" disabled={action.busy} onClick={() => void action.run(() => api(path, {method: "PUT", body: {assignment_id: initial.id, label_id: label.id, revision: initial.revision, value: null}}), saved)}>{t("Снять метку")}</Button>}
     </div>
-    {editing && <fieldset disabled={action.busy} className="space-y-3"><div className="grid grid-cols-2 gap-3"><FormField id={amountId} label={t("Сумма")}><Input id={amountId} inputMode="decimal" required value={amount} onChange={event => setAmount(event.target.value)} placeholder="100.00"/></FormField><FormField id={currencyId} label={t("Валюта")}><Select id={currencyId} value={currency} onChange={event => setCurrency(event.target.value)}>{["RUB", "USD", "EUR"].map(code => <option key={code}>{code}</option>)}</Select></FormField></div><div className="flex gap-2"><Button type="submit" size="sm" disabled={!value || action.busy}>{t("Сохранить")}</Button>{cancel && <Button size="sm" variant="ghost" onClick={cancel}>{t("Отмена")}</Button>}</div></fieldset>}
+    {editing && <fieldset disabled={action.busy} className="space-y-3"><div className="grid grid-cols-2 gap-3"><FormField id={amountId} label={t("Сумма")}><Input id={amountId} inputMode="decimal" required value={amount} onChange={event => setAmount(event.target.value)} placeholder="100.00"/></FormField><FormField id={currencyId} label={t("Валюта")}><ChoiceField id={currencyId} value={currency} change={next => setCurrency(next)}>{["RUB", "USD", "EUR"].map(code => <option key={code}>{code}</option>)}</ChoiceField></FormField></div><div className="flex gap-2"><SaveButton type="submit" size="sm" disabled={!value || action.busy}>{t("Сохранить")}</SaveButton>{cancel && <Button size="sm" variant="ghost" onClick={cancel}>{t("Отмена")}</Button>}</div></fieldset>}
     {action.error && <p role="alert" className="text-sm text-destructive">{action.error}</p>}
-  </form>;
+  </SaveForm>;
 }

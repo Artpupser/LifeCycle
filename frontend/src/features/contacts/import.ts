@@ -37,6 +37,7 @@ export function parseVcards(text: string): { contacts: ContactData[]; warnings: 
         const header = line.slice(0, colon); const key = header.split(";")[0].split(".").at(-1)?.toUpperCase();
         const value = decode(line.slice(colon + 1), header);
         if (key === "N") { const parts = split(value, ";").map(unescape); data.last_name = parts[0] ?? ""; data.first_name = parts[1] ?? ""; data.middle_name = parts[2] ?? ""; }
+        if (key === "GENDER") data.gender=({M:"male",F:"female",O:"other"} as const)[value.split(";")[0].toUpperCase() as "M"|"F"|"O"]??"unspecified";
         if (key === "FN") fn = unescape(value);
         if (key === "TEL") { const phone = unescape(value).replace(/^tel:/i, ""); if (phone && !data.phones.includes(phone)) data.phones.push(phone); }
         if (key === "BDAY") {
@@ -69,7 +70,8 @@ export function parseContactFile(text: string) {
     for (const key of Object.keys(data) as (keyof ContactData)[]) {
       if (!(key in item)) continue;
       const value: unknown = (item as Record<string, unknown>)[key];
-      if (key === "birthday_enabled") { if (typeof value !== "boolean") throw new Error(t("Неверное разрешение дня рождения в JSON.")); data[key] = value; }
+      if (key === "gender") { if (!["unspecified","female","male","other"].includes(String(value))) throw new Error(t("Неверный пол в JSON.")); data.gender=value as ContactData["gender"]; }
+      else if (key === "birthday_enabled") { if (typeof value !== "boolean") throw new Error(t("Неверное разрешение дня рождения в JSON.")); data[key] = value; }
       else if (key === "birth_date") { if (value !== null && typeof value !== "string") throw new Error(t("Неверная дата в JSON.")); data[key] = value; }
       else if (key === "phones" || key === "categories" || key === "tags" || key === "source_keys") { if (!Array.isArray(value) || !value.every(x => typeof x === "string")) throw new Error(t("Неверный список в JSON.")); data[key] = value; }
       else { if (typeof value !== "string") throw new Error(t("Неверное поле контакта в JSON.")); data[key] = value; }

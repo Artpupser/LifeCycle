@@ -2,7 +2,7 @@ use crate::shared::errors::ApiError;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-pub(super) const PAGES: [&str; 17] = [
+pub(super) const PAGES: [&str; 19] = [
     "/today",
     "/habits",
     "/workouts",
@@ -12,6 +12,7 @@ pub(super) const PAGES: [&str; 17] = [
     "/notes",
     "/countdowns",
     "/contacts",
+    "/tree",
     "/pomodoro",
     "/analytics",
     "/ai",
@@ -20,6 +21,7 @@ pub(super) const PAGES: [&str; 17] = [
     "/status",
     "/labels",
     "/history",
+    "/collections",
 ];
 
 #[derive(Serialize, Deserialize)]
