@@ -6,3 +6,5 @@ Operator marks live in the same public catalog and visual picker. MegaFon and Yo
 
 - Emoji: Twemoji / Twitter, unchanged SVG subset distributed through `@iconify-json/twemoji`, CC BY 4.0: https://github.com/twitter/twemoji and https://creativecommons.org/licenses/by/4.0/. Attribution also appears in the shared picker. No remote icon API is used.
 - Zodiac: bundled Tabler `zodiac-*`; conventional civil-date boundaries from https://www.britannica.com/topic/zodiac (western tropical signs).
+
+Currency identifiers and fractional digits: [Unicode CLDR](https://github.com/unicode-org/cldr-json/tree/main/cldr-json/cldr-core/supplemental), Unicode License v3. Currency marks are local ISO-code SVGs in the existing LifeCycle icon pack.

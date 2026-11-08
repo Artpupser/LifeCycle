@@ -63,7 +63,9 @@ export function SettingsPage() {
         <SaveButton type="submit" disabled={pending || uploading || !dirty || (draft.theme==="custom"&&!validTheme(draft.custom_theme!))}>{pending ? <LoaderCircle className="" aria-hidden="true" /> : <Save aria-hidden="true" />}{pending ? t("Сохраняем…") : t("Сохранить настройки")}</SaveButton>
       </div>
     </SaveForm>
+    <section id="integrations" className="space-y-6">
     <OperatorSettings />
     <AiSettings />
+    </section>
   </main>;
 }

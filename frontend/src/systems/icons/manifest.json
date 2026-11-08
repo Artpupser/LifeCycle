@@ -230,7 +230,15 @@
     "zodiac-sagittarius",
     "zodiac-scorpio",
     "zodiac-taurus",
-    "zodiac-virgo"
+    "zodiac-virgo",
+    "device-gamepad-2",
+    "discount",
+    "plug-connected",
+    "bell-check",
+    "unlink",
+    "calendar-plus",
+    "bell",
+    "player-play"
   ],
   "circle-flags": [
     "aa",
@@ -622,7 +630,10 @@
     "stackoverflow",
     "wikipedia",
     "viber",
-    "ollama"
+    "ollama",
+    "epicgames",
+    "gogdotcom",
+    "itchdotio"
   ],
   "twemoji": [
     "airplane",

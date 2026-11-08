@@ -1,0 +1,32 @@
+[
+  {
+    "id": "steam-winter-2026",
+    "platform": "steam",
+    "title": "Зимняя распродажа Steam 2026",
+    "starts_at": "2026-12-17T18:00:00Z",
+    "ends_at": "2027-01-04T18:00:00Z",
+    "source": "https://partner.steamgames.com/doc/marketing/upcoming_events/2026_winter_sale",
+    "verified_on": "2026-11-08",
+    "title_en": "Steam Winter Sale 2026"
+  },
+  {
+    "id": "steam-spring-2027",
+    "platform": "steam",
+    "title": "Весенняя распродажа Steam 2027",
+    "starts_at": "2027-03-18T17:00:00Z",
+    "ends_at": "2027-03-25T17:00:00Z",
+    "source": "https://partner.steamgames.com/doc/marketing/upcoming_events",
+    "verified_on": "2026-11-08",
+    "title_en": "Steam Spring Sale 2027"
+  },
+  {
+    "id": "steam-summer-2027",
+    "platform": "steam",
+    "title": "Летняя распродажа Steam 2027",
+    "starts_at": "2027-06-24T17:00:00Z",
+    "ends_at": "2027-07-08T17:00:00Z",
+    "source": "https://partner.steamgames.com/doc/marketing/upcoming_events",
+    "verified_on": "2026-11-08",
+    "title_en": "Steam Summer Sale 2027"
+  }
+]

@@ -32,6 +32,10 @@ impl AppState {
         })
     }
 
+    pub fn start_background_jobs(&self) -> tokio::task::JoinHandle<()> {
+        tokio::spawn(crate::modules::videogames::background(self.clone()))
+    }
+
     pub async fn migrate(&self) -> Result<(), sqlx::migrate::MigrateError> {
         database::migrate(&self.database).await
     }

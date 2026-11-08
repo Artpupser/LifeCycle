@@ -135,3 +135,14 @@ export function zodiacCode(birthDate:string|null|undefined){
  const signs=["capricorn","aquarius","pisces","aries","taurus","gemini","cancer","leo","virgo","libra","scorpio","sagittarius","capricorn"] as const;
  return signs[month-1+(day>=boundaries[month-1]?1:0)];
 }
+
+/** Retry-After is an HTTP duration or GMT instant, independent of civil-date preferences. */
+export function retryAfterMilliseconds(value:string|null,now=Date.now()){
+ if(!value)return 0;const text=value.trim();
+ if(/^\d+$/.test(text)){const seconds=Number(text);return Number.isSafeInteger(seconds)?Math.min(seconds*1000,2_147_000_000):0;}
+ const at=Date.parse(text);return Number.isFinite(at)?Math.max(0,Math.min(at-now,2_147_000_000)):0;
+}
+export function secondsUntil(instant:number,now=Date.now()){return Math.max(0,Math.ceil((instant-now)/1000));}
+
+/** Announcements with dates only retain their civil date in every user timezone. */
+export function eventDateLabel(instant:string,allDay:boolean,timezone:string,format:"12h"|"24h"="24h") {return allDay?dateLabel(instant.slice(0,10),{day:"numeric",month:"long",year:"numeric"}):dateTimeLabel(instant,timezone,format);}

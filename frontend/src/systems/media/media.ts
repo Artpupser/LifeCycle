@@ -7,7 +7,7 @@ export function mediaId(value: string) {
   const id = value.startsWith("/api/media/") ? value.slice(11) : value;
   return identifier.test(id) ? id : null;
 }
-export function mediaUrl(value: string | null | undefined) { const id = value ? mediaId(value) : null; return id ? `/api/media/${id}` : ""; }
+export function mediaUrl(value: string | null | undefined) { if(value?.startsWith("/api/media/providers/")&&identifier.test(value.slice("/api/media/providers/".length)))return value; const id = value ? mediaId(value) : null; return id ? `/api/media/${id}` : ""; }
 export function validateImage(file: Pick<File,"type"|"size">) {
   if (!imageTypes.includes(file.type) || file.size <= 0 || file.size > 8 * 1024 * 1024) throw new Error(t("Выберите PNG, JPEG или WebP размером до 8 МБ."));
 }

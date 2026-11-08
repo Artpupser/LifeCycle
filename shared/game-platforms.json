@@ -1,0 +1,7 @@
+[
+ {"id":"steam","name":"Steam","icon":"simple-icons:steam","giveaway_name":"Steam","hosts":["store.steampowered.com","steamcommunity.com"]},
+ {"id":"epic","name":"Epic Games Store","icon":"simple-icons:epicgames","giveaway_name":"Epic Games Store","hosts":["store.epicgames.com","www.epicgames.com"]},
+ {"id":"gog","name":"GOG","icon":"simple-icons:gogdotcom","giveaway_name":"GOG","hosts":["www.gog.com","gog.com"]},
+ {"id":"itchio","name":"itch.io","icon":"simple-icons:itchdotio","giveaway_name":"itch.io","hosts":["itch.io"]},
+ {"id":"pc","name":"PC","icon":"tabler:device-desktop","giveaway_name":"PC","hosts":[]}
+]

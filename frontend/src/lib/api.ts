@@ -1,3 +1,5 @@
+import {requestCooldown,recordRequestFailure,recordRequestSuccess} from "@/systems/loading/retry";
+import {revalidateActiveResources} from "@/systems/loading/cache";
 import { feedbackEvents } from "@/lib/feedback";
 import { invalidateResources,revalidateResource } from "@/systems/loading/cache";
 import { effectOrigin, mutationEffect, showEffect } from "@/systems/effects/events";
@@ -7,16 +9,22 @@ type ApiErrorPayload = { error?: { code?: string } };
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
+  retryAt: number|null;
 
-  constructor(status: number, code: string) {
-    super(apiErrorMessage(status, code));
+  constructor(status: number, code: string,retryAt:number|null=null) {
+    super(code==="request_cooldown"?t("Повторные запросы временно приостановлены после ошибки."):apiErrorMessage(status, code));
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.retryAt=retryAt;
   }
 }
 
 export function apiErrorMessage(status: number, code: string) {
+  if(code==="integration_auth_invalid")return t("Код Epic Games недействителен или истёк. Начните новый вход после указанной паузы.");
+  if(code==="integration_login_required")return t("Сессия Epic Games истекла или отозвана. Выполните вход заново.");
+  if(code==="integration_key_required")return t("Для синхронизации нужен Steam Web API key.");
+  if(code==="integration_library_private")return t("Steam не открыл библиотеку. Проверьте приватность данных об играх; сохранённая копия остаётся доступной.");
   if(code==="contact_relationship_self")return t("Нельзя связать контакт с самим собой.");
   if(code==="contact_relationship_duplicate")return t("Такая связь уже существует.");
   if(code==="contact_relationship_cycle")return t("Связь создаёт цикл предков. Проверьте направление родитель → ребёнок.");
@@ -73,7 +81,7 @@ export function apiErrorMessage(status: number, code: string) {
   if (code === "unauthenticated") return t("Сессия завершена. Войдите снова.");
   if (code === "mail_unavailable") return t("Почтовый сервис временно недоступен. Повторите попытку позже.");
   if (code === "csrf_failed") return t("Адрес приложения не совпадает с настройками сервера. Обратитесь к администратору.");
-  if (status === 429) return t("Слишком много попыток. Подождите минуту и попробуйте снова.");
+  if (status === 429) return t("Сервис ограничил частоту запросов. Повторные запросы временно приостановлены.");
   if (status === 400 || status === 422) return t("Проверьте заполненные поля и допустимые значения.");
   if (status === 404) return t("Запрошенные данные не найдены.");
   return t("Не удалось выполнить запрос. Повторите попытку позже.");
@@ -86,27 +94,36 @@ export function errorMessage(error: unknown) {
 }
 
 export async function api<T>(path: string, options: { method?: "GET" | "POST" | "PUT" | "DELETE"; body?: unknown; signal?: AbortSignal } = {}): Promise<T> {
+  const method=options.method??"GET";
+  const cooldown=requestCooldown(path,method);if(cooldown)throw new ApiError(cooldown.status,"request_cooldown",cooldown.retryAt);
   const origin=effectOrigin();
   const timeout = AbortSignal.timeout(15_000);
-  const response = await fetch(`/api${path}`, {
+  let response:Response;
+  try{response = await fetch(`/api${path}`, {
     method: options.method ?? "GET",
     credentials: "same-origin",
     cache: "no-store",
     signal: options.signal ? AbortSignal.any([options.signal, timeout]) : timeout,
     headers: { Accept: "application/json", ...(options.body === undefined ? {} : { "Content-Type": "application/json" }) },
     ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
-  });
+  });}catch(error){if(!options.signal?.aborted)recordRequestFailure(path,error,undefined,method);throw error;}
   if (!response.ok) {
     const payload: ApiErrorPayload = await response.json().catch(() => ({}));
     if (response.status === 401 && !path.startsWith("/auth/")) window.dispatchEvent(new Event("lifecycle:session-expired"));
-    throw new ApiError(response.status, payload.error?.code ?? "request_failed");
+    const failure=new ApiError(response.status,payload.error?.code??"request_failed");
+    failure.retryAt=recordRequestFailure(path,failure,{status:response.status,code:failure.code,retryAfter:response.headers.get("Retry-After"),message:failure.message,global:response.status===429&&!payload.error?.code},method);
+    throw failure;
   }
-  const result:T=response.status===204?undefined:await response.json();
-  if(options.method&&options.method!=="GET"&&path!=="/operators/lookup")invalidateResources();
+  let result:T;
+  try{result=response.status===204?undefined:await response.json();}catch(error){recordRequestFailure(path,error,undefined,method);throw error;}
+  recordRequestSuccess(path,method);
+  if(options.method&&options.method!=="GET"&&path!=="/operators/lookup"&&!/^\/notifications\/[^/]+\/read$/.test(path))invalidateResources();
   if(options.method==="POST"&&(/^\/tasks\/[^/]+\/occurrences\/[^/]+$/.test(path)||/^\/habits\/[^/]+\/marks\/[^/]+$/.test(path))){const status=(result as {status?:string}|null)?.status;if(status)feedbackEvents.dispatchEvent(new CustomEvent("task-result",{detail:{status}}));}
   if(options.method&&options.method!=="GET"&&/^\/(labels|task-tags|notes|contacts|countdowns|workouts|exercises)(\/|$)/.test(path))revalidateResource("/labels");
   if(options.method&&options.method!=="GET"&&(path.startsWith("/labels")||/\/ai-access$/.test(path))){revalidateResource("/labels/values");revalidateResource("/labels/subject-tags");}
   if(options.method&&options.method!=="GET"&&/^\/contacts(?:\/|$)/.test(path)){revalidateResource("/contacts");revalidateResource("/contacts/relationships");revalidateResource("/countdowns");}
+  if(options.method&&options.method!=="GET"&&path.startsWith("/integrations/"))revalidateActiveResources(["/integrations","/videogames"]);
+  if(options.method==="POST"&&/^\/videogames\/sales\/[^/]+\/calendar$/.test(path))revalidateActiveResources(["/countdowns","/calendar","/today"]);
   const effect=mutationEffect(path,options.method??"GET",options.body,result);
   if(effect)showEffect(effect,origin);
   return result;

@@ -64,7 +64,10 @@ export function ActionMenuProvider({children}:{children:ReactNode}){
  const open=(actions:ContextAction[],x:number,y:number,returnTo:HTMLElement|SVGElement|null=null)=>{if(actions.length)setMenu({actions,x,y,returnTo});};
  useEffect(()=>{
   const show=(event:globalThis.MouseEvent|KeyboardEvent)=>{
-   if(event.defaultPrevented||!(event.target instanceof Element)||event.target.closest('input,textarea,select,[contenteditable=true],[role=menu]'))return;
+   if(event.defaultPrevented||!(event.target instanceof Element)||event.target.closest('[role=menu]'))return;
+   if(event.target.matches(':disabled'))return;
+   const editable=event.target.closest('input,textarea,select,[contenteditable=true]');
+   if(editable&&!(editable.matches('input[type=search]')&&editable.closest('[data-action-search]')))return;
    if(event instanceof KeyboardEvent&&!(event.key==='ContextMenu'||event.shiftKey&&event.key==='F10'))return;
    const found=subjectActions(event.target);if(!found?.actions.length)return;
    event.preventDefault();const bounds=event.target.getBoundingClientRect();
@@ -112,5 +115,5 @@ function NumberEntry({action,submit}:{action:ContextAction;submit:(value:number)
 
 export function ActionMenuButton({actions,label,readActions}:{actions:ContextAction[];label?:string;readActions?:()=>ContextAction[]}){
  useLanguage();const open=useActionMenu();
- return <button data-context-ignore type="button" aria-haspopup="menu" className="rounded-lg border border-border bg-card p-2 hover:bg-muted" aria-label={label??t("Действия")} onClick={(event:MouseEvent<HTMLButtonElement>)=>{const box=event.currentTarget.getBoundingClientRect();open(readActions?.()??actions,box.left,box.bottom,event.currentTarget);}}><AppIcon icon="tabler:dots"/></button>;
+ return <button data-context-ignore type="button" aria-haspopup="menu" className="rounded-lg border border-border bg-card p-2 hover:bg-muted [[data-action-search]_&]:min-h-11 [[data-action-search]_&]:min-w-11" aria-label={label??t("Действия")} onClick={(event:MouseEvent<HTMLButtonElement>)=>{const box=event.currentTarget.getBoundingClientRect();open(readActions?.()??actions,box.left,box.bottom,event.currentTarget);}}><AppIcon icon="tabler:dots"/></button>;
 }

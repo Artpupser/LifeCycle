@@ -14,8 +14,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let controller: AbortController;
+    let pending=false;
     const refresh = () => {
-      if(!navigator.onLine&&identity.current)return;
+      if(pending||!navigator.onLine&&identity.current)return;
+      pending=true;
       controller?.abort();
       controller = new AbortController();
       authRequest.current = controller;
@@ -24,12 +26,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((data) => { if (!signal.aborted) { if(identity.current&&identity.current.id!==data.user.id)clearResourceCache(); identity.current=data.user; setUser(data.user); setError(null); } })
       .catch((failure: unknown) => {
         if (!signal.aborted) {
-          if(identity.current&&!(failure instanceof ApiError)){setError(null);return;}
+          if(identity.current&&(!(failure instanceof ApiError)||failure.status===429||failure.status>=500||failure.code==="request_cooldown")){setError(null);return;}
           identity.current=null;clearResourceCache(); setUser(null);
           setError(failure instanceof ApiError && failure.status === 401 ? null : errorMessage(failure));
         }
       })
-      .finally(() => { if (!signal.aborted) setLoading(false); });
+      .finally(() => { pending=false;if (!signal.aborted) setLoading(false); });
     };
     const visible = () => { if (document.visibilityState === "visible") refresh(); };
     refresh();

@@ -1,5 +1,6 @@
 import {t} from "@/systems/i18n/locale";
 export const navigationCatalog=[
+  {to:"/videogames",label:"Видеоигры",icon:"tabler:device-gamepad-2"},
   {to:"/history",label:"История действий",icon:"tabler:history"},
   {to:"/labels",label:"Теги и категории",icon:"tabler:tags"},
   {to:"/collections",label:"Коллекции",icon:"tabler:box-multiple"},

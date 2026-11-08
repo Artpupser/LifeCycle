@@ -31,7 +31,8 @@ async fn run() -> Result<(), String> {
             "Cannot bind application listener".to_owned()
         })?;
     tracing::info!(address = %config.bind, "API listening");
-    axum::serve(
+    let background = state.start_background_jobs();
+    let result = axum::serve(
         listener,
         router(state.clone()).into_make_service_with_connect_info::<std::net::SocketAddr>(),
     )
@@ -40,9 +41,11 @@ async fn run() -> Result<(), String> {
     .map_err(|error| {
         tracing::error!(%error, "HTTP server failed");
         "HTTP server failed".to_owned()
-    })?;
+    });
+    background.abort();
+    let _ = background.await;
     state.database.close().await;
-    Ok(())
+    result
 }
 
 async fn shutdown() {

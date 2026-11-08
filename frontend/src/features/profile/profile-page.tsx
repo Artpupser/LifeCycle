@@ -1,3 +1,4 @@
+import {IntegrationsPanel} from "@/systems/integrations/integrations-panel";
 import {genders,genderName,genderIcon,normalizeGender} from "@/systems/icons/gender";
 import {ChoiceField} from "@/components/ui/choice-picker";
 import {ZodiacBadge} from "@/systems/icons/zodiac-badge";
@@ -119,6 +120,7 @@ export function ProfilePage() {
   const { resource, retry } = useResource<Profile>("/profile");
   return <main id="main" className="mx-auto w-full max-w-4xl px-5 py-10 sm:px-10">
     <div className="mb-8"><p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary"><UserRound className="size-4" aria-hidden="true" />{t("Личное пространство")}</p><h1 className="text-3xl font-semibold tracking-tight">{t("Мой профиль")}</h1><p className="mt-3 text-sm leading-7 text-muted-foreground">{t("Начните с информации о себе. К ней всегда можно вернуться.")}</p></div>
-    {resource.status === "loading" ? <LoadingState /> : resource.status === "error" ? <ErrorState message={resource.message} retry={retry} /> : <ProfileEditor initial={resource.data} />}
+    <IntegrationsPanel/>
+    <div className="mt-8">{resource.status === "loading" ? <LoadingState /> : resource.status === "error" ? <ErrorState message={resource.message} retry={retry} /> : <ProfileEditor initial={resource.data} />}</div>
   </main>;
 }

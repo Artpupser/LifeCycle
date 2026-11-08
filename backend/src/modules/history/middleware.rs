@@ -40,6 +40,8 @@ pub async fn audit(
             | "task-tags"
             | "ai"
             | "operators"
+            | "integrations"
+            | "videogames"
     ) || path.ends_with("/preview")
         || path == "/api/operators/lookup"
     {

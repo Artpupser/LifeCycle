@@ -21,6 +21,7 @@ import type { Settings } from "@/features/settings/types";
 import { useResource } from "@/hooks/use-resource";
 import { errorMessage } from "@/lib/api";
 
+const VideogamesPage=pageComponent("/videogames");
 const HistoryPage=pageComponent("/history");
 const AiPage = pageComponent("/ai");
 const AnalyticsPage = pageComponent("/analytics");
@@ -114,6 +115,7 @@ function AuthenticatedApp() {
     <Route path="/countdowns" element={<CountdownsPage />} />
     <Route path="/contacts" element={<ContactsPage />} />
     <Route path="/tree" element={<TreePage />} />
+    <Route path="/videogames" element={<VideogamesPage/>} />
     <Route path="/pomodoro" element={<PomodoroPage />} />
     <Route path="/ai" element={<AiPage />} />
     <Route path="/analytics" element={<AnalyticsPage />} />
@@ -129,7 +131,7 @@ function AppContent() {
   const { user, loading, error, reload } = useAuth();
   if (loading || error) return <Shell><Suspense fallback={<LoadingState />}><Routes><Route path="/status" element={<HealthPage />} /><Route path="*" element={<main id="main" className="mx-auto max-w-4xl px-5 py-10 sm:px-10">{loading ? <LoadingState /> : <ErrorState message={error!} retry={reload} />}</main>} /></Routes></Suspense></Shell>;
   if (user) return <AuthenticatedApp key={user.id} />;
-  return <Shell><Suspense fallback={<LoadingState />}><Routes><Route path="/status" element={<HealthPage />} /><Route path="/login" element={<LoginPage />} /><Route path="/" element={<Navigate to="/login" replace />} /><Route path="/ai" element={<Navigate to="/login" replace />} /><Route path="/analytics" element={<Navigate to="/login" replace />} /><Route path="/profile" element={<Navigate to="/login" replace />} /><Route path="/settings" element={<Navigate to="/login" replace />} /><Route path="/today" element={<Navigate to="/login" replace />} /><Route path="/tasks" element={<Navigate to="/login" replace />} /><Route path="/boards" element={<Navigate to="/login" replace />} /><Route path="/task-tags" element={<Navigate to="/login" replace />} /><Route path="/history" element={<Navigate to="/login" replace />} /><Route path="/labels" element={<Navigate to="/login" replace />} /><Route path="/collections" element={<Navigate to="/login" replace />} /><Route path="/habits" element={<Navigate to="/login" replace />} /><Route path="/sex" element={<Navigate to="/login" replace />} /><Route path="/workouts/*" element={<Navigate to="/login" replace />} /><Route path="/calendar" element={<Navigate to="/login" replace />} /><Route path="/notes" element={<Navigate to="/login" replace />} /><Route path="/countdowns" element={<Navigate to="/login" replace />} /><Route path="/contacts" element={<Navigate to="/login" replace />} /><Route path="/tree" element={<Navigate to="/login" replace />} /><Route path="/pomodoro" element={<Navigate to="/login" replace />} /><Route path="*" element={<NotFound />} /></Routes></Suspense></Shell>;
+  return <Shell><Suspense fallback={<LoadingState />}><Routes><Route path="/status" element={<HealthPage />} /><Route path="/login" element={<LoginPage />} /><Route path="/" element={<Navigate to="/login" replace />} /><Route path="/ai" element={<Navigate to="/login" replace />} /><Route path="/analytics" element={<Navigate to="/login" replace />} /><Route path="/profile" element={<Navigate to="/login" replace />} /><Route path="/settings" element={<Navigate to="/login" replace />} /><Route path="/today" element={<Navigate to="/login" replace />} /><Route path="/tasks" element={<Navigate to="/login" replace />} /><Route path="/boards" element={<Navigate to="/login" replace />} /><Route path="/task-tags" element={<Navigate to="/login" replace />} /><Route path="/history" element={<Navigate to="/login" replace />} /><Route path="/labels" element={<Navigate to="/login" replace />} /><Route path="/collections" element={<Navigate to="/login" replace />} /><Route path="/habits" element={<Navigate to="/login" replace />} /><Route path="/sex" element={<Navigate to="/login" replace />} /><Route path="/workouts/*" element={<Navigate to="/login" replace />} /><Route path="/calendar" element={<Navigate to="/login" replace />} /><Route path="/notes" element={<Navigate to="/login" replace />} /><Route path="/countdowns" element={<Navigate to="/login" replace />} /><Route path="/contacts" element={<Navigate to="/login" replace />} /><Route path="/tree" element={<Navigate to="/login" replace />} /><Route path="/videogames" element={<Navigate to="/login" replace />} /><Route path="/pomodoro" element={<Navigate to="/login" replace />} /><Route path="*" element={<NotFound />} /></Routes></Suspense></Shell>;
 }
 
 function ApplicationFeedback(){

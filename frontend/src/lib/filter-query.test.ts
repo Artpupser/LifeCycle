@@ -32,3 +32,15 @@ it("validates server ranges without silently dropping unsupported text, exclusio
   expect(filterRange(parseFilterQuery(source,rangeFilters),defaults).error).toBeTruthy();
  }
 });
+
+import {setFilterValue} from "./filter-query";
+it("quick filters replace every positive alias while retaining quoted text and exclusions",()=>{
+ const filters:FilterSpec[]=[{key:"platform",aliases:["площадка"],label:"Platform",example:"platform:steam"},tagFilter];
+ const original='"Portal: two" площадка:gog platform:steam -platform:pc tag:"с пробелом"';
+ const updated=setFilterValue(original,filters,"platform","epic");
+ expect(updated).toBe('"Portal: two" -platform:pc tag:"с пробелом" platform:epic');
+ expect(parseFilterQuery(updated,filters).terms.filter(term=>term.key==="platform"&&!term.negative)).toEqual([{key:"platform",value:"epic",negative:false}]);
+ expect(setFilterValue(updated,filters,"platform",null)).toBe('"Portal: two" -platform:pc tag:"с пробелом"');
+ expect(parseFilterQuery(setFilterValue("hello",filters,"tag",'work "today"'),filters).terms[0].value).toBe('work "today"');
+ expect(setFilterValue('x'.repeat(1000),filters,"platform","steam")).toHaveLength(1000);
+});

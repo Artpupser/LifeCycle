@@ -215,3 +215,60 @@ mod tests {
         assert_eq!(c.next_date.unwrap().to_string(), "2027-02-28");
     }
 }
+
+/// Provider imports use the existing event validation, persistence and calendar projection.
+pub(crate) fn external_id(user: Uuid, key: &str) -> Uuid {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::digest(format!("external-event:{user}:{key}").as_bytes());
+    let mut bytes = [0u8; 16];
+    bytes.copy_from_slice(&digest[..16]);
+    bytes[6] = (bytes[6] & 0x0f) | 0x80;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    Uuid::from_bytes(bytes)
+}
+pub(crate) async fn import_external_event(
+    state: &AppState,
+    user: Uuid,
+    key: &str,
+    title: &str,
+    at: chrono::DateTime<Utc>,
+    source: &str,
+    all_day: bool,
+) -> Result<Uuid, ApiError> {
+    let id = external_id(user, key);
+    let mut lock = state.database.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))")
+        .bind(format!("external-event:{user}:{key}"))
+        .execute(&mut *lock)
+        .await?;
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM app.countdowns WHERE user_id=$1 AND id=$2)",
+    )
+    .bind(user)
+    .bind(id)
+    .fetch_one(&mut *lock)
+    .await?;
+    if !exists {
+        let input:dto::CountdownInput=serde_json::from_value(serde_json::json!({"title":title,"category":"other","icon":"tabler:discount","target_date":at.date_naive(),"target_time":if all_day {None}else{Some(at.time())},"timezone":if all_day {crate::shared::domain::settings(state,user).await?.timezone}else{"UTC".into()},"recurrence":"once","description":source})).map_err(|_|ApiError::internal())?;
+        repository::save(state, user, id, input, repository::WriteMode::Create).await?;
+    }
+    lock.commit().await?;
+    Ok(id)
+}
+
+/// External consumers ask the event owner instead of depending on its storage schema.
+pub(crate) async fn external_event_exists(
+    state: &AppState,
+    user: Uuid,
+    key: &str,
+) -> Result<bool, ApiError> {
+    Ok(
+        sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM app.countdowns WHERE user_id=$1 AND id=$2)",
+        )
+        .bind(user)
+        .bind(external_id(user, key))
+        .fetch_one(&state.database)
+        .await?,
+    )
+}

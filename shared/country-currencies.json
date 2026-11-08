@@ -1,0 +1,1738 @@
+{
+  "source": "https://github.com/unicode-org/cldr-json/tree/main/cldr-json/cldr-core/supplemental",
+  "countries": {
+    "AC": {
+      "currency": "SHP",
+      "ru": "о-в Вознесения",
+      "en": "Ascension Island"
+    },
+    "AD": {
+      "currency": "EUR",
+      "ru": "Андорра",
+      "en": "Andorra"
+    },
+    "AE": {
+      "currency": "AED",
+      "ru": "ОАЭ",
+      "en": "United Arab Emirates"
+    },
+    "AF": {
+      "currency": "AFN",
+      "ru": "Афганистан",
+      "en": "Afghanistan"
+    },
+    "AG": {
+      "currency": "XCD",
+      "ru": "Антигуа и Барбуда",
+      "en": "Antigua & Barbuda"
+    },
+    "AI": {
+      "currency": "XCD",
+      "ru": "Ангилья",
+      "en": "Anguilla"
+    },
+    "AL": {
+      "currency": "ALL",
+      "ru": "Албания",
+      "en": "Albania"
+    },
+    "AM": {
+      "currency": "AMD",
+      "ru": "Армения",
+      "en": "Armenia"
+    },
+    "AO": {
+      "currency": "AOA",
+      "ru": "Ангола",
+      "en": "Angola"
+    },
+    "AR": {
+      "currency": "ARS",
+      "ru": "Аргентина",
+      "en": "Argentina"
+    },
+    "AS": {
+      "currency": "USD",
+      "ru": "Американское Самоа",
+      "en": "American Samoa"
+    },
+    "AT": {
+      "currency": "EUR",
+      "ru": "Австрия",
+      "en": "Austria"
+    },
+    "AU": {
+      "currency": "AUD",
+      "ru": "Австралия",
+      "en": "Australia"
+    },
+    "AW": {
+      "currency": "AWG",
+      "ru": "Аруба",
+      "en": "Aruba"
+    },
+    "AX": {
+      "currency": "EUR",
+      "ru": "Аландские о-ва",
+      "en": "Åland Islands"
+    },
+    "AZ": {
+      "currency": "AZN",
+      "ru": "Азербайджан",
+      "en": "Azerbaijan"
+    },
+    "BA": {
+      "currency": "BAM",
+      "ru": "Босния и Герцеговина",
+      "en": "Bosnia & Herzegovina"
+    },
+    "BB": {
+      "currency": "BBD",
+      "ru": "Барбадос",
+      "en": "Barbados"
+    },
+    "BD": {
+      "currency": "BDT",
+      "ru": "Бангладеш",
+      "en": "Bangladesh"
+    },
+    "BE": {
+      "currency": "EUR",
+      "ru": "Бельгия",
+      "en": "Belgium"
+    },
+    "BF": {
+      "currency": "XOF",
+      "ru": "Буркина-Фасо",
+      "en": "Burkina Faso"
+    },
+    "BG": {
+      "currency": "EUR",
+      "ru": "Болгария",
+      "en": "Bulgaria"
+    },
+    "BH": {
+      "currency": "BHD",
+      "ru": "Бахрейн",
+      "en": "Bahrain"
+    },
+    "BI": {
+      "currency": "BIF",
+      "ru": "Бурунди",
+      "en": "Burundi"
+    },
+    "BJ": {
+      "currency": "XOF",
+      "ru": "Бенин",
+      "en": "Benin"
+    },
+    "BL": {
+      "currency": "EUR",
+      "ru": "Сен-Бартелеми",
+      "en": "St. Barthélemy"
+    },
+    "BM": {
+      "currency": "BMD",
+      "ru": "Бермудские о-ва",
+      "en": "Bermuda"
+    },
+    "BN": {
+      "currency": "BND",
+      "ru": "Бруней",
+      "en": "Brunei"
+    },
+    "BO": {
+      "currency": "BOB",
+      "ru": "Боливия",
+      "en": "Bolivia"
+    },
+    "BQ": {
+      "currency": "USD",
+      "ru": "Бонэйр, Синт-Эстатиус и Саба",
+      "en": "Caribbean Netherlands"
+    },
+    "BR": {
+      "currency": "BRL",
+      "ru": "Бразилия",
+      "en": "Brazil"
+    },
+    "BS": {
+      "currency": "BSD",
+      "ru": "Багамы",
+      "en": "Bahamas"
+    },
+    "BT": {
+      "currency": "BTN",
+      "ru": "Бутан",
+      "en": "Bhutan"
+    },
+    "BV": {
+      "currency": "NOK",
+      "ru": "о-в Буве",
+      "en": "Bouvet Island"
+    },
+    "BW": {
+      "currency": "BWP",
+      "ru": "Ботсвана",
+      "en": "Botswana"
+    },
+    "BY": {
+      "currency": "BYN",
+      "ru": "Беларусь",
+      "en": "Belarus"
+    },
+    "BZ": {
+      "currency": "BZD",
+      "ru": "Белиз",
+      "en": "Belize"
+    },
+    "CA": {
+      "currency": "CAD",
+      "ru": "Канада",
+      "en": "Canada"
+    },
+    "CC": {
+      "currency": "AUD",
+      "ru": "Кокосовые о-ва",
+      "en": "Cocos (Keeling) Islands"
+    },
+    "CD": {
+      "currency": "CDF",
+      "ru": "Конго - Киншаса",
+      "en": "Congo - Kinshasa"
+    },
+    "CF": {
+      "currency": "XAF",
+      "ru": "Центрально-Африканская Республика",
+      "en": "Central African Republic"
+    },
+    "CG": {
+      "currency": "XAF",
+      "ru": "Конго - Браззавиль",
+      "en": "Congo - Brazzaville"
+    },
+    "CH": {
+      "currency": "CHF",
+      "ru": "Швейцария",
+      "en": "Switzerland"
+    },
+    "CI": {
+      "currency": "XOF",
+      "ru": "Кот-д’Ивуар",
+      "en": "Côte d’Ivoire"
+    },
+    "CK": {
+      "currency": "NZD",
+      "ru": "о-ва Кука",
+      "en": "Cook Islands"
+    },
+    "CL": {
+      "currency": "CLP",
+      "ru": "Чили",
+      "en": "Chile"
+    },
+    "CM": {
+      "currency": "XAF",
+      "ru": "Камерун",
+      "en": "Cameroon"
+    },
+    "CN": {
+      "currency": "CNY",
+      "ru": "Китай",
+      "en": "China"
+    },
+    "CO": {
+      "currency": "COP",
+      "ru": "Колумбия",
+      "en": "Colombia"
+    },
+    "CR": {
+      "currency": "CRC",
+      "ru": "Коста-Рика",
+      "en": "Costa Rica"
+    },
+    "CU": {
+      "currency": "CUP",
+      "ru": "Куба",
+      "en": "Cuba"
+    },
+    "CV": {
+      "currency": "CVE",
+      "ru": "Кабо-Верде",
+      "en": "Cape Verde"
+    },
+    "CW": {
+      "currency": "XCG",
+      "ru": "Кюрасао",
+      "en": "Curaçao"
+    },
+    "CX": {
+      "currency": "AUD",
+      "ru": "о-в Рождества",
+      "en": "Christmas Island"
+    },
+    "CY": {
+      "currency": "EUR",
+      "ru": "Кипр",
+      "en": "Cyprus"
+    },
+    "CZ": {
+      "currency": "CZK",
+      "ru": "Чехия",
+      "en": "Czechia"
+    },
+    "DE": {
+      "currency": "EUR",
+      "ru": "Германия",
+      "en": "Germany"
+    },
+    "DG": {
+      "currency": "USD",
+      "ru": "Диего-Гарсия",
+      "en": "Diego Garcia"
+    },
+    "DJ": {
+      "currency": "DJF",
+      "ru": "Джибути",
+      "en": "Djibouti"
+    },
+    "DK": {
+      "currency": "DKK",
+      "ru": "Дания",
+      "en": "Denmark"
+    },
+    "DM": {
+      "currency": "XCD",
+      "ru": "Доминика",
+      "en": "Dominica"
+    },
+    "DO": {
+      "currency": "DOP",
+      "ru": "Доминиканская Республика",
+      "en": "Dominican Republic"
+    },
+    "DZ": {
+      "currency": "DZD",
+      "ru": "Алжир",
+      "en": "Algeria"
+    },
+    "EA": {
+      "currency": "EUR",
+      "ru": "Сеута и Мелилья",
+      "en": "Ceuta & Melilla"
+    },
+    "EC": {
+      "currency": "USD",
+      "ru": "Эквадор",
+      "en": "Ecuador"
+    },
+    "EE": {
+      "currency": "EUR",
+      "ru": "Эстония",
+      "en": "Estonia"
+    },
+    "EG": {
+      "currency": "EGP",
+      "ru": "Египет",
+      "en": "Egypt"
+    },
+    "EH": {
+      "currency": "MAD",
+      "ru": "Западная Сахара",
+      "en": "Western Sahara"
+    },
+    "ER": {
+      "currency": "ERN",
+      "ru": "Эритрея",
+      "en": "Eritrea"
+    },
+    "ES": {
+      "currency": "EUR",
+      "ru": "Испания",
+      "en": "Spain"
+    },
+    "ET": {
+      "currency": "ETB",
+      "ru": "Эфиопия",
+      "en": "Ethiopia"
+    },
+    "EU": {
+      "currency": "EUR",
+      "ru": "Европейский союз",
+      "en": "European Union"
+    },
+    "FI": {
+      "currency": "EUR",
+      "ru": "Финляндия",
+      "en": "Finland"
+    },
+    "FJ": {
+      "currency": "FJD",
+      "ru": "Фиджи",
+      "en": "Fiji"
+    },
+    "FK": {
+      "currency": "FKP",
+      "ru": "Фолклендские о-ва",
+      "en": "Falkland Islands"
+    },
+    "FM": {
+      "currency": "USD",
+      "ru": "Федеративные Штаты Микронезии",
+      "en": "Micronesia"
+    },
+    "FO": {
+      "currency": "DKK",
+      "ru": "Фарерские о-ва",
+      "en": "Faroe Islands"
+    },
+    "FR": {
+      "currency": "EUR",
+      "ru": "Франция",
+      "en": "France"
+    },
+    "GA": {
+      "currency": "XAF",
+      "ru": "Габон",
+      "en": "Gabon"
+    },
+    "GB": {
+      "currency": "GBP",
+      "ru": "Великобритания",
+      "en": "United Kingdom"
+    },
+    "GD": {
+      "currency": "XCD",
+      "ru": "Гренада",
+      "en": "Grenada"
+    },
+    "GE": {
+      "currency": "GEL",
+      "ru": "Грузия",
+      "en": "Georgia"
+    },
+    "GF": {
+      "currency": "EUR",
+      "ru": "Французская Гвиана",
+      "en": "French Guiana"
+    },
+    "GG": {
+      "currency": "GBP",
+      "ru": "Гернси",
+      "en": "Guernsey"
+    },
+    "GH": {
+      "currency": "GHS",
+      "ru": "Гана",
+      "en": "Ghana"
+    },
+    "GI": {
+      "currency": "GIP",
+      "ru": "Гибралтар",
+      "en": "Gibraltar"
+    },
+    "GL": {
+      "currency": "DKK",
+      "ru": "Гренландия",
+      "en": "Greenland"
+    },
+    "GM": {
+      "currency": "GMD",
+      "ru": "Гамбия",
+      "en": "Gambia"
+    },
+    "GN": {
+      "currency": "GNF",
+      "ru": "Гвинея",
+      "en": "Guinea"
+    },
+    "GP": {
+      "currency": "EUR",
+      "ru": "Гваделупа",
+      "en": "Guadeloupe"
+    },
+    "GQ": {
+      "currency": "XAF",
+      "ru": "Экваториальная Гвинея",
+      "en": "Equatorial Guinea"
+    },
+    "GR": {
+      "currency": "EUR",
+      "ru": "Греция",
+      "en": "Greece"
+    },
+    "GS": {
+      "currency": "GBP",
+      "ru": "Южная Георгия и Южные Сандвичевы о-ва",
+      "en": "South Georgia & South Sandwich Islands"
+    },
+    "GT": {
+      "currency": "GTQ",
+      "ru": "Гватемала",
+      "en": "Guatemala"
+    },
+    "GU": {
+      "currency": "USD",
+      "ru": "Гуам",
+      "en": "Guam"
+    },
+    "GW": {
+      "currency": "XOF",
+      "ru": "Гвинея-Бисау",
+      "en": "Guinea-Bissau"
+    },
+    "GY": {
+      "currency": "GYD",
+      "ru": "Гайана",
+      "en": "Guyana"
+    },
+    "HK": {
+      "currency": "HKD",
+      "ru": "Гонконг (САР)",
+      "en": "Hong Kong SAR China"
+    },
+    "HM": {
+      "currency": "AUD",
+      "ru": "о-ва Херд и Макдональд",
+      "en": "Heard & McDonald Islands"
+    },
+    "HN": {
+      "currency": "HNL",
+      "ru": "Гондурас",
+      "en": "Honduras"
+    },
+    "HR": {
+      "currency": "EUR",
+      "ru": "Хорватия",
+      "en": "Croatia"
+    },
+    "HT": {
+      "currency": "HTG",
+      "ru": "Гаити",
+      "en": "Haiti"
+    },
+    "HU": {
+      "currency": "HUF",
+      "ru": "Венгрия",
+      "en": "Hungary"
+    },
+    "IC": {
+      "currency": "EUR",
+      "ru": "Канарские о-ва",
+      "en": "Canary Islands"
+    },
+    "ID": {
+      "currency": "IDR",
+      "ru": "Индонезия",
+      "en": "Indonesia"
+    },
+    "IE": {
+      "currency": "EUR",
+      "ru": "Ирландия",
+      "en": "Ireland"
+    },
+    "IL": {
+      "currency": "ILS",
+      "ru": "Израиль",
+      "en": "Israel"
+    },
+    "IM": {
+      "currency": "GBP",
+      "ru": "о-в Мэн",
+      "en": "Isle of Man"
+    },
+    "IN": {
+      "currency": "INR",
+      "ru": "Индия",
+      "en": "India"
+    },
+    "IO": {
+      "currency": "USD",
+      "ru": "Британская территория в Индийском океане",
+      "en": "British Indian Ocean Territory"
+    },
+    "IQ": {
+      "currency": "IQD",
+      "ru": "Ирак",
+      "en": "Iraq"
+    },
+    "IR": {
+      "currency": "IRR",
+      "ru": "Иран",
+      "en": "Iran"
+    },
+    "IS": {
+      "currency": "ISK",
+      "ru": "Исландия",
+      "en": "Iceland"
+    },
+    "IT": {
+      "currency": "EUR",
+      "ru": "Италия",
+      "en": "Italy"
+    },
+    "JE": {
+      "currency": "GBP",
+      "ru": "Джерси",
+      "en": "Jersey"
+    },
+    "JM": {
+      "currency": "JMD",
+      "ru": "Ямайка",
+      "en": "Jamaica"
+    },
+    "JO": {
+      "currency": "JOD",
+      "ru": "Иордания",
+      "en": "Jordan"
+    },
+    "JP": {
+      "currency": "JPY",
+      "ru": "Япония",
+      "en": "Japan"
+    },
+    "KE": {
+      "currency": "KES",
+      "ru": "Кения",
+      "en": "Kenya"
+    },
+    "KG": {
+      "currency": "KGS",
+      "ru": "Киргизия",
+      "en": "Kyrgyzstan"
+    },
+    "KH": {
+      "currency": "KHR",
+      "ru": "Камбоджа",
+      "en": "Cambodia"
+    },
+    "KI": {
+      "currency": "AUD",
+      "ru": "Кирибати",
+      "en": "Kiribati"
+    },
+    "KM": {
+      "currency": "KMF",
+      "ru": "Коморы",
+      "en": "Comoros"
+    },
+    "KN": {
+      "currency": "XCD",
+      "ru": "Сент-Китс и Невис",
+      "en": "St. Kitts & Nevis"
+    },
+    "KP": {
+      "currency": "KPW",
+      "ru": "КНДР",
+      "en": "North Korea"
+    },
+    "KR": {
+      "currency": "KRW",
+      "ru": "Республика Корея",
+      "en": "South Korea"
+    },
+    "KW": {
+      "currency": "KWD",
+      "ru": "Кувейт",
+      "en": "Kuwait"
+    },
+    "KY": {
+      "currency": "KYD",
+      "ru": "о-ва Кайман",
+      "en": "Cayman Islands"
+    },
+    "KZ": {
+      "currency": "KZT",
+      "ru": "Казахстан",
+      "en": "Kazakhstan"
+    },
+    "LA": {
+      "currency": "LAK",
+      "ru": "Лаос",
+      "en": "Laos"
+    },
+    "LB": {
+      "currency": "LBP",
+      "ru": "Ливан",
+      "en": "Lebanon"
+    },
+    "LC": {
+      "currency": "XCD",
+      "ru": "Сент-Люсия",
+      "en": "St. Lucia"
+    },
+    "LI": {
+      "currency": "CHF",
+      "ru": "Лихтенштейн",
+      "en": "Liechtenstein"
+    },
+    "LK": {
+      "currency": "LKR",
+      "ru": "Шри-Ланка",
+      "en": "Sri Lanka"
+    },
+    "LR": {
+      "currency": "LRD",
+      "ru": "Либерия",
+      "en": "Liberia"
+    },
+    "LS": {
+      "currency": "ZAR",
+      "ru": "Лесото",
+      "en": "Lesotho"
+    },
+    "LT": {
+      "currency": "EUR",
+      "ru": "Литва",
+      "en": "Lithuania"
+    },
+    "LU": {
+      "currency": "EUR",
+      "ru": "Люксембург",
+      "en": "Luxembourg"
+    },
+    "LV": {
+      "currency": "EUR",
+      "ru": "Латвия",
+      "en": "Latvia"
+    },
+    "LY": {
+      "currency": "LYD",
+      "ru": "Ливия",
+      "en": "Libya"
+    },
+    "MA": {
+      "currency": "MAD",
+      "ru": "Марокко",
+      "en": "Morocco"
+    },
+    "MC": {
+      "currency": "EUR",
+      "ru": "Монако",
+      "en": "Monaco"
+    },
+    "MD": {
+      "currency": "MDL",
+      "ru": "Молдова",
+      "en": "Moldova"
+    },
+    "ME": {
+      "currency": "EUR",
+      "ru": "Черногория",
+      "en": "Montenegro"
+    },
+    "MF": {
+      "currency": "EUR",
+      "ru": "Сен-Мартен",
+      "en": "St. Martin"
+    },
+    "MG": {
+      "currency": "MGA",
+      "ru": "Мадагаскар",
+      "en": "Madagascar"
+    },
+    "MH": {
+      "currency": "USD",
+      "ru": "Маршалловы о-ва",
+      "en": "Marshall Islands"
+    },
+    "MK": {
+      "currency": "MKD",
+      "ru": "Северная Македония",
+      "en": "North Macedonia"
+    },
+    "ML": {
+      "currency": "XOF",
+      "ru": "Мали",
+      "en": "Mali"
+    },
+    "MM": {
+      "currency": "MMK",
+      "ru": "Мьянма (Бирма)",
+      "en": "Myanmar (Burma)"
+    },
+    "MN": {
+      "currency": "MNT",
+      "ru": "Монголия",
+      "en": "Mongolia"
+    },
+    "MO": {
+      "currency": "MOP",
+      "ru": "Макао (САР)",
+      "en": "Macao SAR China"
+    },
+    "MP": {
+      "currency": "USD",
+      "ru": "Северные Марианские о-ва",
+      "en": "Northern Mariana Islands"
+    },
+    "MQ": {
+      "currency": "EUR",
+      "ru": "Мартиника",
+      "en": "Martinique"
+    },
+    "MR": {
+      "currency": "MRU",
+      "ru": "Мавритания",
+      "en": "Mauritania"
+    },
+    "MS": {
+      "currency": "XCD",
+      "ru": "Монтсеррат",
+      "en": "Montserrat"
+    },
+    "MT": {
+      "currency": "EUR",
+      "ru": "Мальта",
+      "en": "Malta"
+    },
+    "MU": {
+      "currency": "MUR",
+      "ru": "Маврикий",
+      "en": "Mauritius"
+    },
+    "MV": {
+      "currency": "MVR",
+      "ru": "Мальдивы",
+      "en": "Maldives"
+    },
+    "MW": {
+      "currency": "MWK",
+      "ru": "Малави",
+      "en": "Malawi"
+    },
+    "MX": {
+      "currency": "MXN",
+      "ru": "Мексика",
+      "en": "Mexico"
+    },
+    "MY": {
+      "currency": "MYR",
+      "ru": "Малайзия",
+      "en": "Malaysia"
+    },
+    "MZ": {
+      "currency": "MZN",
+      "ru": "Мозамбик",
+      "en": "Mozambique"
+    },
+    "NA": {
+      "currency": "NAD",
+      "ru": "Намибия",
+      "en": "Namibia"
+    },
+    "NC": {
+      "currency": "XPF",
+      "ru": "Новая Каледония",
+      "en": "New Caledonia"
+    },
+    "NE": {
+      "currency": "XOF",
+      "ru": "Нигер",
+      "en": "Niger"
+    },
+    "NF": {
+      "currency": "AUD",
+      "ru": "о-в Норфолк",
+      "en": "Norfolk Island"
+    },
+    "NG": {
+      "currency": "NGN",
+      "ru": "Нигерия",
+      "en": "Nigeria"
+    },
+    "NI": {
+      "currency": "NIO",
+      "ru": "Никарагуа",
+      "en": "Nicaragua"
+    },
+    "NL": {
+      "currency": "EUR",
+      "ru": "Нидерланды",
+      "en": "Netherlands"
+    },
+    "NO": {
+      "currency": "NOK",
+      "ru": "Норвегия",
+      "en": "Norway"
+    },
+    "NP": {
+      "currency": "NPR",
+      "ru": "Непал",
+      "en": "Nepal"
+    },
+    "NR": {
+      "currency": "AUD",
+      "ru": "Науру",
+      "en": "Nauru"
+    },
+    "NU": {
+      "currency": "NZD",
+      "ru": "Ниуэ",
+      "en": "Niue"
+    },
+    "NZ": {
+      "currency": "NZD",
+      "ru": "Новая Зеландия",
+      "en": "New Zealand"
+    },
+    "OM": {
+      "currency": "OMR",
+      "ru": "Оман",
+      "en": "Oman"
+    },
+    "PA": {
+      "currency": "PAB",
+      "ru": "Панама",
+      "en": "Panama"
+    },
+    "PE": {
+      "currency": "PEN",
+      "ru": "Перу",
+      "en": "Peru"
+    },
+    "PF": {
+      "currency": "XPF",
+      "ru": "Французская Полинезия",
+      "en": "French Polynesia"
+    },
+    "PG": {
+      "currency": "PGK",
+      "ru": "Папуа — Новая Гвинея",
+      "en": "Papua New Guinea"
+    },
+    "PH": {
+      "currency": "PHP",
+      "ru": "Филиппины",
+      "en": "Philippines"
+    },
+    "PK": {
+      "currency": "PKR",
+      "ru": "Пакистан",
+      "en": "Pakistan"
+    },
+    "PL": {
+      "currency": "PLN",
+      "ru": "Польша",
+      "en": "Poland"
+    },
+    "PM": {
+      "currency": "EUR",
+      "ru": "Сен-Пьер и Микелон",
+      "en": "St. Pierre & Miquelon"
+    },
+    "PN": {
+      "currency": "NZD",
+      "ru": "о-ва Питкэрн",
+      "en": "Pitcairn Islands"
+    },
+    "PR": {
+      "currency": "USD",
+      "ru": "Пуэрто-Рико",
+      "en": "Puerto Rico"
+    },
+    "PS": {
+      "currency": "ILS",
+      "ru": "Палестинские территории",
+      "en": "Palestinian Territories"
+    },
+    "PT": {
+      "currency": "EUR",
+      "ru": "Португалия",
+      "en": "Portugal"
+    },
+    "PW": {
+      "currency": "USD",
+      "ru": "Палау",
+      "en": "Palau"
+    },
+    "PY": {
+      "currency": "PYG",
+      "ru": "Парагвай",
+      "en": "Paraguay"
+    },
+    "QA": {
+      "currency": "QAR",
+      "ru": "Катар",
+      "en": "Qatar"
+    },
+    "RE": {
+      "currency": "EUR",
+      "ru": "Реюньон",
+      "en": "Réunion"
+    },
+    "RO": {
+      "currency": "RON",
+      "ru": "Румыния",
+      "en": "Romania"
+    },
+    "RS": {
+      "currency": "RSD",
+      "ru": "Сербия",
+      "en": "Serbia"
+    },
+    "RU": {
+      "currency": "RUB",
+      "ru": "Россия",
+      "en": "Russia"
+    },
+    "RW": {
+      "currency": "RWF",
+      "ru": "Руанда",
+      "en": "Rwanda"
+    },
+    "SA": {
+      "currency": "SAR",
+      "ru": "Саудовская Аравия",
+      "en": "Saudi Arabia"
+    },
+    "SB": {
+      "currency": "SBD",
+      "ru": "Соломоновы о-ва",
+      "en": "Solomon Islands"
+    },
+    "SC": {
+      "currency": "SCR",
+      "ru": "Сейшельские о-ва",
+      "en": "Seychelles"
+    },
+    "SD": {
+      "currency": "SDG",
+      "ru": "Судан",
+      "en": "Sudan"
+    },
+    "SE": {
+      "currency": "SEK",
+      "ru": "Швеция",
+      "en": "Sweden"
+    },
+    "SG": {
+      "currency": "SGD",
+      "ru": "Сингапур",
+      "en": "Singapore"
+    },
+    "SH": {
+      "currency": "SHP",
+      "ru": "о-в Св. Елены",
+      "en": "St. Helena"
+    },
+    "SI": {
+      "currency": "EUR",
+      "ru": "Словения",
+      "en": "Slovenia"
+    },
+    "SJ": {
+      "currency": "NOK",
+      "ru": "Шпицберген и Ян-Майен",
+      "en": "Svalbard & Jan Mayen"
+    },
+    "SK": {
+      "currency": "EUR",
+      "ru": "Словакия",
+      "en": "Slovakia"
+    },
+    "SL": {
+      "currency": "SLE",
+      "ru": "Сьерра-Леоне",
+      "en": "Sierra Leone"
+    },
+    "SM": {
+      "currency": "EUR",
+      "ru": "Сан-Марино",
+      "en": "San Marino"
+    },
+    "SN": {
+      "currency": "XOF",
+      "ru": "Сенегал",
+      "en": "Senegal"
+    },
+    "SO": {
+      "currency": "SOS",
+      "ru": "Сомали",
+      "en": "Somalia"
+    },
+    "SR": {
+      "currency": "SRD",
+      "ru": "Суринам",
+      "en": "Suriname"
+    },
+    "SS": {
+      "currency": "SSP",
+      "ru": "Южный Судан",
+      "en": "South Sudan"
+    },
+    "ST": {
+      "currency": "STN",
+      "ru": "Сан-Томе и Принсипи",
+      "en": "São Tomé & Príncipe"
+    },
+    "SV": {
+      "currency": "USD",
+      "ru": "Сальвадор",
+      "en": "El Salvador"
+    },
+    "SX": {
+      "currency": "XCG",
+      "ru": "Синт-Мартен",
+      "en": "Sint Maarten"
+    },
+    "SY": {
+      "currency": "SYP",
+      "ru": "Сирия",
+      "en": "Syria"
+    },
+    "SZ": {
+      "currency": "SZL",
+      "ru": "Эсватини",
+      "en": "Eswatini"
+    },
+    "TA": {
+      "currency": "GBP",
+      "ru": "Тристан-да-Кунья",
+      "en": "Tristan da Cunha"
+    },
+    "TC": {
+      "currency": "USD",
+      "ru": "Тёркс и Кайкос",
+      "en": "Turks & Caicos Islands"
+    },
+    "TD": {
+      "currency": "XAF",
+      "ru": "Чад",
+      "en": "Chad"
+    },
+    "TF": {
+      "currency": "EUR",
+      "ru": "Французские Южные территории",
+      "en": "French Southern Territories"
+    },
+    "TG": {
+      "currency": "XOF",
+      "ru": "Того",
+      "en": "Togo"
+    },
+    "TH": {
+      "currency": "THB",
+      "ru": "Таиланд",
+      "en": "Thailand"
+    },
+    "TJ": {
+      "currency": "TJS",
+      "ru": "Таджикистан",
+      "en": "Tajikistan"
+    },
+    "TK": {
+      "currency": "NZD",
+      "ru": "Токелау",
+      "en": "Tokelau"
+    },
+    "TL": {
+      "currency": "USD",
+      "ru": "Восточный Тимор",
+      "en": "Timor-Leste"
+    },
+    "TM": {
+      "currency": "TMT",
+      "ru": "Туркменистан",
+      "en": "Turkmenistan"
+    },
+    "TN": {
+      "currency": "TND",
+      "ru": "Тунис",
+      "en": "Tunisia"
+    },
+    "TO": {
+      "currency": "TOP",
+      "ru": "Тонга",
+      "en": "Tonga"
+    },
+    "TR": {
+      "currency": "TRY",
+      "ru": "Турция",
+      "en": "Türkiye"
+    },
+    "TT": {
+      "currency": "TTD",
+      "ru": "Тринидад и Тобаго",
+      "en": "Trinidad & Tobago"
+    },
+    "TV": {
+      "currency": "AUD",
+      "ru": "Тувалу",
+      "en": "Tuvalu"
+    },
+    "TW": {
+      "currency": "TWD",
+      "ru": "Тайвань",
+      "en": "Taiwan"
+    },
+    "TZ": {
+      "currency": "TZS",
+      "ru": "Танзания",
+      "en": "Tanzania"
+    },
+    "UA": {
+      "currency": "UAH",
+      "ru": "Украина",
+      "en": "Ukraine"
+    },
+    "UG": {
+      "currency": "UGX",
+      "ru": "Уганда",
+      "en": "Uganda"
+    },
+    "UM": {
+      "currency": "USD",
+      "ru": "Внешние малые о-ва (США)",
+      "en": "U.S. Outlying Islands"
+    },
+    "US": {
+      "currency": "USD",
+      "ru": "Соединенные Штаты",
+      "en": "United States"
+    },
+    "UY": {
+      "currency": "UYU",
+      "ru": "Уругвай",
+      "en": "Uruguay"
+    },
+    "UZ": {
+      "currency": "UZS",
+      "ru": "Узбекистан",
+      "en": "Uzbekistan"
+    },
+    "VA": {
+      "currency": "EUR",
+      "ru": "Ватикан",
+      "en": "Vatican City"
+    },
+    "VC": {
+      "currency": "XCD",
+      "ru": "Сент-Винсент и Гренадины",
+      "en": "St. Vincent & Grenadines"
+    },
+    "VE": {
+      "currency": "VES",
+      "ru": "Венесуэла",
+      "en": "Venezuela"
+    },
+    "VG": {
+      "currency": "USD",
+      "ru": "Виргинские о-ва (Великобритания)",
+      "en": "British Virgin Islands"
+    },
+    "VI": {
+      "currency": "USD",
+      "ru": "Виргинские о-ва (США)",
+      "en": "U.S. Virgin Islands"
+    },
+    "VN": {
+      "currency": "VND",
+      "ru": "Вьетнам",
+      "en": "Vietnam"
+    },
+    "VU": {
+      "currency": "VUV",
+      "ru": "Вануату",
+      "en": "Vanuatu"
+    },
+    "WF": {
+      "currency": "XPF",
+      "ru": "Уоллис и Футуна",
+      "en": "Wallis & Futuna"
+    },
+    "WS": {
+      "currency": "WST",
+      "ru": "Самоа",
+      "en": "Samoa"
+    },
+    "XK": {
+      "currency": "EUR",
+      "ru": "Косово",
+      "en": "Kosovo"
+    },
+    "YE": {
+      "currency": "YER",
+      "ru": "Йемен",
+      "en": "Yemen"
+    },
+    "YT": {
+      "currency": "EUR",
+      "ru": "Майотта",
+      "en": "Mayotte"
+    },
+    "ZA": {
+      "currency": "ZAR",
+      "ru": "Южно-Африканская Республика",
+      "en": "South Africa"
+    },
+    "ZM": {
+      "currency": "ZMW",
+      "ru": "Замбия",
+      "en": "Zambia"
+    },
+    "ZW": {
+      "currency": "ZWG",
+      "ru": "Зимбабве",
+      "en": "Zimbabwe"
+    }
+  },
+  "currencies": {
+    "AED": {
+      "digits": 2
+    },
+    "AFN": {
+      "digits": 0
+    },
+    "ALL": {
+      "digits": 0
+    },
+    "AMD": {
+      "digits": 2
+    },
+    "AOA": {
+      "digits": 2
+    },
+    "ARS": {
+      "digits": 2
+    },
+    "AUD": {
+      "digits": 2
+    },
+    "AWG": {
+      "digits": 2
+    },
+    "AZN": {
+      "digits": 2
+    },
+    "BAM": {
+      "digits": 2
+    },
+    "BBD": {
+      "digits": 2
+    },
+    "BDT": {
+      "digits": 2
+    },
+    "BHD": {
+      "digits": 3
+    },
+    "BIF": {
+      "digits": 0
+    },
+    "BMD": {
+      "digits": 2
+    },
+    "BND": {
+      "digits": 2
+    },
+    "BOB": {
+      "digits": 2
+    },
+    "BRL": {
+      "digits": 2
+    },
+    "BSD": {
+      "digits": 2
+    },
+    "BTN": {
+      "digits": 2
+    },
+    "BWP": {
+      "digits": 2
+    },
+    "BYN": {
+      "digits": 2
+    },
+    "BZD": {
+      "digits": 2
+    },
+    "CAD": {
+      "digits": 2
+    },
+    "CDF": {
+      "digits": 2
+    },
+    "CHF": {
+      "digits": 2
+    },
+    "CLP": {
+      "digits": 0
+    },
+    "CNY": {
+      "digits": 2
+    },
+    "COP": {
+      "digits": 0
+    },
+    "CRC": {
+      "digits": 2
+    },
+    "CUP": {
+      "digits": 2
+    },
+    "CVE": {
+      "digits": 2
+    },
+    "CZK": {
+      "digits": 2
+    },
+    "DJF": {
+      "digits": 0
+    },
+    "DKK": {
+      "digits": 2
+    },
+    "DOP": {
+      "digits": 2
+    },
+    "DZD": {
+      "digits": 2
+    },
+    "EGP": {
+      "digits": 2
+    },
+    "ERN": {
+      "digits": 2
+    },
+    "ETB": {
+      "digits": 2
+    },
+    "EUR": {
+      "digits": 2
+    },
+    "FJD": {
+      "digits": 2
+    },
+    "FKP": {
+      "digits": 2
+    },
+    "GBP": {
+      "digits": 2
+    },
+    "GEL": {
+      "digits": 2
+    },
+    "GHS": {
+      "digits": 2
+    },
+    "GIP": {
+      "digits": 2
+    },
+    "GMD": {
+      "digits": 2
+    },
+    "GNF": {
+      "digits": 0
+    },
+    "GTQ": {
+      "digits": 2
+    },
+    "GYD": {
+      "digits": 2
+    },
+    "HKD": {
+      "digits": 2
+    },
+    "HNL": {
+      "digits": 2
+    },
+    "HTG": {
+      "digits": 2
+    },
+    "HUF": {
+      "digits": 0
+    },
+    "IDR": {
+      "digits": 0
+    },
+    "ILS": {
+      "digits": 2
+    },
+    "INR": {
+      "digits": 2
+    },
+    "IQD": {
+      "digits": 0
+    },
+    "IRR": {
+      "digits": 0
+    },
+    "ISK": {
+      "digits": 0
+    },
+    "JMD": {
+      "digits": 2
+    },
+    "JOD": {
+      "digits": 3
+    },
+    "JPY": {
+      "digits": 0
+    },
+    "KES": {
+      "digits": 2
+    },
+    "KGS": {
+      "digits": 2
+    },
+    "KHR": {
+      "digits": 2
+    },
+    "KMF": {
+      "digits": 0
+    },
+    "KPW": {
+      "digits": 0
+    },
+    "KRW": {
+      "digits": 0
+    },
+    "KWD": {
+      "digits": 3
+    },
+    "KYD": {
+      "digits": 2
+    },
+    "KZT": {
+      "digits": 2
+    },
+    "LAK": {
+      "digits": 0
+    },
+    "LBP": {
+      "digits": 0
+    },
+    "LKR": {
+      "digits": 2
+    },
+    "LRD": {
+      "digits": 2
+    },
+    "LYD": {
+      "digits": 3
+    },
+    "MAD": {
+      "digits": 2
+    },
+    "MDL": {
+      "digits": 2
+    },
+    "MGA": {
+      "digits": 0
+    },
+    "MKD": {
+      "digits": 2
+    },
+    "MMK": {
+      "digits": 0
+    },
+    "MNT": {
+      "digits": 2
+    },
+    "MOP": {
+      "digits": 2
+    },
+    "MRU": {
+      "digits": 2
+    },
+    "MUR": {
+      "digits": 2
+    },
+    "MVR": {
+      "digits": 2
+    },
+    "MWK": {
+      "digits": 2
+    },
+    "MXN": {
+      "digits": 2
+    },
+    "MYR": {
+      "digits": 2
+    },
+    "MZN": {
+      "digits": 2
+    },
+    "NAD": {
+      "digits": 2
+    },
+    "NGN": {
+      "digits": 2
+    },
+    "NIO": {
+      "digits": 2
+    },
+    "NOK": {
+      "digits": 2
+    },
+    "NPR": {
+      "digits": 2
+    },
+    "NZD": {
+      "digits": 2
+    },
+    "OMR": {
+      "digits": 3
+    },
+    "PAB": {
+      "digits": 2
+    },
+    "PEN": {
+      "digits": 2
+    },
+    "PGK": {
+      "digits": 2
+    },
+    "PHP": {
+      "digits": 2
+    },
+    "PKR": {
+      "digits": 2
+    },
+    "PLN": {
+      "digits": 2
+    },
+    "PYG": {
+      "digits": 0
+    },
+    "QAR": {
+      "digits": 2
+    },
+    "RON": {
+      "digits": 2
+    },
+    "RSD": {
+      "digits": 2
+    },
+    "RUB": {
+      "digits": 2
+    },
+    "RWF": {
+      "digits": 0
+    },
+    "SAR": {
+      "digits": 2
+    },
+    "SBD": {
+      "digits": 2
+    },
+    "SCR": {
+      "digits": 2
+    },
+    "SDG": {
+      "digits": 2
+    },
+    "SEK": {
+      "digits": 2
+    },
+    "SGD": {
+      "digits": 2
+    },
+    "SHP": {
+      "digits": 2
+    },
+    "SLE": {
+      "digits": 2
+    },
+    "SOS": {
+      "digits": 0
+    },
+    "SRD": {
+      "digits": 2
+    },
+    "SSP": {
+      "digits": 2
+    },
+    "STN": {
+      "digits": 2
+    },
+    "SYP": {
+      "digits": 0
+    },
+    "SZL": {
+      "digits": 2
+    },
+    "THB": {
+      "digits": 2
+    },
+    "TJS": {
+      "digits": 2
+    },
+    "TMT": {
+      "digits": 2
+    },
+    "TND": {
+      "digits": 3
+    },
+    "TOP": {
+      "digits": 2
+    },
+    "TRY": {
+      "digits": 2
+    },
+    "TTD": {
+      "digits": 2
+    },
+    "TWD": {
+      "digits": 2
+    },
+    "TZS": {
+      "digits": 2
+    },
+    "UAH": {
+      "digits": 2
+    },
+    "UGX": {
+      "digits": 0
+    },
+    "USD": {
+      "digits": 2
+    },
+    "UYU": {
+      "digits": 2
+    },
+    "UZS": {
+      "digits": 2
+    },
+    "VES": {
+      "digits": 2
+    },
+    "VND": {
+      "digits": 0
+    },
+    "VUV": {
+      "digits": 0
+    },
+    "WST": {
+      "digits": 2
+    },
+    "XAF": {
+      "digits": 0
+    },
+    "XCD": {
+      "digits": 2
+    },
+    "XCG": {
+      "digits": 2
+    },
+    "XOF": {
+      "digits": 0
+    },
+    "XPF": {
+      "digits": 0
+    },
+    "YER": {
+      "digits": 0
+    },
+    "ZAR": {
+      "digits": 2
+    },
+    "ZMW": {
+      "digits": 2
+    },
+    "ZWG": {
+      "digits": 2
+    }
+  }
+}

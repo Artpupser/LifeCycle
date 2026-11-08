@@ -18,3 +18,6 @@ pub mod profile;
 pub mod settings;
 pub mod tasks;
 pub mod workouts;
+
+pub(crate) mod integrations;
+pub(crate) mod videogames;

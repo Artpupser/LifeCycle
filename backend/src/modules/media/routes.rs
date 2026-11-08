@@ -10,4 +10,5 @@ pub fn routes() -> Router<AppState> {
             axum::routing::post(upload).layer(DefaultBodyLimit::max(MAX_BYTES)),
         )
         .route("/api/media/{id}", get(download))
+        .route("/api/media/providers/{id}", get(super::provider::download))
 }

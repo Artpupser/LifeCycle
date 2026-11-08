@@ -17,3 +17,11 @@ it("maps historical values and falls back without loading arbitrary remote names
  expect(resolveIcon("constructor")).toBe("tabler:sparkles");
  expect(resolveIcon("__proto__")).toBe("tabler:sparkles");
 });
+
+import currencyMetadata from "../../../../shared/country-currencies.json";
+import {currencyIcon,currencyNames} from "./currencies";
+it("every country currency is bundled and searchable in the shared icon catalog",()=>{
+ for(const country of Object.values(currencyMetadata.countries)){
+  const id=currencyIcon(country.currency);expect(id).toMatch(/^lifecycle:currency-/);expect(resolveIcon(id)).toBe(id);expect(iconData(id)?.body).toContain(country.currency);expect(currencyNames(country.currency)).toContain(country.currency);
+ }
+});

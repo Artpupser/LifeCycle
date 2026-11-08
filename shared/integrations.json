@@ -1,0 +1,55 @@
+[
+  {
+    "id": "steam",
+    "name": "Steam",
+    "icon": "simple-icons:steam",
+    "kind": "gaming",
+    "capabilities": [
+      "identity",
+      "library",
+      "playtime"
+    ],
+    "settings_path": "/profile#integrations",
+    "authorization_origin": "https://steamcommunity.com",
+    "authorization_path": "/openid/login"
+  },
+  {
+    "id": "epic",
+    "name": "Epic Games",
+    "icon": "simple-icons:epicgames",
+    "kind": "gaming",
+    "capabilities": [
+      "identity",
+      "library",
+      "offers",
+      "sales"
+    ],
+    "settings_path": "/profile#integrations",
+    "authorization_origin": "https://www.epicgames.com",
+    "authorization_path": "/id/login"
+  },
+  {
+    "id": "ai",
+    "name": "AI",
+    "icon": "tabler:brain",
+    "kind": "delegate",
+    "capabilities": [
+      "assistant"
+    ],
+    "settings_path": "/settings#integrations",
+    "authorization_origin": null,
+    "authorization_path": null
+  },
+  {
+    "id": "operators",
+    "name": "num7",
+    "icon": "tabler:phone",
+    "kind": "delegate",
+    "capabilities": [
+      "phone_lookup"
+    ],
+    "settings_path": "/settings#integrations",
+    "authorization_origin": null,
+    "authorization_path": null
+  }
+]

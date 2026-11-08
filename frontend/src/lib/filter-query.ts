@@ -1,6 +1,6 @@
 import { t } from "@/systems/i18n/locale";
 import { dayDifference, isCalendarDate } from "./dates";
-export type FilterSpec={key:string;label:string;aliases?:string[];example:string;values?:string[];type?:"date";control?:boolean};
+export type FilterSpec={key:string;label:string;aliases?:string[];example:string;values?:string[];type?:"date";control?:boolean;choices?:{value:string;label:string;icon?:string}[]};
 export type FilterTerm={key:string;value:string;negative:boolean};
 export type FilterQuery={text:string;terms:FilterTerm[];errors:string[]};
 const normalize=(value:string)=>value.toLocaleLowerCase("ru-RU");
@@ -53,3 +53,13 @@ export function filterRange(query: FilterQuery, defaults: { from: string; to: st
 }
 export const categoryFilter: FilterSpec = { key: "category", aliases: ["категория"], get label() { return t("Категория"); }, example: 'категория:"Личное"' };
 export function filterLiteral(value: string) { return JSON.stringify(value); }
+
+/** Replace one positive filter, preserving free text, exclusions and unrelated tokens. */
+export function setFilterValue(source:string,specs:FilterSpec[],key:string,value:string|null){
+ const spec=specs.find(item=>item.key===key);if(!spec)return source;
+ const aliases=[spec.key,...spec.aliases??[]].map(normalize);
+ const tokens=source.match(/(?:[^\s"\\]|\\.|"(?:\\.|[^"\\])*")+|"[^"]*$/gu)??[];
+ const kept=tokens.filter(token=>{const match=token.match(/^([\p{L}_]+):/u);return !match||!aliases.includes(normalize(match[1]));});
+ if(value!==null)kept.push(`${spec.key}:${/^[^\s"\\]+$/u.test(value)?value:filterLiteral(value)}`);
+ const next=kept.join(" ");return next.length<=1000?next:source;
+}

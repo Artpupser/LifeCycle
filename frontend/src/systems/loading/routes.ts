@@ -1,5 +1,6 @@
 import {lazy} from "react";
 const importers={
+ "/videogames":()=>import("@/features/videogames/videogames-page").then(m=>({default:m.VideogamesPage})),
  "/tree":()=>import("@/features/contacts/tree-page").then(m=>({default:m.TreePage})),
  "/collections":()=>import("@/systems/labels/collections-page").then(m=>({default:m.CollectionsPage})),
  "/history":()=>import("@/systems/history/history-page").then(m=>({default:m.HistoryPage})),
