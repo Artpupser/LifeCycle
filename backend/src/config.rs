@@ -22,6 +22,7 @@ pub struct Config {
     pub smtp_username: String,
     pub smtp_password: String,
     pub trust_proxy: bool,
+    pub web_push_private_key: Option<String>,
 }
 
 impl Config {
@@ -126,6 +127,15 @@ impl Config {
             "false" => false,
             _ => return Err("TRUST_PROXY must be true or false".to_owned()),
         };
+        let web_push_private_key = values
+            .get("WEB_PUSH_PRIVATE_KEY")
+            .filter(|v| !v.trim().is_empty())
+            .cloned();
+        if let Some(key) = &web_push_private_key {
+            web_push::VapidSignatureBuilder::from_base64_no_sub(key).map_err(|_| {
+                "WEB_PUSH_PRIVATE_KEY must be a valid base64url P-256 private key".to_owned()
+            })?;
+        }
         Ok(Self {
             bind,
             public_url,
@@ -145,6 +155,7 @@ impl Config {
             smtp_username,
             smtp_password,
             trust_proxy,
+            web_push_private_key,
         })
     }
 }

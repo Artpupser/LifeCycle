@@ -32,7 +32,7 @@ export function ConfigForm({ config, onSaved, onDirty }: { config: AiConfig; onS
     catch(failure){setError(errorMessage(failure));}finally{setBusy(false);}
   }
   function updateModel(model:string){setDraft(current=>({...current,model}));onDirty();}
-  return <section aria-label={t("Подключение и разрешения AI")} className="space-y-5 rounded-2xl border border-border bg-card p-5">
+  return <section aria-label={t("Подключение и разрешения AI")} className="space-y-5 rounded-card border border-line bg-surface p-5">
     <div><h2 className="flex items-center gap-2 text-lg font-semibold"><ShieldCheck className="size-5 text-primary" aria-hidden="true" />{t("Подключение и разрешения")}</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">{t("Выберите подключение: тариф ChatGPT через вход, OpenAI API или OpenRouter API. Стоимость и лимиты определяет выбранный сервис. Разрешения действуют отдельно от локальной аналитики.")}</p></div>
     <SaveForm onSubmit={(event) => void save(event)} className="space-y-5">
       <fieldset disabled={busy} className="space-y-5">

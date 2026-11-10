@@ -11,7 +11,7 @@ use sqlx::types::Json as DbJson;
 use std::collections::HashSet;
 use uuid::Uuid;
 
-pub async fn refresh(s: &AppState) -> Result<(), ApiError> {
+pub async fn refresh(s: &AppState, manual: bool) -> Result<(), ApiError> {
     let mut tx = s.database.begin().await?;
     let locked: bool =
         sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended('game-feeds',0))")
@@ -27,7 +27,8 @@ pub async fn refresh(s: &AppState) -> Result<(), ApiError> {
     let now = Utc::now();
     let due = |source: &str| {
         states.iter().find(|row| row.0 == source).is_none_or(|row| {
-            row.1 <= now - chrono::Duration::minutes(5) && row.3.is_none_or(|retry| retry <= now)
+            row.1 <= now - chrono::Duration::minutes(if manual { 1 } else { 5 })
+                && row.3.is_none_or(|retry| retry <= now)
         })
     };
     let free = async {
@@ -38,14 +39,14 @@ pub async fn refresh(s: &AppState) -> Result<(), ApiError> {
         }
     };
     let discount = async {
-        if due("cheapshark") {
+        if due("steam") {
             Some(providers::discounts().await)
         } else {
             None
         }
     };
     let (free, discount) = tokio::join!(free, discount);
-    for (id, result) in [("gamerpower", free), ("cheapshark", discount)] {
+    for (id, result) in [("gamerpower", free), ("steam", discount)] {
         let Some(result) = result else {
             continue;
         };
@@ -82,15 +83,16 @@ pub async fn feed(
     let mut checked = None;
     let mut errors = vec![];
     for (id, data, at, error) in rows {
+        if !providers::SOURCES.contains(&id.as_str()) {
+            continue;
+        }
         if error || at < Utc::now() - chrono::Duration::minutes(30) {
             errors.push(id);
         }
         checked = Some(checked.map_or(at, |old: DateTime<Utc>| old.min(at)));
-        offers.extend(
-            data.0
-                .into_iter()
-                .filter(|offer| offer.ends_at.is_none_or(|end| end > Utc::now())),
-        );
+        offers.extend(data.0.into_iter().filter(|offer| {
+            providers::official_offer(offer) && offer.ends_at.is_none_or(|end| end > Utc::now())
+        }));
     }
     if checked.is_none() {
         errors = providers::SOURCES.into_iter().map(str::to_owned).collect();
@@ -112,7 +114,12 @@ pub async fn feed(
             .then(a.id.cmp(&b.id))
     });
     let mut ids = HashSet::new();
-    offers.retain(|offer| ids.insert(offer.id.clone()));
+    offers.retain(|offer| {
+        ids.insert((
+            offer.platform.clone(),
+            offer.app_id.clone().unwrap_or_else(|| offer.url.clone()),
+        ))
+    });
     Ok((offers, checked, errors))
 }
 async fn baseline(
@@ -143,12 +150,12 @@ async fn baseline(
     tx.commit().await?;
     Ok(())
 }
-pub async fn catalog(s: &AppState, user: Uuid) -> Result<Catalog, ApiError> {
+pub async fn catalog(s: &AppState, user: Uuid, manual: bool) -> Result<Catalog, ApiError> {
     let has_feed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.game_feeds)")
         .fetch_one(&s.database)
         .await?;
     if !has_feed {
-        refresh(s).await?;
+        refresh(s, manual).await?;
     }
     sqlx::query("INSERT INTO app.gaming_preferences(user_id) VALUES($1) ON CONFLICT DO NOTHING")
         .bind(user)
@@ -158,7 +165,7 @@ pub async fn catalog(s: &AppState, user: Uuid) -> Result<Catalog, ApiError> {
     let profile = crate::modules::profile::load(s, user).await?;
     let country = super::market::country(&profile.residence_country);
     let (regional, sale_catalog) = tokio::join!(
-        super::market::regionalize(s, country.as_deref(), &mut offers),
+        super::market::regionalize(s, country.as_deref(), &mut offers, manual),
         super::market::sales_catalog(s, country.is_none())
     );
     let (mut regional_sales, regional_errors) = regional?;
@@ -194,16 +201,31 @@ pub async fn catalog(s: &AppState, user: Uuid) -> Result<Catalog, ApiError> {
     });
     let mut unique = HashSet::new();
     library.retain(|game| unique.insert((game.provider.clone(), game.id.clone())));
+    let steam_image = |id: &str| {
+        format!(
+            "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{id}/header.jpg"
+        )
+    };
     let image_for_game = |game: &crate::modules::integrations::Game| {
-        (game.provider == "steam").then(|| {
-            format!(
-                "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{}/header.jpg",
-                game.id
-            )
-        }).or_else(||game.image_url.clone())
+        game.image_url
+            .as_ref()
+            .filter(|url| crate::modules::media::provider::trusted(url).is_some())
+            .cloned()
+            .or_else(|| (game.provider == "steam").then(|| steam_image(&game.id)))
     };
     let image_for_offer = |offer: &Offer| {
-        offer.app_id.as_ref().filter(|_|offer.platform=="steam").map(|id|format!("https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{id}/header.jpg")).or_else(||offer.image_url.clone())
+        offer
+            .image_url
+            .as_ref()
+            .filter(|url| crate::modules::media::provider::trusted(url).is_some())
+            .cloned()
+            .or_else(|| {
+                offer
+                    .app_id
+                    .as_ref()
+                    .filter(|_| offer.platform == "steam")
+                    .map(|id| steam_image(id))
+            })
     };
     let images = crate::modules::media::register_providers(
         s,
@@ -225,10 +247,11 @@ pub async fn catalog(s: &AppState, user: Uuid) -> Result<Catalog, ApiError> {
     }
     let owned: HashSet<_> = library
         .iter()
+        .filter(|game| game.ownership_verified)
         .map(|game| (game.provider.as_str(), game.id.as_str()))
         .collect();
     let known: HashSet<String> = sqlx::query_scalar(
-        "SELECT provider FROM app.integrations WHERE user_id=$1 AND encrypted_snapshot IS NOT NULL",
+        "SELECT provider FROM app.integrations WHERE user_id=$1 AND encrypted_snapshot IS NOT NULL AND provider NOT IN ('xbox','playstation')",
     )
     .bind(user)
     .fetch_all(&s.database)

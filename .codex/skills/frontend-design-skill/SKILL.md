@@ -1,6 +1,6 @@
 ---
 name: frontend-design-skill
-description: Apply the project's Apple-style minimalist Bento design system to all frontend work in this React 19 + Vite + Tailwind v4 app. Use whenever creating or modifying components, pages, layouts, or styles.
+description: Apply the project's Apple-style minimalist Bento design system and full-workspace page layouts in this React 19 + Vite + Tailwind v4 app. Use whenever creating or modifying components, pages, layouts, or styles.
 ---
 
 # Apple + Minimalism + Bento
@@ -16,6 +16,7 @@ MUST NOT add UI kits (shadcn CLI, MUI, Chakra...), CSS-in-JS, `tailwind.config.*
 2. If the CSS entry lacks the tokens, merge `assets/theme.css` into it (single `@import "tailwindcss"`). Never duplicate tokens.
 3. Build or restyle using token utilities. Keep logic, props, and routing unchanged.
 4. Compose pages with `BentoGrid` / `BentoCard` (`assets/bento.tsx`; copy to `components/ui/` if absent).
+   Every section fills the available workspace through the shared `.app-content main#main` layout in `src/index.css`; keep page gutters in the theme tokens.
 5. Run Verification.
 
 ## Token utilities
@@ -26,7 +27,9 @@ MUST NOT add UI kits (shadcn CLI, MUI, Chakra...), CSS-in-JS, `tailwind.config.*
 - Dark mode is automatic through tokens. MUST NOT use `dark:` in components.
 
 ## Layout (Bento)
-- Page `bg-app`, content `max-w-[1200px] mx-auto px-4 sm:px-6`; spacing on the 8px scale.
+- Every section fills the entire available workspace beside the navigation, including at wide desktop sizes. The outer page has full width, no maximum width or centered narrow container, and a minimum height equal to the workspace; longer pages scroll naturally.
+- Use the shared `.app-content main#main` rule in `src/index.css` for page geometry and the `--page-gutter` token from `src/assets/theme.css` for responsive horizontal padding. Full workspace is the default for every section, including Calendar and Tasks; do not require a per-page opt-in or duplicate layout rules in services.
+- Keep page backgrounds on `bg-app` and spacing on the 8px scale. Content grids use the available width. Width limits may remain on individual text blocks, controls and dialogs for readability; do not constrain the section itself.
 - Grid: 1 col <640px, 2 cols ≥640px, 4 cols ≥1024px, `gap-4`, `grid-flow-dense`.
 - Card sizes only: `1x1`, `2x1`, `1x2`, `2x2`. Spans collapse on small screens (handled in `BentoCard`).
 - One card = one idea; at most one hero (`2x2` or `2x1`) per view.
@@ -73,4 +76,4 @@ SHOULD:
 ## Verification
 - `pnpm lint && pnpm typecheck` after changes. `pnpm build` only if config or the CSS entry changed. `pnpm test:e2e` only if existing tests cover the changed UI.
 - No hardcoded colors/radii/fonts outside `theme.css` (grep).
-- No `dark:` classes, no horizontal scroll at 375px, one accent, one hero per view.
+- No `dark:` classes, no horizontal scroll at 375px, one accent, one hero per view. At 375/768/1280px and a wide desktop size, sections fill the available workspace beside the navigation; no outer 1200px cap or centered gutters return.

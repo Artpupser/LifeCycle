@@ -1,7 +1,89 @@
 [
- {"id":"steam","name":"Steam","icon":"simple-icons:steam","giveaway_name":"Steam","hosts":["store.steampowered.com","steamcommunity.com"]},
- {"id":"epic","name":"Epic Games Store","icon":"simple-icons:epicgames","giveaway_name":"Epic Games Store","hosts":["store.epicgames.com","www.epicgames.com"]},
- {"id":"gog","name":"GOG","icon":"simple-icons:gogdotcom","giveaway_name":"GOG","hosts":["www.gog.com","gog.com"]},
- {"id":"itchio","name":"itch.io","icon":"simple-icons:itchdotio","giveaway_name":"itch.io","hosts":["itch.io"]},
- {"id":"pc","name":"PC","icon":"tabler:device-desktop","giveaway_name":"PC","hosts":[]}
+  {
+    "id": "steam",
+    "name": "Steam",
+    "icon": "simple-icons:steam",
+    "giveaway_name": "Steam",
+    "hosts": [
+      "store.steampowered.com",
+      "steamcommunity.com"
+    ],
+    "store_url": "https://store.steampowered.com/search/?specials=1"
+  },
+  {
+    "id": "epic",
+    "name": "Epic Games Store",
+    "icon": "simple-icons:epicgames",
+    "giveaway_name": "Epic Games Store",
+    "hosts": [
+      "store.epicgames.com",
+      "www.epicgames.com"
+    ],
+    "store_url": "https://store.epicgames.com/free-games"
+  },
+  {
+    "id": "gog",
+    "name": "GOG",
+    "icon": "simple-icons:gogdotcom",
+    "giveaway_name": "GOG",
+    "hosts": [
+      "www.gog.com",
+      "gog.com"
+    ],
+    "store_url": "https://www.gog.com/"
+  },
+  {
+    "id": "itchio",
+    "name": "itch.io",
+    "icon": "simple-icons:itchdotio",
+    "giveaway_name": "itch.io",
+    "hosts": [
+      "itch.io"
+    ],
+    "store_url": "https://itch.io/games/on-sale"
+  },
+  {
+    "id": "battlenet",
+    "name": "Battle.net",
+    "icon": "simple-icons:battledotnet",
+    "giveaway_name": "Battle.net",
+    "hosts": [
+      "shop.battle.net",
+      "eu.shop.battle.net",
+      "us.shop.battle.net"
+    ],
+    "store_url": "https://shop.battle.net/"
+  },
+  {
+    "id": "xbox",
+    "name": "Xbox",
+    "icon": "tabler:brand-xbox",
+    "giveaway_name": "Xbox",
+    "hosts": [
+      "www.xbox.com",
+      "www.microsoft.com",
+      "apps.microsoft.com"
+    ],
+    "store_url": "https://www.xbox.com/games/all-games",
+    "giveaway_aliases": [
+      "Xbox One",
+      "Xbox Series X|S",
+      "Xbox Series X",
+      "Xbox 360"
+    ]
+  },
+  {
+    "id": "playstation",
+    "name": "PlayStation Store",
+    "icon": "simple-icons:playstation",
+    "giveaway_name": "Playstation",
+    "hosts": [
+      "store.playstation.com"
+    ],
+    "store_url": "https://store.playstation.com/",
+    "giveaway_aliases": [
+      "Playstation 4",
+      "Playstation 5"
+    ]
+  }
 ]

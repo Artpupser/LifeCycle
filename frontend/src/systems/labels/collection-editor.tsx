@@ -1,3 +1,4 @@
+import {defaultItemColor} from "@/systems/themes/themes";
 import {ChoiceField} from "@/components/ui/choice-picker";
 import {SaveButton,SaveForm} from "@/components/ui/save";
 import {useState,type FormEvent} from "react";
@@ -22,7 +23,7 @@ export function CollectionEditor({kind:initialKind="toy",initial,close,saved,cho
  async function submit(event:FormEvent){
   event.preventDefault();event.stopPropagation();if(uploading||action.busy||!collectionDefinition(kind).expandable)return;
   await action.run(async()=>{
-   const label=await api<Label>(initial?`/labels/${initial.id}`:"/labels",{method:initial?"PUT":"POST",body:{name:name.trim(),kind,color:initial?.color??"#6366F1",icon:initial?.icon??collectionDefinition(kind).icon,...(initial?{revision:initial.revision}:{}),details:{description:description.trim(),image_id:image}}});
+   const label=await api<Label>(initial?`/labels/${initial.id}`:"/labels",{method:initial?"PUT":"POST",body:{name:name.trim(),kind,color:initial?.color??defaultItemColor,icon:initial?.icon??collectionDefinition(kind).icon,...(initial?{revision:initial.revision}:{}),details:{description:description.trim(),image_id:image}}});
    labels.mutate(values=>[...values.filter(item=>item.id!==label.id),label]);refreshCollectionResources();notify(t("Элемент коллекции сохранён"));saved?.(label);close();
   });
  }

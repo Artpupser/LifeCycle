@@ -29,6 +29,48 @@
     "authorization_path": "/id/login"
   },
   {
+    "id": "battlenet",
+    "name": "Battle.net",
+    "icon": "simple-icons:battledotnet",
+    "kind": "gaming",
+    "capabilities": [
+      "identity",
+      "store"
+    ],
+    "settings_path": "/profile#integrations",
+    "authorization_origin": "https://oauth.battle.net",
+    "authorization_path": "/authorize"
+  },
+  {
+    "id": "xbox",
+    "name": "Xbox",
+    "icon": "tabler:brand-xbox",
+    "kind": "gaming",
+    "capabilities": [
+      "identity",
+      "library",
+      "played_history"
+    ],
+    "settings_path": "/profile#integrations",
+    "authorization_origin": "https://login.live.com",
+    "authorization_path": "/oauth20_authorize.srf"
+  },
+  {
+    "id": "playstation",
+    "name": "PlayStation",
+    "icon": "simple-icons:playstation",
+    "kind": "gaming",
+    "capabilities": [
+      "identity",
+      "library",
+      "playtime",
+      "played_history"
+    ],
+    "settings_path": "/profile#integrations",
+    "authorization_origin": "https://www.playstation.com",
+    "authorization_path": "/"
+  },
+  {
     "id": "ai",
     "name": "AI",
     "icon": "tabler:brain",

@@ -1,3 +1,4 @@
+import {NotificationSettings} from "@/components/notification-settings";
 import {ChoiceInput,ChoiceField} from "@/components/ui/choice-picker";
 import {LanguageInput} from "@/systems/i18n/language-input";
 import {SaveButton,SaveForm} from "@/components/ui/save";
@@ -63,6 +64,7 @@ export function SettingsPage() {
         <SaveButton type="submit" disabled={pending || uploading || !dirty || (draft.theme==="custom"&&!validTheme(draft.custom_theme!))}>{pending ? <LoaderCircle className="" aria-hidden="true" /> : <Save aria-hidden="true" />}{pending ? t("Сохраняем…") : t("Сохранить настройки")}</SaveButton>
       </div>
     </SaveForm>
+    <div className="my-6"><NotificationSettings/></div>
     <section id="integrations" className="space-y-6">
     <OperatorSettings />
     <AiSettings />

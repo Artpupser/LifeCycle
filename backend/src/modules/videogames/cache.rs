@@ -16,6 +16,20 @@ where
     T: Serialize + DeserializeOwned,
     F: std::future::Future<Output = Result<T, ApiError>>,
 {
+    load_with_refresh(s, key, family, ttl, false, request).await
+}
+pub async fn load_with_refresh<T, F>(
+    s: &AppState,
+    key: &str,
+    family: &str,
+    ttl: i64,
+    manual: bool,
+    request: F,
+) -> Result<(Option<T>, bool), ApiError>
+where
+    T: Serialize + DeserializeOwned,
+    F: std::future::Future<Output = Result<T, ApiError>>,
+{
     let mut tx = s.database.begin().await?;
     let locked: bool =
         sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1,0))")
@@ -26,9 +40,9 @@ where
     let cached = old
         .as_ref()
         .and_then(|row| serde_json::from_value(row.0.0.clone()).ok());
-    let fresh = old
-        .as_ref()
-        .is_some_and(|row| !row.2 && row.1 > Utc::now() - chrono::Duration::seconds(ttl));
+    let fresh = old.as_ref().is_some_and(|row| {
+        !row.2 && row.1 > Utc::now() - chrono::Duration::seconds(if manual { 60 } else { ttl })
+    });
     let paused:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM app.game_feeds WHERE kind='metadata' AND id LIKE $1 AND retry_at>now())").bind(format!("{family}%")).fetch_one(&mut *tx).await?;
     if fresh || !locked || paused {
         return Ok((cached, !fresh));

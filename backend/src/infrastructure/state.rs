@@ -33,7 +33,21 @@ impl AppState {
     }
 
     pub fn start_background_jobs(&self) -> tokio::task::JoinHandle<()> {
-        tokio::spawn(crate::modules::videogames::background(self.clone()))
+        let state = self.clone();
+        tokio::spawn(async move {
+            let games = crate::modules::videogames::background(state.clone());
+            let push = async {
+                let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
+                interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+                loop {
+                    interval.tick().await;
+                    if crate::shared::feedback::deliver_push(&state).await.is_err() {
+                        tracing::warn!("Push delivery deferred");
+                    }
+                }
+            };
+            tokio::join!(games, push);
+        })
     }
 
     pub async fn migrate(&self) -> Result<(), sqlx::migrate::MigrateError> {

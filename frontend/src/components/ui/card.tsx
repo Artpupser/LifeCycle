@@ -3,7 +3,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export function Card({ className, ...props }: ComponentProps<"div">) {
-  return <div className={cn("rounded-2xl border border-border bg-card text-card-foreground", className)} {...props} />;
+  return <div className={cn("min-w-0 rounded-card border border-line bg-surface text-fg", className)} {...props} />;
 }
 
 export function CardHeader({ className, ...props }: ComponentProps<"div">) {
@@ -30,5 +30,14 @@ export function MetricDetails({children}:{children:ReactNode}) {
  return <details className="text-xs text-muted-foreground"><summary className="min-h-8 cursor-pointer py-1.5 text-primary">{t("О расчёте")}</summary><div className="space-y-2 pb-2 leading-5">{children}</div></details>;
 }
 export function Metrics({title,values,children}:{title:string;values:readonly (readonly [string,ReactNode])[];children?:ReactNode}) {
- return <section aria-label={title} className="min-w-0 space-y-2 rounded-xl border border-border bg-card p-4"><h2 className="text-base font-semibold">{title}</h2><MetricList values={values}/>{children&&<MetricDetails>{children}</MetricDetails>}</section>;
+ return <section aria-label={title} className="min-w-0 space-y-4 rounded-card border border-line bg-surface p-6"><h2 className="text-base font-semibold">{title}</h2><MetricList values={values}/>{children&&<MetricDetails>{children}</MetricDetails>}</section>;
+}
+
+/** Bento composition extends the existing card owner. */
+export function BentoGrid({className,...props}:ComponentProps<"div">){
+ return <div {...props} className={cn("grid min-w-0 grid-flow-dense grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4",className)}/>;
+}
+export function BentoCard({className,size="1x1",...props}:ComponentProps<"div">&{size?:"1x1"|"2x1"|"1x2"|"2x2"}){
+ const spans={"1x1":"","2x1":"sm:col-span-2","1x2":"sm:row-span-2","2x2":"sm:col-span-2 sm:row-span-2"};
+ return <Card {...props} className={cn("p-6",spans[size],className)}/>;
 }

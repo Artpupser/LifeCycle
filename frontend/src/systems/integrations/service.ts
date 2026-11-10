@@ -10,7 +10,16 @@ function authorizationUrl(provider:Integration,value:string){
  return url.href;
 }
 export async function connectIntegration(provider:Integration){const result=await api<{url:string}>(`/integrations/${encodeURIComponent(provider.id)}/connect`,{method:"POST"});window.location.assign(authorizationUrl(provider,result.url));}
-export async function startEpicLogin(provider:Integration):Promise<CodeLogin>{const result=await api<CodeLogin>("/integrations/epic/connect",{method:"POST"});if(!/^[a-f0-9]{64}$/i.test(result.state))throw new Error("Invalid integration state");return {...result,url:authorizationUrl(provider,result.url)};}
+export async function startSessionLogin(provider:Integration):Promise<CodeLogin>{
+ const result=await api<CodeLogin>(`/integrations/${encodeURIComponent(provider.id)}/connect`,{method:"POST"});
+ if(!/^[a-f0-9]{64}$/i.test(result.state))throw new Error("Invalid integration state");
+ return {...result,url:authorizationUrl(provider,result.url)};
+}
+export async function finishSessionLogin(provider:Integration,attempt:CodeLogin,code:string):Promise<SyncResult>{
+ const result=await api<Integration[]|SyncResult>(`/integrations/${encodeURIComponent(provider.id)}/authorize`,{method:"POST",body:{state:attempt.state,code:code.trim()}});
+ return Array.isArray(result)?{pending:false}:result;
+}
+export const startEpicLogin=startSessionLogin;
 export function finishEpicLogin(attempt:CodeLogin,code:string){return api<Integration[]>("/integrations/epic/authorize",{method:"POST",body:{state:attempt.state,code:code.trim()}});}
 export async function disconnectIntegration(provider:Integration){
  if(!await confirmAction({message:t("Отключить {name}? Сохранённые ключи и копия библиотеки будут удалены.",{name:provider.name}),destructive:true}))return false;

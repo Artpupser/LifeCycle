@@ -1,14 +1,24 @@
 use super::{models, providers};
 #[test]
-fn integration_deals_use_exact_strict_discount_threshold() {
-    assert!(!providers::qualifies("10.00", "100.00"));
-    assert!(providers::qualifies("9.99", "100.00"));
-    assert!(!providers::qualifies("1.00", "9.99"));
-    assert!(providers::qualifies("0.99", "9.99"));
-    assert!(providers::qualifies("0.00", "0.00"));
-    assert!(!providers::qualifies("-1.00", "100.00"));
-    assert!(!providers::qualifies("NaN", "100.00"));
-    assert!(!providers::qualifies("0.001", "100.00"));
+fn official_steam_deals_cover_the_full_discount_range_without_resellers() {
+    let data = serde_json::json!({"specials":{"items":[
+    {"id":400,"type":0,"name":"Portal","original_price":10000,"final_price":8000,"currency":"USD","header_image":"https://cdn.akamai.steamstatic.com/a.jpg"},
+    {"id":401,"type":0,"name":"Free game","original_price":10000,"final_price":0,"currency":"USD"},
+    {"id":402,"type":1,"name":"DLC","original_price":10000,"final_price":1000,"currency":"USD"},
+    {"id":403,"type":0,"name":"Regular price","original_price":10000,"final_price":10000,"currency":"USD"}
+    ]}});
+    let rows = providers::steam_discounts(&data);
+    assert_eq!(rows.len(), 2);
+    assert_eq!(rows[0].discount_basis_points, 2000);
+    assert_eq!(rows[0].price, "80.00");
+    assert!(rows[1].free);
+    assert!(rows.iter().all(providers::official_offer));
+    let mut reseller = rows[0].clone();
+    reseller.claim_url = "https://www.cheapshark.com/redirect".into();
+    assert!(!providers::official_offer(&reseller));
+    reseller = rows[0].clone();
+    reseller.platform = "epic".into();
+    assert!(!providers::official_offer(&reseller));
 }
 #[test]
 fn integration_external_offers_never_accept_credential_urls_or_spoofed_stores() {
@@ -25,6 +35,8 @@ fn integration_external_offers_never_accept_credential_urls_or_spoofed_stores() 
         "https://store.steampowered.com.evil.test/game",
         "https://attacker@store.steampowered.com/app/10/",
         "https://localhost/game",
+        "https://www.gamerpower.com/game/",
+        "https://www.cheapshark.com/redirect",
     ] {
         assert!(providers::safe_offer_url(url).is_none());
     }
@@ -84,6 +96,10 @@ async fn videogames_database_catalog_and_repeated_calendar_import_use_current_sc
     .map(|(key, value)| (key.into(), value.into()))
     .collect();
     values.insert("DATABASE_URL".into(), database);
+    values.insert(
+        "WEB_PUSH_PRIVATE_KEY".into(),
+        "IQ9Ur0ykXoHS9gzfYX0aBjy9lvdrjx_PFUXmie9YRcY".into(),
+    );
     let state = AppState::lazy(&Config::from_values(values).unwrap()).unwrap();
     state.migrate().await.unwrap();
     let user = uuid::Uuid::new_v4();
@@ -124,8 +140,8 @@ async fn videogames_database_catalog_and_repeated_calendar_import_use_current_sc
         .execute(&state.database)
         .await
         .unwrap();
-    let offer = serde_json::json!({"id":"cheapshark:portal","platform":"steam","title":"Portal","app_id":"400","price":"0.99","regular_price":"19.99","currency":"USD","discount_basis_points":9504,"free":false,"url":"https://store.steampowered.com/app/400/","claim_url":"https://www.cheapshark.com/","source":"cheapshark","ends_at":null});
-    sqlx::query("UPDATE app.game_feeds SET data=$1 WHERE id='cheapshark'")
+    let offer = serde_json::json!({"id":"steam:400","platform":"steam","title":"Portal","app_id":"400","price":"0.99","regular_price":"19.99","currency":"USD","discount_basis_points":9504,"free":false,"url":"https://store.steampowered.com/app/400/","claim_url":"https://store.steampowered.com/app/400/","source":"steam","ends_at":null});
+    sqlx::query("UPDATE app.game_feeds SET data=$1 WHERE id='steam'")
         .bind(sqlx::types::Json(serde_json::json!([offer])))
         .execute(&state.database)
         .await
@@ -414,6 +430,201 @@ async fn videogames_database_catalog_and_repeated_calendar_import_use_current_sc
         before, after,
         "Paused providers must not be contacted or have their pause reset"
     );
+
+    // Battle.net shares encrypted credentials, versioned configuration and session-bound OAuth state.
+    let client_input = serde_json::json!({"instance_id":null,"revision":0,"client_id":"battle-client-id","api_key":"battle-private-secret"});
+    let make_client_request = |body: serde_json::Value| {
+        Request::builder()
+            .method("PUT")
+            .uri("/api/integrations/battlenet")
+            .header("cookie", format!("lifecycle_session={token}"))
+            .header("origin", "http://localhost:8081")
+            .header("content-type", "application/json")
+            .body(Body::from(body.to_string()))
+            .unwrap()
+    };
+    let response = crate::router(state.clone())
+        .oneshot(make_client_request(client_input))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let providers: serde_json::Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+    assert!(!providers.to_string().contains("battle-private-secret"));
+    let battle = providers
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p["id"] == "battlenet")
+        .unwrap();
+    assert_eq!(battle["configured"], true);
+    assert_eq!(battle["connected"], false);
+    let response = crate::router(state.clone())
+        .oneshot(request(
+            "POST",
+            "/api/integrations/battlenet/connect".into(),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let start: serde_json::Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 16384).await.unwrap()).unwrap();
+    let auth_url = url::Url::parse(start["url"].as_str().unwrap()).unwrap();
+    assert_eq!(
+        auth_url.origin().ascii_serialization(),
+        "https://oauth.battle.net"
+    );
+    let oauth_state = auth_url
+        .query_pairs()
+        .find(|(key, _)| key == "state")
+        .unwrap()
+        .1
+        .into_owned();
+    let callback =
+        format!("/api/integrations/battlenet/callback?state={oauth_state}&code=test-code");
+    let response = crate::router(state.clone())
+        .oneshot(
+            Request::builder()
+                .uri(&callback)
+                .header("cookie", format!("lifecycle_session={foreign_token}"))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    let attempts:i64=sqlx::query_scalar("SELECT count(*) FROM app.integration_auth_attempts WHERE user_id=$1 AND provider='battlenet'").bind(user).fetch_one(&state.database).await.unwrap();
+    assert_eq!(attempts, 1);
+    let response=crate::router(state.clone()).oneshot(make_client_request(serde_json::json!({"instance_id":battle["instance_id"],"revision":battle["revision"],"client_id":"battle-rotated-client","api_key":"battle-rotated-secret"}))).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let response = crate::router(state.clone())
+        .oneshot(request("GET", callback))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert!(
+        response.headers()["location"]
+            .to_str()
+            .unwrap()
+            .contains("result=failed")
+    );
+
+    // Console session attempts cannot be redeemed by a different LifeCycle session.
+    for provider in ["xbox", "playstation"] {
+        let start_path = format!("/api/integrations/{provider}/connect");
+        let response = crate::router(state.clone())
+            .oneshot(request("POST", start_path))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let attempt: serde_json::Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 16384).await.unwrap()).unwrap();
+        let state_token = attempt["state"].as_str().unwrap();
+        let credential = if provider == "xbox" {
+            format!(
+                "https://login.live.com/oauth20_desktop.srf#access_token=private-test&expires_in=3600&state={state_token}"
+            )
+        } else {
+            "n".repeat(64)
+        };
+        let body = serde_json::json!({"state":state_token,"code":credential});
+        let response = crate::router(state.clone())
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/integrations/{provider}/authorize"))
+                    .header("cookie", format!("lifecycle_session={other_token}"))
+                    .header("origin", "http://localhost:8081")
+                    .header("content-type", "application/json")
+                    .body(Body::from(body.to_string()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let remaining: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM app.integration_auth_attempts WHERE user_id=$1 AND provider=$2",
+        )
+        .bind(user)
+        .bind(provider)
+        .fetch_one(&state.database)
+        .await
+        .unwrap();
+        assert_eq!(remaining, 1);
+        let pending:Option<chrono::DateTime<chrono::Utc>>=sqlx::query_scalar("SELECT authorization_started_at FROM app.integrations WHERE user_id=$1 AND provider=$2").bind(user).bind(provider).fetch_one(&state.database).await.unwrap();
+        assert!(pending.is_none());
+    }
+    // The feedback adapter uses the existing session and enforces account boundaries.
+    let subscription = serde_json::json!({"endpoint":"https://updates.push.services.mozilla.com/wpush/v1/test-device","keys":{"p256dh":"BLMbF9ffKBiWQLCKvTHb6LO8Nb6dcUh6TItC455vu2kElga6PQvUmaFyCdykxY2nOSSL3yKgfbmFLRTUaGv4yV8","auth":"xS03Fi5ErfTNH_l9WHE9Ig"}});
+    let push_request = |method: &str, cookie: &str, body: serde_json::Value| {
+        Request::builder()
+            .method(method)
+            .uri("/api/notifications/push")
+            .header("cookie", format!("lifecycle_session={cookie}"))
+            .header("origin", "http://localhost:8081")
+            .header("content-type", "application/json")
+            .body(Body::from(body.to_string()))
+            .unwrap()
+    };
+    for _ in 0..2 {
+        let response = crate::router(state.clone())
+            .oneshot(push_request("PUT", &token, subscription.clone()))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::NO_CONTENT);
+    }
+    let count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM app.feedback_push_subscriptions WHERE user_id=$1")
+            .bind(user)
+            .fetch_one(&state.database)
+            .await
+            .unwrap();
+    assert_eq!(count, 1);
+    let encrypted: Vec<u8> = sqlx::query_scalar(
+        "SELECT encrypted_data FROM app.feedback_push_subscriptions WHERE user_id=$1",
+    )
+    .bind(user)
+    .fetch_one(&state.database)
+    .await
+    .unwrap();
+    assert!(!String::from_utf8_lossy(&encrypted).contains("test-device"));
+    let response = crate::router(state.clone())
+        .oneshot(push_request("GET", &token, serde_json::Value::Null))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let config: serde_json::Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 16384).await.unwrap()).unwrap();
+    assert_eq!(config["subscriptions"].as_array().unwrap().len(), 1);
+    assert!(!config.to_string().contains("IQ9Ur0yk"));
+    let response = crate::router(state.clone())
+        .oneshot(push_request(
+            "DELETE",
+            &foreign_token,
+            serde_json::json!({"endpoint":subscription["endpoint"]}),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+    let count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM app.feedback_push_subscriptions WHERE user_id=$1")
+            .bind(user)
+            .fetch_one(&state.database)
+            .await
+            .unwrap();
+    assert_eq!(count, 1);
+    sqlx::query("DELETE FROM app.sessions WHERE token_hash=$1")
+        .bind(hex::encode(Sha256::digest(token.as_bytes())))
+        .execute(&state.database)
+        .await
+        .unwrap();
+    let count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM app.feedback_push_subscriptions WHERE user_id=$1")
+            .bind(user)
+            .fetch_one(&state.database)
+            .await
+            .unwrap();
+    assert_eq!(count, 0, "Logging out revokes background delivery");
     state.database.close().await;
 }
 

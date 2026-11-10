@@ -1,6 +1,6 @@
 import { t } from "@/systems/i18n/locale";
 import { dayDifference, isCalendarDate } from "./dates";
-export type FilterSpec={key:string;label:string;aliases?:string[];example:string;values?:string[];type?:"date";control?:boolean;choices?:{value:string;label:string;icon?:string}[]};
+export type FilterSpec={key:string;label:string;aliases?:string[];example:string;values?:string[];type?:"date"|"number";min?:number;max?:number;suffix?:string;control?:boolean;choices?:{value:string;label:string;icon?:string}[]};
 export type FilterTerm={key:string;value:string;negative:boolean};
 export type FilterQuery={text:string;terms:FilterTerm[];errors:string[]};
 const normalize=(value:string)=>value.toLocaleLowerCase("ru-RU");
@@ -14,10 +14,10 @@ export function parseFilterQuery(source:string,specs:FilterSpec[]):FilterQuery {
     const [,negative,key,raw]=match;const spec=specs.find(item=>[item.key,...item.aliases??[]].some(alias=>normalize(alias)===normalize(key)));
     if(!spec){result.errors.push(t("Неизвестный фильтр «{v0}». Откройте подсказку рядом с поиском.", {v0: key}));continue;}
     if(!raw||raw.startsWith('"')&&!raw.endsWith('"')){result.errors.push(t("Укажите значение фильтра «{v0}».", {v0: spec.label}));continue;}
-    const value=decode(raw);if((spec.type==="date"||spec.key==="from"||spec.key==="to")&&!isCalendarDate(value)){result.errors.push(t("Дата фильтра: ГГГГ-ММ-ДД."));continue;}if(!value.trim()){result.errors.push(t("Пустое значение фильтра «{v0}».", {v0: spec.label}));continue;}
+    const value=decode(raw);if(spec.type==="number"&&!numericFilter(value,spec)){result.errors.push(t("Укажите число, диапазон N..N или сравнение >=N / <=N: {label}",{label:spec.label}));continue;}if((spec.type==="date"||spec.key==="from"||spec.key==="to")&&!isCalendarDate(value)){result.errors.push(t("Дата фильтра: ГГГГ-ММ-ДД."));continue;}if(!value.trim()){result.errors.push(t("Пустое значение фильтра «{v0}».", {v0: spec.label}));continue;}
     if(spec.values&&!spec.values.some(item=>normalize(item)===normalize(value))){result.errors.push(`${spec.label}: ${spec.values.join(", ")}.`);continue;}
     if(spec.control && (negative || result.terms.some(term=>term.key===spec.key))){result.errors.push(t("Фильтр «{v0}» задаётся один раз, без исключения.", {v0: spec.label}));continue;}
-    result.terms.push({key:spec.key,value,negative:negative==="-"});
+    result.terms.push({key:spec.key,value:spec.type==="number"&&spec.suffix?value.replaceAll(spec.suffix,""):value,negative:negative==="-"});
   }
   result.text=words.join(" ");return result;
 }
@@ -27,6 +27,7 @@ function matchValue(actual:Field,expected:string):boolean {
   if(Array.isArray(actual))return actual.some(value=>matchValue(value,expected));
   if(actual===null||actual===undefined)return false;
   if(typeof actual==="boolean"){const positive=["true","yes","да","1","shared","ai_shared","доступен","выполнено"];const negative=["false","no","нет","0","private","закрыт"];const value=normalize(expected);return positive.includes(value)?actual:negative.includes(value)?!actual:false;}
+  if(typeof actual==="number"){const range=numericFilter(expected);if(!range)return false;return range.operator===">"?actual>range.min!:range.operator==="<"?actual<range.max!:(range.min===undefined||actual>=range.min)&&(range.max===undefined||actual<=range.max);}
   const value=normalize(String(actual??""));const wanted=normalize(expected);const comparison=wanted.match(/^(>=|<=|>|<|=)(.+)$/);
   if(comparison){const [,operator,right]=comparison;const left=typeof actual==="number"?actual:value;const other=typeof actual==="number"?Number(right):right;return operator===">="?left>=other:operator==="<="?left<=other:operator===">"?left>other:operator==="<"?left<other:left===other;}
   return value===wanted;
@@ -62,4 +63,22 @@ export function setFilterValue(source:string,specs:FilterSpec[],key:string,value
  const kept=tokens.filter(token=>{const match=token.match(/^([\p{L}_]+):/u);return !match||!aliases.includes(normalize(match[1]));});
  if(value!==null)kept.push(`${spec.key}:${/^[^\s"\\]+$/u.test(value)?value:filterLiteral(value)}`);
  const next=kept.join(" ");return next.length<=1000?next:source;
+}
+
+/** Inclusive numeric ranges are shared by search and its action menu. */
+export function numericFilter(source:string,spec:Pick<FilterSpec,"min"|"max"|"suffix">={}):{min?:number;max?:number;operator?:string}|null {
+ const value=(spec.suffix?source.split("..").map(part=>part.endsWith(spec.suffix!)?part.slice(0,-spec.suffix!.length):part).join(".."):source).replaceAll(",",".");
+ const scalar="(?:-?\\d+(?:\\.\\d+)?)";
+ const range=value.match(new RegExp(`^(${scalar})\\.\\.(${scalar})$`));
+ const single=value.match(new RegExp(`^(>=|<=|>|<|=)?(${scalar})$`));
+ if(!range&&!single)return null;
+ const a=Number(range?.[1]??single?.[2]),b=Number(range?.[2]??single?.[2]);
+ if(!Number.isFinite(a)||!Number.isFinite(b)||a>b||(spec.min!==undefined&&a<spec.min)||(spec.max!==undefined&&b>spec.max))return null;
+ const operator=single?.[1];
+ return range?{min:a,max:b}:operator?.startsWith(">")?{min:a,operator}:operator?.startsWith("<")?{max:b,operator}:{min:a,max:a};
+}
+export function setNumericBound(source:string,specs:FilterSpec[],key:string,bound:"min"|"max",value:number){
+ const spec=specs.find(item=>item.key===key);const parsed=numericFilter(filterValue(parseFilterQuery(source,specs),key),spec);
+ const min=bound==="min"?value:parsed?.min,max=bound==="max"?value:parsed?.max;
+ return setFilterValue(source,specs,key,min!==undefined&&max!==undefined?`${Math.min(min,max)}..${Math.max(min,max)}`:min!==undefined?`>=${min}`:`<=${max}`);
 }

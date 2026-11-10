@@ -28,10 +28,22 @@ pub fn routes() -> Router<AppState> {
         .route("/api/integrations/{provider}/connect", post(connect))
         .route("/api/integrations/{provider}/sync", post(sync))
         .route(
+            "/api/integrations/xbox/authorize",
+            post(super::session::authorize_xbox),
+        )
+        .route(
+            "/api/integrations/playstation/authorize",
+            post(super::session::authorize_playstation),
+        )
+        .route(
             "/api/integrations/epic/authorize",
             post(super::epic::authorize),
         )
         .route("/api/integrations/steam/callback", get(callback))
+        .route(
+            "/api/integrations/battlenet/callback",
+            get(super::battlenet::callback),
+        )
         .route(
             "/api/integrations/epic/callback",
             get(super::epic::callback),
@@ -75,7 +87,7 @@ async fn disconnect(
     Path(provider): Path<String>,
     ApiJson(input): ApiJson<Revision>,
 ) -> Result<StatusCode, ApiError> {
-    if !["steam", "epic"].contains(&provider.as_str()) {
+    if !["steam", "epic", "battlenet", "xbox", "playstation"].contains(&provider.as_str()) {
         return Err(domain::not_found());
     }
     let mut tx = s.database.begin().await?;
@@ -115,6 +127,12 @@ async fn connect(
     headers: HeaderMap,
     Path(provider): Path<String>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    if ["xbox", "playstation"].contains(&provider.as_str()) {
+        return super::session::connect(&s, &u, &headers, &provider).await;
+    }
+    if provider == "battlenet" {
+        return super::battlenet::connect(&s, &u, &headers).await;
+    }
     if provider == "epic" {
         return super::epic::connect(&s, &u, &headers).await;
     }

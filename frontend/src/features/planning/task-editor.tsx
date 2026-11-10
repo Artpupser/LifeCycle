@@ -1,3 +1,4 @@
+import {defaultItemColor} from "@/systems/themes/themes";
 import {ChoiceField} from "@/components/ui/choice-picker";
 import {SaveButton,SaveForm} from "@/components/ui/save";
 import {toggleKeys} from "@/systems/selection/state";
@@ -20,7 +21,7 @@ import { taskInput, defaultSchedule, isRecurring, priorityLabels, type Task, typ
 export function TaskEditor({ task, tasks, parentId, close, saved, submitDraft }: { task: Task | null; tasks: Task[]; parentId?: string; close: () => void; saved: () => void; submitDraft?: (value: TaskInput) => Promise<void> }) {
   useLanguage();
   const { settings } = usePreferences();
-  const [draft, setDraft] = useState<TaskInput>(() => task ? taskInput(task) : { title: "", description: "", status: "todo", tags: [], color: "#a3e635", priority: "normal", parent_id: parentId ?? null, due_at: null, schedule: null });
+  const [draft, setDraft] = useState<TaskInput>(() => task ? taskInput(task) : { title: "", description: "", status: "todo", tags: [], color: defaultItemColor, priority: "normal", parent_id: parentId ?? null, due_at: null, schedule: null });
   const [planning, setPlanning] = useState(() => planningFromTask(task ?? { schedule:null,due_at:null }, settings.timezone));
   const initialPlanning = planningFromTask(task ?? { schedule:null,due_at:null },settings.timezone);
   const [dateError, setDateError] = useState<string | null>(null);

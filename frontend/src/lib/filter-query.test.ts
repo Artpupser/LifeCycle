@@ -44,3 +44,16 @@ it("quick filters replace every positive alias while retaining quoted text and e
  expect(parseFilterQuery(setFilterValue("hello",filters,"tag",'work "today"'),filters).terms[0].value).toBe('work "today"');
  expect(setFilterValue('x'.repeat(1000),filters,"platform","steam")).toHaveLength(1000);
 });
+
+import {numericFilter,setNumericBound} from "./filter-query";
+it("matches inclusive numeric ranges and validates finite bounds",()=>{
+ const numeric:FilterSpec[]=[{key:"discount",label:"Discount",example:"discount:20..80",type:"number",min:0,max:100,suffix:"%"}];
+ const range=parseFilterQuery("discount:20%..80%",numeric);
+ expect(range.errors).toEqual([]);
+ for(const value of [20,55.5,80])expect(matchesFilter(range,"",{discount:value})).toBe(true);
+ for(const value of [19.99,80.01,null])expect(matchesFilter(range,"",{discount:value})).toBe(false);
+ for(const source of ["80..20","-1","101","NaN","Infinity","10%%","1..","1...2"])expect(parseFilterQuery(`discount:${source}`,numeric).errors.length).toBeGreaterThan(0);
+ expect(numericFilter("<=20.5")).toEqual({max:20.5,operator:"<="});
+ expect(matchesFilter(parseFilterQuery("discount:>20",numeric),"",{discount:20})).toBe(false);
+ expect(setNumericBound("Portal discount:>=20 -discount:100",numeric,"discount","max",80)).toBe("Portal -discount:100 discount:20..80");
+});

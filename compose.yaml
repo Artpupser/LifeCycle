@@ -76,6 +76,7 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-LifeCycle <noreply@lifecycle.test>}
       TRUST_PROXY: ${TRUST_PROXY:-true}
+      WEB_PUSH_PRIVATE_KEY: ${WEB_PUSH_PRIVATE_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

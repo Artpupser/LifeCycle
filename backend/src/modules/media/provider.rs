@@ -22,7 +22,16 @@ pub fn trusted(value: &str) -> Option<url::Url> {
         || url.password().is_some()
         || ![
             "shared.fastly.steamstatic.com",
+            "cdn.fastly.steamstatic.com",
             "cdn.akamai.steamstatic.com",
+            "shared.cloudflare.steamstatic.com",
+            "media.contentapi.ea.com",
+            "images.blz-contentstack.com",
+            "bnetcmsus-a.akamaihd.net",
+            "store-images.s-microsoft.com",
+            "images-eds-ssl.xboxlive.com",
+            "image.api.playstation.com",
+            "images-1.gog-statics.com",
             "cdn.cloudflare.steamstatic.com",
             "images.gog-statics.com",
             "www.gamerpower.com",
@@ -37,6 +46,13 @@ pub fn trusted(value: &str) -> Option<url::Url> {
         return None;
     }
     Some(url)
+}
+/// Prioritize usable trusted catalog images rather than accepting an empty or unsupported first URL.
+pub(crate) fn catalog_image<'a>(sources: impl IntoIterator<Item = &'a str>) -> Option<String> {
+    sources
+        .into_iter()
+        .find(|source| source.len() <= 2000 && trusted(source).is_some())
+        .map(str::to_owned)
 }
 pub async fn register_providers(
     s: &AppState,
@@ -88,11 +104,33 @@ pub async fn download(
         return Err(ApiError::rate_limited(300));
     }
     let result = async {
-        let response = http::client()?
-            .get(url)
+        let client = http::client()?;
+        let mut response = client
+            .get(url.clone())
             .send()
             .await
             .map_err(|_| ApiError::unavailable())?;
+        if response.status() == reqwest::StatusCode::NOT_FOUND
+            && url
+                .host_str()
+                .is_some_and(|host| host.ends_with(".steamstatic.com"))
+        {
+            let segments: Vec<_> = url.path_segments().into_iter().flatten().collect();
+            if let Some(index) = segments.iter().position(|part| *part == "apps") {
+                if let Some(id) = segments
+                    .get(index + 1)
+                    .filter(|id| !id.is_empty() && id.bytes().all(|byte| byte.is_ascii_digit()))
+                {
+                    response = client
+                        .get(format!(
+                            "https://cdn.akamai.steamstatic.com/steam/apps/{id}/header.jpg"
+                        ))
+                        .send()
+                        .await
+                        .map_err(|_| ApiError::unavailable())?;
+                }
+            }
+        }
         let mime = response
             .headers()
             .get(header::CONTENT_TYPE)

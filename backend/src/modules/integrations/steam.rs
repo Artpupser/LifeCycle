@@ -157,6 +157,7 @@ fn normalize(owned: GamesData, recent: Option<GamesData>) -> Result<Snapshot, Ap
             continue;
         }
         games.push(Game {
+            ownership_verified: true,
             preview: None,
             image_url: None,
             provider: "steam".into(),

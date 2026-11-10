@@ -12,7 +12,7 @@ pub(crate) async fn background(s: crate::infrastructure::state::AppState) {
     interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
     loop {
         interval.tick().await;
-        if service::refresh(&s).await.is_err() {
+        if service::refresh(&s, false).await.is_err() {
             tracing::warn!("Game offer refresh unavailable");
         }
         if market::sales_catalog(&s, true).await.is_err() {

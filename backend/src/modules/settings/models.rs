@@ -113,7 +113,13 @@ impl Default for Settings {
 
 impl Settings {
     pub fn validate(&self) -> Result<(), ApiError> {
-        if self.hidden_collections.len() > crate::modules::labels::collection_catalog().len() || self.hidden_collections.iter().any(|kind| !crate::modules::labels::collection_catalog().iter().any(|item| item.id == *kind)) {
+        if self.hidden_collections.len() > crate::modules::labels::collection_catalog().len()
+            || self.hidden_collections.iter().any(|kind| {
+                !crate::modules::labels::collection_catalog()
+                    .iter()
+                    .any(|item| item.id == *kind)
+            })
+        {
             return Err(ApiError::validation("Unsupported hidden collection"));
         }
         if self.timezone.parse::<chrono_tz::Tz>().is_err() {
@@ -128,7 +134,7 @@ impl Settings {
             return Err(ApiError::validation("Unsupported time format"));
         }
         if ![
-            "system", "light", "dark", "ocean", "forest", "dusk", "rose", "sand", "custom",
+            "system", "light", "dark", "ocean", "forest", "dusk", "sand", "custom",
         ]
         .contains(&self.theme.as_str())
         {

@@ -106,7 +106,7 @@ function ProfileEditor({ initial }: { initial: Profile }) {
         {draft.gender !== "male" && <>{textField("breast_size", t("Размер груди"))}<OptionalBoolean id="pregnant" label={t("Беременность")} value={draft.pregnant} onChange={(value) => update("pregnant", value)} /></>}
       </Section>
     </fieldset>
-    <div className="rounded-xl border border-border bg-card p-3">
+    <div className="rounded-card border border-line bg-surface p-3">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="text-sm" aria-live="polite">{error ? <span className="text-destructive" role="alert">{error}</span> : success ? <span className="text-primary">{t("Профиль сохранён")}</span> : <span className="text-muted-foreground">{dirty ? t("Есть несохранённые изменения") : t("Все изменения сохранены")}</span>}</div>
         <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={pending || !dirty} onClick={() => { setDraft(saved); setError(null); setSuccess(false); }}>{t("Отменить")}</Button><SaveButton type="submit" disabled={pending || !dirty}>{pending ? <LoaderCircle className="" aria-hidden="true" /> : <Save aria-hidden="true" />}{pending ? t("Сохраняем…") : t("Сохранить профиль")}</SaveButton></div>

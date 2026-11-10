@@ -1,3 +1,4 @@
+import {defaultItemColor} from "@/systems/themes/themes";
 import {ChoiceField} from "@/components/ui/choice-picker";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { LabelInput } from "@/systems/labels/inputs";
@@ -14,7 +15,7 @@ import type {Folder,NoteSelection} from "./note-types";
 export type BulkKind="move"|"tags_add"|"tags_remove"|"color"|"delete"|"ai_on"|"ai_off";
 export function NotesBulkDialog({kind,selection,folders,close,saved}:{kind:BulkKind;selection:NoteSelection;folders:Folder[];close:()=>void;saved:()=>void}){
   useLanguage();
- const [folder,setFolder]=useState("");const [tags,setTags]=useState("");const [color,setColor]=useState("#2a9d8f");const action=useAction();
+ const [folder,setFolder]=useState("");const [tags,setTags]=useState("");const [color,setColor]=useState(defaultItemColor);const action=useAction();
  const labels:Record<BulkKind,string>={move:t("Переместить заметки"),tags_add:t("Добавить теги"),tags_remove:t("Убрать теги"),color:t("Изменить цвет заметок"),delete:t("Удалить выбранные заметки"),ai_on:t("Разрешить AI выбранным"),ai_off:t("Закрыть доступ AI")};const count=Object.keys(selection).length;
  async function apply(){
   const sharing=kind==="ai_on"||kind==="ai_off";

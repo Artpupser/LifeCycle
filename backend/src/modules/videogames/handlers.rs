@@ -24,12 +24,12 @@ pub fn routes() -> Router<AppState> {
         .route("/api/videogames/sales/{id}/calendar", post(calendar))
 }
 async fn read(State(s): State<AppState>, u: CurrentUser) -> Result<Json<Catalog>, ApiError> {
-    Ok(Json(service::catalog(&s, u.id).await?))
+    Ok(Json(service::catalog(&s, u.id, false).await?))
 }
 async fn refresh(State(s): State<AppState>, u: CurrentUser) -> Result<Json<Catalog>, ApiError> {
-    service::refresh(&s).await?;
+    service::refresh(&s, true).await?;
     service::notify_subscribers(&s).await?;
-    Ok(Json(service::catalog(&s, u.id).await?))
+    Ok(Json(service::catalog(&s, u.id, true).await?))
 }
 async fn preferences(
     State(s): State<AppState>,

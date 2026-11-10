@@ -1,4 +1,5 @@
 FROM docker.io/library/rust:1.96-slim-bookworm AS build
+RUN apt-get update && apt-get install -y --no-install-recommends libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
 WORKDIR /app/backend
 ENV CARGO_TARGET_DIR=/app/target
 COPY backend/Cargo.toml backend/Cargo.lock backend/build.rs ./
@@ -8,7 +9,7 @@ COPY shared /app/shared
 RUN --mount=type=cache,target=/usr/local/cargo/registry --mount=type=cache,target=/app/target cargo build --locked --release && cp /app/target/release/lifecycle-api /app/lifecycle-api
 
 FROM docker.io/library/debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/* && groupadd --system app && useradd --system --gid app app
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl libssl3 && rm -rf /var/lib/apt/lists/* && groupadd --system app && useradd --system --gid app app
 COPY --from=build /app/lifecycle-api /usr/local/bin/lifecycle-api
 USER app
 EXPOSE 8080

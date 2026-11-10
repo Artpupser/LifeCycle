@@ -4,7 +4,7 @@ use super::{http, models::*, service};
 use crate::{
     infrastructure::state::AppState,
     shared::{
-        auth::{CurrentUser, session_token},
+        auth::CurrentUser,
         domain,
         errors::{ApiError, ApiJson},
     },
@@ -16,21 +16,15 @@ use axum::{
     response::Redirect,
 };
 use chrono::{DateTime, Utc};
-use rand::RngCore;
 use serde::Deserialize;
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
 use std::collections::HashSet;
-use uuid::Uuid;
 const CLIENT_ID: &str = "34a02cf8f4414e29b15921876da36f9a";
 const CLIENT_SECRET: &str = "daafbccc737745039dffe53d94fc76cf";
 const TOKEN_URL: &str =
     "https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/token";
 const LIBRARY_URL: &str =
     "https://library-service.live.use1a.on.epicgames.com/library/api/public/items";
-fn digest(value: &str) -> String {
-    hex::encode(Sha256::digest(value.as_bytes()))
-}
 fn paused(row: &Row) -> Result<(), ApiError> {
     if let Some(at) = row.retry_at.filter(|at| *at > Utc::now()) {
         return Err(ApiError::rate_limited(
@@ -71,37 +65,7 @@ pub async fn connect(
     u: &CurrentUser,
     headers: &HeaderMap,
 ) -> Result<Json<Value>, ApiError> {
-    let session = session_token(headers).ok_or_else(ApiError::unauthenticated)?;
-    let mut tx = s.database.begin().await?;
-    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))")
-        .bind(service::context(u.id, "epic", "settings"))
-        .execute(&mut *tx)
-        .await?;
-    if let Some(row) = service::row(s, u.id, "epic").await? {
-        paused(&row)?;
-    }
-    let empty = service::encrypt(s, u.id, "epic", "config", &Credentials::default())?;
-    sqlx::query("INSERT INTO app.integrations(user_id,provider,encrypted_config) VALUES($1,'epic',$2) ON CONFLICT DO NOTHING").bind(u.id).bind(empty).execute(&mut *tx).await?;
-    let (instance, revision): (Uuid, i64) = sqlx::query_as(
-        "SELECT instance_id,revision FROM app.integrations WHERE user_id=$1 AND provider='epic'",
-    )
-    .bind(u.id)
-    .fetch_one(&mut *tx)
-    .await?;
-    sqlx::query("DELETE FROM app.integration_auth_attempts WHERE expires_at<now() OR (user_id=$1 AND provider='epic' AND session_hash=$2)").bind(u.id).bind(digest(session)).execute(&mut *tx).await?;
-    let count: i64 =
-        sqlx::query_scalar("SELECT count(*) FROM app.integration_auth_attempts WHERE user_id=$1")
-            .bind(u.id)
-            .fetch_one(&mut *tx)
-            .await?;
-    if count >= 3 {
-        return Err(ApiError::rate_limited(600));
-    }
-    let mut random = [0; 32];
-    rand::rngs::OsRng.fill_bytes(&mut random);
-    let state = hex::encode(random);
-    sqlx::query("INSERT INTO app.integration_auth_attempts(token_hash,user_id,provider,session_hash,expires_at,integration_instance,integration_revision) VALUES($1,$2,'epic',$3,now()+interval '10 minutes',$4,$5)").bind(digest(&state)).bind(u.id).bind(digest(session)).bind(instance).bind(revision).execute(&mut *tx).await?;
-    tx.commit().await?;
+    let state = service::authorization_attempt(s, u, headers, "epic").await?;
     Ok(Json(json!({"url":login_url(),"state":state})))
 }
 pub fn code(value: &str) -> Result<String, ApiError> {
@@ -218,7 +182,6 @@ async fn finish(
     if input.state.len() != 64 || !input.state.bytes().all(|b| b.is_ascii_hexdigit()) {
         return Err(ApiError::validation("Invalid authentication state"));
     }
-    let session = session_token(headers).ok_or_else(ApiError::unauthenticated)?;
     // Serialize redemptions for this provider; a second state cannot produce parallel token requests.
     let mut lock = s.database.begin().await?;
     let acquired: bool =
@@ -233,12 +196,7 @@ async fn finish(
         .await?
         .ok_or_else(login_required)?;
     paused(&row)?;
-    let consumed=sqlx::query("DELETE FROM app.integration_auth_attempts WHERE token_hash=$1 AND user_id=$2 AND provider='epic' AND session_hash=$3 AND expires_at>now() AND integration_instance=$4 AND integration_revision=$5").bind(digest(&input.state)).bind(u.id).bind(digest(session)).bind(row.instance_id).bind(row.revision).execute(&s.database).await?.rows_affected();
-    if consumed != 1 {
-        return Err(ApiError::validation(
-            "Expired authentication state; start a new login",
-        ));
-    }
+    service::consume_authorization(s, u, headers, "epic", &row, &input.state).await?;
     let result = token(endpoint, "authorization_code", &authorization).await;
     let (account, session) = match result {
         Ok(value) => value,
@@ -401,6 +359,7 @@ pub fn normalize_library(records: Vec<Value>) -> Result<Snapshot, ApiError> {
             .filter(|url| url.len() < 2000)
             .map(str::to_owned);
         games.push(Game {
+            ownership_verified: true,
             provider: "epic".into(),
             id,
             name,

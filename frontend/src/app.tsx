@@ -69,8 +69,8 @@ function Shell({ children }: { children: ReactNode }) {
   return <div className="app-shell relative isolate h-svh overflow-hidden bg-background text-foreground">
     <ThemeBackground/>
     <a href="#main" className="sr-only z-50 rounded-lg bg-primary px-4 py-3 text-primary-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4">{t("Перейти к содержимому")}</a>
-    {expanded && <button className="fixed inset-0 z-30 bg-black/40 md:hidden" aria-label={t("Закрыть меню")} onClick={() => setExpanded(false)} />}
-    <AnimatedNavigation className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-border bg-card ${expanded ? "w-60" : "w-16 md:w-60"}`}>
+    {expanded && <button className="fixed inset-0 z-30 bg-foreground/40 md:hidden" aria-label={t("Закрыть меню")} onClick={() => setExpanded(false)} />}
+    <AnimatedNavigation className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-line bg-app/70 backdrop-blur-xl backdrop-saturate-150 ${expanded ? "w-60" : "w-16 md:w-60"}`}>
       <div className="flex h-20 shrink-0 items-center justify-center gap-2 px-3 md:justify-start md:px-5"><Link to={user ? "/today" : "/login"} className="flex min-w-0 items-center gap-3 rounded-lg" aria-label={t("LifeCycle — главная")} onClick={() => setExpanded(false)}><AppIcon icon="lifecycle:mark" className="size-9 shrink-0"/><span className={`${expanded ? "block" : "hidden md:block"} text-xl font-semibold`}>LifeCycle<span className="text-primary">.</span></span></Link></div>
       <Button variant="ghost" size="icon" className="mx-auto mb-3 md:hidden" aria-label={expanded ? t("Свернуть навигацию") : t("Развернуть навигацию")} onClick={() => setExpanded(!expanded)}>{expanded ? <X /> : <Menu />}</Button>
       <SidebarNavigation key={user?.id??"guest"} items={navigation} authenticated={Boolean(user)} expanded={expanded} close={()=>setExpanded(false)} onConfigure={()=>{if(window.innerWidth<768)setExpanded(true);}} />

@@ -23,7 +23,13 @@ pub struct Credentials {
     #[serde(default)]
     pub epic: Option<EpicCredentials>,
     #[serde(default)]
+    pub battlenet: Option<EpicCredentials>,
+    #[serde(default)]
+    pub battle_tag: Option<String>,
+    #[serde(default)]
     pub epic_session: Option<EpicSession>,
+    #[serde(default)]
+    pub sessions: std::collections::HashMap<String, SessionTokens>,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EpicCredentials {
@@ -31,12 +37,13 @@ pub struct EpicCredentials {
     pub client_secret: String,
 }
 #[derive(Serialize, Deserialize, Clone)]
-pub struct EpicSession {
+pub struct SessionTokens {
     pub access_token: String,
     pub refresh_token: String,
     pub expires_at: DateTime<Utc>,
     pub display_name: Option<String>,
 }
+pub type EpicSession = SessionTokens;
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct CodeInput {
@@ -46,6 +53,8 @@ pub struct CodeInput {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Game {
     pub provider: String,
+    #[serde(default = "yes")]
+    pub ownership_verified: bool,
     pub id: String,
     pub name: String,
     pub playtime_minutes: Option<u64>,
@@ -78,6 +87,7 @@ pub struct Integration {
     pub client_id: Option<String>,
     pub display_name: Option<String>,
     pub syncing: bool,
+    pub authorizing: bool,
     pub retry_at: Option<DateTime<Utc>>,
     pub revision: i64,
     pub last_synced_at: Option<DateTime<Utc>>,
@@ -85,6 +95,8 @@ pub struct Integration {
 }
 #[derive(sqlx::FromRow)]
 pub struct Row {
+    #[sqlx(default)]
+    pub authorization_started_at: Option<DateTime<Utc>>,
     pub failure_count: i32,
     pub retry_at: Option<DateTime<Utc>>,
     pub instance_id: uuid::Uuid,

@@ -399,6 +399,7 @@ pub async fn regionalize(
     s: &AppState,
     country: Option<&str>,
     offers: &mut Vec<Offer>,
+    manual: bool,
 ) -> Result<(Vec<Sale>, Vec<String>), ApiError> {
     let ids: Vec<String> = offers
         .iter()
@@ -421,14 +422,15 @@ pub async fn regionalize(
     let steam_key = format!("steam-prices:{country}");
     let epic_key = format!("epic:{country}");
     let (prices, epic_data) = tokio::join!(
-        cache::load(
+        cache::load_with_refresh(
             s,
             &steam_key,
             "steam-prices",
             3600,
+            manual,
             steam_prices(country, &ids)
         ),
-        cache::load(s, &epic_key, "epic:", 900, epic_catalog(country))
+        cache::load_with_refresh(s, &epic_key, "epic:", 900, manual, epic_catalog(country))
     );
     let (prices, stale) = prices?;
     let (epic_data, epic_stale) = epic_data?;
@@ -465,9 +467,7 @@ pub async fn regionalize(
                 let units = |value: &str| value.replace('.', "").parse::<u64>().ok();
                 units(&offer.price)
                     .zip(units(regular))
-                    .is_some_and(|(sale, normal)| {
-                        sale.checked_mul(10).is_some_and(|sale| sale < normal)
-                    })
+                    .is_some_and(|(sale, normal)| sale < normal)
             })
     });
     let mut sales = vec![];

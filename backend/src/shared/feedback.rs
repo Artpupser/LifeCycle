@@ -1,4 +1,5 @@
 //! Durable delivery extends the existing UI feedback owner; feature modules only enqueue messages.
+mod push;
 use crate::{
     infrastructure::state::AppState,
     shared::{auth::CurrentUser, errors::ApiError},
@@ -9,6 +10,7 @@ use axum::{
     http::StatusCode,
     routing::{get, post},
 };
+pub(crate) use push::deliver as deliver_push;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 #[derive(Serialize, Deserialize)]
@@ -26,6 +28,12 @@ struct Entry {
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/notifications", get(list))
+        .route(
+            "/api/notifications/push",
+            get(push::configuration)
+                .put(push::subscribe)
+                .delete(push::unsubscribe),
+        )
         .route("/api/notifications/{id}/read", post(read))
 }
 pub async fn enqueue(

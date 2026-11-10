@@ -59,6 +59,8 @@ pub fn sales() -> Vec<Sale> {
 pub struct Platform {
     pub id: String,
     pub giveaway_name: String,
+    #[serde(default)]
+    pub giveaway_aliases: Vec<String>,
     pub hosts: Vec<String>,
 }
 pub fn platforms() -> Vec<Platform> {

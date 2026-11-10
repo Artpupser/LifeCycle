@@ -1,3 +1,4 @@
+import {defaultItemColor} from "@/systems/themes/themes";
 import {MetricList,MetricDetails} from "@/components/ui/card";
 import {EntitySelectionArea,SelectionItem} from "@/systems/selection/entities";
 import {SubjectLabels} from "@/systems/labels/functional";
@@ -60,7 +61,7 @@ export function HabitsPage() {
   const selectedHabit = habits.resource.status === "ready" ? habits.resource.data.find((habit) => habit.id === selected) : undefined;
   function refresh() { habits.retry(); stats.retry(); day.retry(); }
   const day=useResource<import("@/features/planning/types").DayPlan>(`/today?date=${localDate(settings.timezone)}`);
-  function create() { setEditor({ title: "", description: "", tags: [], color: "#2A9D8F", schedule: { ...defaultSchedule(settings.timezone), recurrence: "daily",time:null,duration_minutes:1 }, habit: { icon: "🌱",  } }); }
+  function create() { setEditor({ title: "", description: "", tags: [], color: defaultItemColor, schedule: { ...defaultSchedule(settings.timezone), recurrence: "daily",time:null,duration_minutes:1 }, habit: { icon: "🌱",  } }); }
   async function remove(id: string) {
     if (!await confirmAction(t("Удалить привычку безвозвратно? Будущие появления прекратятся. Сохранённые результаты останутся в аналитике; её можно удалить отдельно. Без отметок аналитика исчезнет автоматически."))) return;
     await action.run(() => api(`/habits/${id}`, { method: "DELETE" }), () => { habitChanged(); refresh(); });

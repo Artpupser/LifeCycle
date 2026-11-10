@@ -1,3 +1,4 @@
+import {noPermissions} from "../src/features/ai/types";
 import {test,expect,type Page} from "@playwright/test";
 import registry from "../../shared/integrations.json" with {type:"json"};
 import sales from "../../shared/game-sales.json" with {type:"json"};
@@ -16,8 +17,11 @@ async function setup(page:Page){
   const request=route.request(),url=new URL(request.url()),path=url.pathname,method=request.method();let data:unknown=[];
   if(path==="/api/auth/me")data={user:{id:"user",email:"games@example.test"}};
   else if(path==="/api/profile")data={revision:1,name:"Игрок",nickname:"",gender:"unspecified",birth_date:null,birth_country:"",residence_country:"",origin:emptyOrigin,firsts:emptyFirsts,harmful_habits:[],conditions:[],daily_medications:[],past_medications:[],surgeries:[],height_cm:null,weight_kg:null,arms_count:null,legs_count:null,eye_color:"",hair_color:"",skin_color:"",colleagues_count:null,friends_count:null,acquaintances_count:null,has_family:null,has_partner:null,penis_length_cm:null,penis_width_cm:null,breast_size:"",pregnant:null};
-  else if(path==="/api/settings")data=state.settings;
+  else if(path==="/api/settings"){if(method==="PUT")Object.assign(state.settings,request.postDataJSON());data=state.settings;}
   else if(path==="/api/navigation")data={ordering:["/videogames","/profile","/calendar","/today"],pinned:["/videogames","/profile","/calendar","/today"],revision:1};
+  else if(path==="/api/ai/settings")data={provider:"openai",auth_mode:"api_key",active_account_id:null,login_available:false,model:"",enabled:false,permissions:noPermissions,key_present:false,openai_key_present:false,openrouter_key_present:false,revision:0};
+  else if(path==="/api/operators/settings")data={enabled:false,configured:false};
+  else if(path==="/api/notifications/push")data={public_key:null,subscriptions:[]};
   else if(path==="/api/integrations")data=state.providers;
   else if(path==="/api/integrations/steam"&&method==="PUT"){
    const input=request.postDataJSON(),provider=state.providers[0];expect(input.revision).toBe(provider.revision);expect(input.instance_id).toBe(provider.instance_id);state.keyWrites.push(input);provider.configured=!input.remove_key;provider.revision++;data=state.providers;
@@ -107,7 +111,7 @@ test("video game request failures pause focus, preload and refresh attempts with
  const {state,errors}=await setup(page);let reads=0;
  await page.route("**/api/videogames",async route=>{reads++;await route.fulfill(reads<3?{status:500,json:{error:{code:"internal_error"}}}:{json:state.catalog});});
  await page.goto("/videogames");await expect(page.getByRole("alert")).toContainText("Не удалось выполнить запрос");
- const wait=page.getByRole("button",{name:"Ожидание перед повтором",exact:true});await expect(wait).toBeDisabled();await expect(page.getByRole("button",{name:"Обновить",exact:true})).toBeDisabled();
+ const wait=page.getByRole("button",{name:"Ожидание перед повтором",exact:true});await expect(wait).toBeDisabled();await expect(page.getByRole("button",{name:"Обновить предложения",exact:true})).toBeDisabled();
  await page.evaluate(()=>{for(let index=0;index<12;index++)window.dispatchEvent(new Event("focus"));});expect(reads).toBe(1);
  await page.clock.setFixedTime(new Date(Date.parse(stamp)+31_000));await page.evaluate(()=>window.dispatchEvent(new Event("focus")));
  await expect.poll(()=>reads).toBe(2);await expect(wait).toBeDisabled();
@@ -169,3 +173,62 @@ test("persisted integration cooldown migrates on reload and leaves local changes
  await epic.getByRole("button",{name:"Подключить Epic Games",exact:true}).click();await expect(epic.getByRole("alert")).toContainText("Повторные запросы временно приостановлены после ошибки.");expect(connects).toBe(0);
  await epic.getByRole("button",{name:"Действия",exact:true}).click();await page.getByRole("menuitem",{name:"Отключить интеграцию",exact:true}).click();await page.getByRole("alertdialog").getByRole("button",{name:"Подтвердить",exact:true}).click();await expect.poll(()=>writes).toBe(1);expect(errors).toEqual([]);
 });
+
+
+test("numeric ranges share the search action menu and refresh offers separately from the library",async({page},testInfo)=>{
+ const {state,errors}=await setup(page);let refreshes=0;
+ await page.route("**/api/videogames/refresh",async route=>{refreshes++;await route.fulfill({json:state.catalog});});
+ await page.goto("/videogames");
+ const search=page.getByLabel("Поиск видеоигр",{exact:true});
+ await search.fill("discount:90..96 price:0.5..1 free:no");await expect(page.locator("[data-game-offer]")).toHaveCount(1);
+ await expect(page.locator('[data-game-offer="portal"]')).toBeVisible();
+ await search.fill("price:<=0");await expect(page.locator('[data-game-offer="gift"]')).toBeVisible();
+ await search.fill("discount:101");await expect(search).toHaveAttribute("aria-invalid","true");
+ await search.fill("");await page.getByLabel("Фильтры: Поиск видеоигр",{exact:true}).click();
+ await page.getByRole("menuitem",{name:"Скидка, %",exact:true}).click();
+ await page.getByRole("menuitem",{name:"От значения",exact:true}).click();
+ await page.getByRole("spinbutton",{name:"Скидка, %",exact:true}).fill("90");await page.getByRole("button",{name:"Выбрать",exact:true}).click();
+ await expect(search).toHaveValue("discount:>=90");
+ await page.getByRole("button",{name:"Обновить предложения",exact:true}).click();await expect.poll(()=>refreshes).toBe(1);expect(state.syncs).toBe(0);
+ await page.getByRole("button",{name:"Обновить библиотеку",exact:true}).click();await expect.poll(()=>state.syncs).toBe(1);
+ for(const width of [375,768,1280]){await page.setViewportSize({width,height:900});expect(await page.locator(".app-content").evaluate(element=>element.scrollWidth-element.clientWidth)).toBeLessThanOrEqual(1);}
+ await page.screenshot({path:testInfo.outputPath("games-bento.png"),fullPage:true});
+ expect(errors).toEqual([]);
+});
+
+test("six palettes and notification settings use shared cards on mobile and desktop",async({page},testInfo)=>{
+ const {state,errors}=await setup(page);await page.goto("/settings");
+ const themes=page.getByRole("radiogroup",{name:"Тема приложения",exact:true});
+ await expect(themes.getByRole("radio")).toHaveCount(8);
+ for(const [label,name] of [["Песок","sand"],["Тёмная","dark"],["Океан","ocean"],["Лес","forest"],["Сумерки","dusk"],["Светлая","light"]]){
+  await themes.getByRole("radio",{name:label,exact:true}).check();
+  await page.getByRole("button",{name:"Сохранить настройки",exact:true}).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme",name);
+ }
+ await expect(page.getByRole("heading",{name:"Push-уведомления",exact:true})).toBeVisible();
+ await expect(page.getByRole("button",{name:"Включить на этом устройстве",exact:true})).toBeDisabled();
+ for(const width of [375,768,1280]){await page.setViewportSize({width,height:900});expect(await page.locator(".app-content").evaluate(element=>element.scrollWidth-element.clientWidth)).toBeLessThanOrEqual(1);}
+ await page.screenshot({path:testInfo.outputPath("settings-palettes.png"),fullPage:true});
+ expect(state.settings.theme).toBe("light");expect(errors).toEqual([]);
+});
+
+for(const providerId of ["xbox","playstation"] as const){
+ test(`${providerId} user session uses the shared form and starts the library separately`,async({page})=>{
+  const {state,errors}=await setup(page);const provider=state.providers.find(item=>item.id===providerId)!;let authorized=0,synced=0;
+  const attempt="b".repeat(64);
+  const login=providerId==="xbox"?`https://login.live.com/oauth20_authorize.srf?state=${attempt}`:"https://www.playstation.com/";
+  const credential=providerId==="xbox"?`https://login.live.com/oauth20_desktop.srf#access_token=private-token&expires_in=3600&state=${attempt}`:JSON.stringify({npsso:"c".repeat(64)});
+  await page.route(`**/api/integrations/${providerId}/connect`,async route=>{provider.revision=1;provider.instance_id="44444444-4444-4444-8444-444444444444";await route.fulfill({json:{url:login,state:attempt}});});
+  await page.route(`**/api/integrations/${providerId}/authorize`,async route=>{authorized++;expect(route.request().postDataJSON()).toEqual({state:attempt,code:credential});provider.connected=true;provider.configured=true;provider.display_name="Console Player";await route.fulfill({json:{pending:false}});});
+  await page.route(`**/api/integrations/${providerId}/sync`,async route=>{synced++;await route.fulfill({json:{pending:false}});});
+  await page.goto("/profile#integrations");const card=page.getByRole("article",{name:provider.name,exact:true});
+  await card.getByRole("button",{name:`Подключить ${provider.name}`,exact:true}).click();
+  const field=card.getByLabel(providerId==="xbox"?"Адрес завершения входа Microsoft":"NPSSO PlayStation",{exact:true});
+  await expect(field).toHaveAttribute("type","password");await field.fill(credential);expect(authorized).toBe(0);expect(synced).toBe(0);
+  await card.getByRole("button",{name:`Подтвердить сессию ${provider.name}`,exact:true}).click();await expect(card).toContainText("Console Player");await expect(field).toHaveCount(0);expect(synced).toBe(0);
+  expect(await page.evaluate(()=>JSON.stringify(localStorage))).not.toContain("private-token");expect(await page.evaluate(()=>JSON.stringify(localStorage))).not.toContain("c".repeat(64));
+  await card.getByRole("button",{name:"Синхронизировать библиотеку",exact:true}).click();await expect.poll(()=>synced).toBe(1);
+  for(const width of [375,768,1280]){await page.setViewportSize({width,height:900});expect(await page.locator(".app-content").evaluate(element=>element.scrollWidth-element.clientWidth)).toBeLessThanOrEqual(1);}
+  expect(errors).toEqual([]);
+ });
+}

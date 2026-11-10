@@ -20,3 +20,18 @@ it("handles Russian aliases, invalid queries and localized sale names",async()=>
  const sale={id:"winter",platform:"steam",title:"Зимняя распродажа Steam 2026",title_en:"Steam Winter Sale 2026",starts_at:"2026-12-17T18:00:00Z",ends_at:"2027-01-04T18:00:00Z",source:"https://partner.steamgames.com/",verified_on:"2026-11-08"} satisfies Sale;
  await setLanguage("en");expect(filterGames("type:sales Winter",[],[],[sale]).sales).toEqual([sale]);await setLanguage("ru");
 });
+
+it("combines price, discount, free exclusion and currency without treating missing prices as zero",()=>{
+ const rows=[{...offer("Paid","steam","unknown"),price:"25.50",discount_basis_points:5000},offer("Free","epic","unknown",true),{...offer("Unavailable","steam","unknown"),price_unavailable:true,currency:""}];
+ expect(filterGames("discount:20..80 price:20..30 free:no currency:USD",rows,[],[]).offers.map(item=>item.id)).toEqual(["Paid"]);
+ expect(filterGames("price:<=0",rows,[],[]).offers.map(item=>item.id)).toEqual(["Free"]);
+ expect(filterGames("цена:>=25.5 скидка:<=50 бесплатно:нет",rows,[],[]).offers.map(item=>item.id)).toEqual(["Paid"]);
+ expect(filterGames("discount:101",rows,[],[]).offers).toEqual([]);
+});
+
+it("does not treat a console play-history entry as verified ownership",()=>{
+ const history:Game={...game,provider:"xbox",ownership_verified:false};
+ expect(filterGames("owned:yes",[],[game,history],[]).library).toEqual([game]);
+ expect(filterGames("owned:no",[],[history],[]).library).toEqual([]);
+ expect(filterGames("-owned:yes",[],[game,history],[]).library).toEqual([history]);
+});

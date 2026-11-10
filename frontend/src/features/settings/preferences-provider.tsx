@@ -1,7 +1,7 @@
 import { LabelProvider } from "@/systems/labels/provider";
 import { configureAnimations } from "@/systems/animations/policy";
 import { configureEffects } from "@/systems/effects/events";
-import { themes, themeStyle, readableText } from "@/systems/themes/themes";
+import { themes, themeStyle, isDarkTheme } from "@/systems/themes/themes";
 import { notify } from "@/lib/feedback";
 import { t } from "@/systems/i18n/locale";
 import { setLanguage } from "@/systems/i18n/locale";
@@ -19,11 +19,12 @@ export function PreferencesProvider({ initial, children }: { initial: Settings; 
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const root=document.documentElement;
     const apply = () => {
-      const selected=settings.theme === "system" ? media.matches ? "dark" : "light" : settings.theme;
+      const selected=(settings.theme as string)==="rose"?"sand":settings.theme === "system" ? media.matches ? "dark" : "light" : settings.theme;
       const colors=selected==="custom" ? settings.custom_theme??themes.light : themes[selected]??themes.light;
       root.dataset.theme=selected;
       Object.entries(themeStyle(colors)).forEach(([key,value])=>root.style.setProperty(key,value));
-      root.style.colorScheme=readableText(colors.background)==="#ffffff"?"dark":"light";
+      document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute("content",colors.background);
+      root.style.colorScheme=isDarkTheme(colors)?"dark":"light";
     };
     apply(); media.addEventListener("change", apply);
     return () => { media.removeEventListener("change", apply); delete root.dataset.theme; Object.keys(themeStyle(themes.light)).forEach(key=>root.style.removeProperty(key)); root.style.removeProperty("color-scheme"); };

@@ -1,0 +1,129 @@
+/* The six built-in palettes. The theme editor reads these same tokens. */
+/* palette:light */
+:root[data-theme="light"] {
+  --background: #f5f5f7;
+  --foreground: #202124;
+  --card: #ffffff;
+  --primary: #3459c9;
+  --primary-foreground: #ffffff;
+  --muted: #e9ebf0;
+  --muted-foreground: #626774;
+  --border: #dfe2e8;
+  --destructive: #b32636;
+  color-scheme: light;
+}
+
+/* palette:sand */
+:root[data-theme="sand"] {
+  --background: #f7f4ee;
+  --foreground: #302b25;
+  --card: #fffdf8;
+  --primary: #74562d;
+  --primary-foreground: #ffffff;
+  --muted: #eee8dd;
+  --muted-foreground: #706557;
+  --border: #e0d7ca;
+  --destructive: #ae2638;
+  color-scheme: light;
+}
+
+/* palette:dark */
+:root, :root[data-theme="dark"] {
+  --background: #141518;
+  --foreground: #f0f1f4;
+  --card: #1e2025;
+  --primary: #a6baff;
+  --primary-foreground: #172144;
+  --muted: #2a2d35;
+  --muted-foreground: #a8adba;
+  --border: #343842;
+  --destructive: #ffa7b3;
+  color-scheme: dark;
+}
+
+/* palette:ocean */
+:root[data-theme="ocean"] {
+  --background: #131921;
+  --foreground: #eff3f8;
+  --card: #1c2531;
+  --primary: #9dbbff;
+  --primary-foreground: #162847;
+  --muted: #283444;
+  --muted-foreground: #a3b3c8;
+  --border: #35465c;
+  --destructive: #ffa7b3;
+  color-scheme: dark;
+}
+
+/* palette:forest */
+:root[data-theme="forest"] {
+  --background: #151b19;
+  --foreground: #eef4f0;
+  --card: #202a25;
+  --primary: #9fc8ac;
+  --primary-foreground: #182b20;
+  --muted: #2c3831;
+  --muted-foreground: #a4b8ac;
+  --border: #3a4b40;
+  --destructive: #ffa7b3;
+  color-scheme: dark;
+}
+
+/* palette:dusk */
+:root[data-theme="dusk"] {
+  --background: #1b1821;
+  --foreground: #f4eff8;
+  --card: #28232f;
+  --primary: #c5b3e8;
+  --primary-foreground: #2b2042;
+  --muted: #37303f;
+  --muted-foreground: #b9adca;
+  --border: #493f55;
+  --destructive: #ffa7b3;
+  color-scheme: dark;
+}
+
+@theme inline {
+ --color-app: var(--background);
+ --color-surface: var(--card);
+ --color-surface-2: var(--muted);
+ --color-fg: var(--foreground);
+ --color-fg-muted: var(--muted-foreground);
+ --color-line: var(--border);
+ --color-accent: var(--primary);
+ --color-accent-fg: var(--primary-foreground);
+ --radius-card: 1.5rem;
+ --radius-control: .75rem;
+ --radius-2xl: var(--radius-card);
+ --radius-xl: var(--radius-control);
+ --shadow-card: 0 2px 12px color-mix(in srgb, var(--foreground) 4%, transparent);
+ --text-display: clamp(2rem, 4vw, 3.5rem);
+ --text-title: clamp(1.5rem, 3vw, 2rem);
+ --text-heading: 1.125rem;
+ --text-body: .9375rem;
+ --text-caption: .8125rem;
+ --ease-apple: cubic-bezier(.2,.7,.2,1);
+}
+:root { --page-gutter: 1rem; }
+@media (min-width: 640px) { :root { --page-gutter: 1.5rem; } }
+
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* User-selected category colors are content, shared by every object editor. */
+:root {
+ --content-color-1: #6366f1;
+ --content-color-2: #2563eb;
+ --content-color-3: #0891b2;
+ --content-color-4: #16a34a;
+ --content-color-5: #ca8a04;
+ --content-color-6: #ea580c;
+ --content-color-7: #dc2626;
+ --content-color-8: #db2777;
+ --contrast-dark: #172314;
+ --contrast-light: #ffffff;
+}
