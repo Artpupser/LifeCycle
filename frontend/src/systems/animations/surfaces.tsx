@@ -1,5 +1,5 @@
 import {AnimatePresence,animate,motion,useReducedMotion,type HTMLMotionProps} from "motion/react";
-import {useEffect,useRef,useSyncExternalStore,type ComponentProps,type ReactNode} from "react";
+import {useCallback,useEffect,useRef,useSyncExternalStore,type ComponentProps,type ReactNode} from "react";
 import {animationsEnabled,prefersReducedMotion,subscribeAnimations} from "./policy";
 import {entrances,transitions} from "./presets";
 function useMovement(){const enabled=useSyncExternalStore(subscribeAnimations,animationsEnabled,()=>true);const reduced=useReducedMotion();return enabled&&!(reduced??prefersReducedMotion());}
@@ -7,7 +7,7 @@ export function AnimatedSurface({kind="card",...props}:Omit<HTMLMotionProps<"div
   const movement=useMovement();
   return <motion.div initial={movement?entrances[kind]:false} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0}} transition={movement?transitions.surface:{duration:0}} {...props}/>;
 }
-export function AnimatedArticle(props:ComponentProps<"article">) {
+export function AnimatedArticle({ref:externalRef,...props}:ComponentProps<"article">) {
   const movement=useMovement();
   const ref=useRef<HTMLElement>(null);
   useEffect(()=>{
@@ -15,7 +15,8 @@ export function AnimatedArticle(props:ComponentProps<"article">) {
     const animation=animate(ref.current,{opacity:[0,1],y:[5,0]},transitions.quick);
     return()=>{animation.complete();};
   },[movement]);
-  return <article {...props} ref={ref}/>;
+  const bind=useCallback((node:HTMLElement|null)=>{ref.current=node;if(typeof externalRef==="function")return externalRef(node);if(externalRef)externalRef.current=node;},[externalRef]);
+  return <article {...props} ref={bind}/>;
 }
 export function AnimatedNavigation({children,className}:{children:ReactNode;className?:string}) {
   const movement=useMovement();
@@ -31,7 +32,7 @@ export function Pulse({children,className,role}:{children?:ReactNode;className?:
   return <motion.span role={role} className={className} animate={{opacity:movement?[.5,1,.5]:1}} transition={movement?{duration:1.4,repeat:Infinity}:{duration:0}}>{children}</motion.span>;
 }
 
-type BarProps=Pick<ComponentProps<"rect">,"x"|"y"|"width"|"height"|"rx"|"fill"|"opacity"|"style"|"role"|"aria-label"|"tabIndex"|"onPointerDown"|"onPointerMove"|"onPointerUp"|"onPointerCancel"|"onKeyDown"|"children">;
+type BarProps=Pick<ComponentProps<"rect">,"x"|"y"|"width"|"height"|"rx"|"fill"|"opacity"|"style"|"role"|"aria-label"|"tabIndex"|"onPointerDown"|"onPointerMove"|"onPointerUp"|"onPointerCancel"|"onClick"|"ref"|"onKeyDown"|"children">;
 export function AnimatedGanttBar({x,width,...props}:BarProps){
  const movement=useMovement();
  return <motion.rect {...props} x={0} initial={false} animate={{attrX:Number(x),width:Number(width)}} transition={{duration:movement?.1:0,ease:"easeOut"}}/>;

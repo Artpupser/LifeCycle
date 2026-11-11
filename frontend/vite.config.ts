@@ -7,5 +7,5 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   server: { port: 5173, strictPort: true, fs: { allow: [fileURLToPath(new URL(".", import.meta.url)), fileURLToPath(new URL("../shared", import.meta.url))] }, proxy: { "/api": "http://127.0.0.1:8080" } },
-  test: { css: {include:[/theme\.css/]}, include: ["src/**/*.test.ts"] },
+  test: { environmentOptions:{jsdom:{url:"http://localhost"}},css: {include:[/theme\.css/]}, setupFiles:["src/testing/setup.ts"],include: ["src/**/*.test.{ts,tsx}"] },
 });

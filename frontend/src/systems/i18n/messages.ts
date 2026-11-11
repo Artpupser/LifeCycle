@@ -1,5 +1,11 @@
 /** English interface catalog. Keys are Russian source messages; user content is never translated. */
 export const english: Record<string, string> = {
+  "Перетащить задачу {v0}": "Move task {v0}",
+  "Перемещение начато.": "Moving started.",
+  "Перемещение отменено.": "Moving canceled.",
+  "Перемещение завершено.": "Moving completed.",
+  "Пробел — начать перемещение, стрелки — выбрать позицию, пробел — завершить, Escape — отменить.": "Press Space to start moving, arrows to choose a position, Space to finish, Escape to cancel.",
+  "Заполните обязательные поля.": "Fill in the required fields.",
   "Подключение подтверждается. Результат появится автоматически.": "Verifying your connection. The result will appear automatically.",
   "Площадка {name} не разрешила загрузить данные. Проверьте доступ и настройки приватности; сохранённая копия остаётся доступной.": "{name} did not allow access to the data. Check your access and privacy settings; your saved copy remains available.",
   "Сессия {name} истекла или отозвана. Выполните вход заново.": "Your {name} session expired or was revoked. Sign in again.",

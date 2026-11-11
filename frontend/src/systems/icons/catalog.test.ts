@@ -18,7 +18,7 @@ it("maps historical values and falls back without loading arbitrary remote names
  expect(resolveIcon("__proto__")).toBe("tabler:sparkles");
 });
 
-import currencyMetadata from "../../../../shared/country-currencies.json";
+import currencyMetadata from "../../../../shared/country-currencies.json" with {type:"json"};
 import {currencyIcon,currencyNames} from "./currencies";
 it("every country currency is bundled and searchable in the shared icon catalog",()=>{
  for(const country of Object.values(currencyMetadata.countries)){

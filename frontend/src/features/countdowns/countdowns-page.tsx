@@ -1,6 +1,9 @@
+import {EditorForm} from "@/systems/forms/editor";
+import {useEditorState} from "@/systems/forms/use-editor";
+import {editorSchemas} from "@/systems/forms/schemas";
 import {ChoiceField} from "@/components/ui/choice-picker";
 import {ZodiacBadge} from "@/systems/icons/zodiac-badge";
-import {SaveButton,SaveForm} from "@/components/ui/save";
+import {SaveButton} from "@/components/ui/save";
 import {EntitySelectionArea,SelectionItem} from "@/systems/selection/entities";
 import {SubjectLabels} from "@/systems/labels/functional";
 import {CategoryChip} from "@/systems/labels/category-chip";
@@ -46,7 +49,7 @@ function CountdownEditor({ initial, close, saved }: { initial: CountdownInput & 
   const [initialClock] = useState(() => initial.target_time && initial.original_at ? clockFields(initial.original_at, settings.timezone) : { target_date: initial.target_date, target_time: initial.target_time });
   const [seed, setSeed] = useState<ContactData | null>(null);
   const [tags, setTags] = useState(() => formatLabels(initial.tags ?? []));
-  const [value, setValue] = useState({ ...initial, ...initialClock,tags:initial.tags??[],category:eventCategory(initial.category),icon:resolveIcon(initial.icon,"tabler:calendar") }); const [busy, setBusy] = useState(false); const [uploading, setUploading] = useState(false); const [error, setError] = useState<string | null>(null);
+  const [value, setValue, valueEditor] = useEditorState({ ...initial, ...initialClock,tags:initial.tags??[],category:eventCategory(initial.category),icon:resolveIcon(initial.icon,"tabler:calendar") }, editorSchemas.titled); const [busy, setBusy] = useState(false); const [uploading, setUploading] = useState(false); const [error, setError] = useState<string | null>(null);
   async function submit(event: FormEvent) {
     event.preventDefault(); if (busy || uploading) return; setBusy(true); setError(null);
     const { title, category, icon, recurrence, description, contact_id, contact_birthday } = value;
@@ -57,7 +60,7 @@ function CountdownEditor({ initial, close, saved }: { initial: CountdownInput & 
     try { await api(initial.id ? `/countdowns/${initial.id}` : "/countdowns", { method: initial.id ? "PUT" : "POST", body: { title: value.contact_birthday ? t("День рождения") : title.trim(), category, tags:normalizeLabels(tags),display:value.display, icon, target_date: target_date || "1900-01-01", target_time, timezone, recurrence, description, contact_id: contact_id || null, contact_birthday: Boolean(contact_birthday), ...(initial.updated_at ? { expected_updated_at: initial.updated_at } : {}) } }); saved(); }
     catch (failure) { setError(errorMessage(failure)); } finally { setBusy(false); }
   }
-  return <><Dialog title={initial.id ? t("Редактировать событие") : t("Новое событие")} onClose={() => { if (!busy && !uploading) close(); }}><SaveForm className="space-y-5" onSubmit={event => void submit(event)}><fieldset className="space-y-5" disabled={busy}>
+  return <><Dialog title={initial.id ? t("Редактировать событие") : t("Новое событие")} onClose={() => { if (!busy && !uploading) close(); }}><EditorForm editor={valueEditor} className="space-y-5" onSubmit={event => void submit(event)}><fieldset className="space-y-5" disabled={busy}>
     <FormField id="countdown-title" label={t("Название события")}><Input disabled={value.contact_birthday} id="countdown-title" required autoFocus maxLength={200} value={value.title} onChange={e => setValue({ ...value, title: e.target.value })} /></FormField>
     <FormField id="countdown-category" label={t("Категория события")}><EventCategorySelect id="countdown-category" value={value.category} change={category=>setValue({...value,category})}/></FormField>
     <FormField id="countdown-tags" label={t("Теги события")}><LabelInput id="countdown-tags" value={tags} change={setTags}/></FormField>
@@ -70,7 +73,7 @@ function CountdownEditor({ initial, close, saved }: { initial: CountdownInput & 
     <FormField id="countdown-unit" label={t("Единица отсчёта")}><ChoiceField id="countdown-unit" value={value.display.unit??"days"} change={next=>setValue({...value,display:{...value.display,unit:next as import("@/lib/dates").CountdownUnit}})}>{[["days","Дни"],["seconds","Секунды"],["minutes","Минуты"],["weeks","Недели"],["months","Месяцы"]].map(([unit,label])=><option key={unit} value={unit}>{t(label)}</option>)}</ChoiceField></FormField>
     <FormField id="countdown-description" label={t("Описание события")}><MarkdownEditor id="countdown-description" value={value.description} onChange={description => setValue(v => ({ ...v, description }))} onUploading={setUploading} /></FormField>
     {!value.contact_id && value.details.full_name.trim() && <Button variant="outline" onClick={() => setSeed({ ...emptyContact(), first_name: value.details.full_name, phones: value.details.phone.split(/[·;\n]/).map(p => p.trim()).filter(Boolean), profession: value.details.occupation, relationship: value.details.relationship, description: value.details.notes, birth_date: value.recurrence === "yearly" && resolveIcon(value.icon) === "tabler:cake" ? value.target_date : null })}>{t("Перенести в контакты")}</Button>}
-  </fieldset>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<SaveButton type="submit" disabled={busy || uploading}>{busy ? t("Сохраняем…") : t("Сохранить событие")}</SaveButton></SaveForm></Dialog>{seed && <ContactEditor seed={seed} close={() => setSeed(null)} saved={contact => { setSeed(null); contacts.mutate(old => [...old, contact]); setValue(v => ({ ...v, contact_id: contact.id, contact_birthday: v.recurrence === "yearly" && resolveIcon(v.icon) === "tabler:cake" })); }} />}</>;
+  </fieldset>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<SaveButton type="submit" disabled={busy || uploading}>{busy ? t("Сохраняем…") : t("Сохранить событие")}</SaveButton></EditorForm></Dialog>{seed && <ContactEditor seed={seed} close={() => setSeed(null)} saved={contact => { setSeed(null); contacts.mutate(old => [...old, contact]); setValue(v => ({ ...v, contact_id: contact.id, contact_birthday: v.recurrence === "yearly" && resolveIcon(v.icon) === "tabler:cake" })); }} />}</>;
 }
 function Remaining({ countdown, now, eventAt, timezone }: { countdown: Countdown; now: number; eventAt?: string; timezone: string }) {
   useLanguage();

@@ -1,71 +1,31 @@
+import {DateTime} from "luxon";
 import { getLocale } from "@/systems/i18n/locale";
 import { t } from "@/systems/i18n/locale";
-export function localDate(timezone: string, instant: string | number | Date = Date.now()) {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(instant));
-  const value = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
-  return `${value("year")}-${value("month")}-${value("day")}`;
+function instant(value:string|number|Date,zone="UTC") {
+ return (typeof value==="number"?DateTime.fromMillis(value):value instanceof Date?DateTime.fromJSDate(value):DateTime.fromISO(value,{setZone:true})).setZone(zone);
 }
-
-export function shiftDate(date: string, days: number) {
-  const value = new Date(`${date}T12:00:00Z`); value.setUTCDate(value.getUTCDate() + days); return value.toISOString().slice(0, 10);
+function civil(value:string){return DateTime.fromISO(value,{zone:"UTC"});}
+export function localDate(timezone:string,value:string|number|Date=Date.now()){return instant(value,timezone).toISODate()!;}
+export function shiftDate(date:string,days:number){return civil(date).plus({days}).toISODate()!;}
+export function dayDifference(from:string,to:string){return civil(to).diff(civil(from),"days").days;}
+export function dateLabel(date:string,options:Intl.DateTimeFormatOptions={day:"numeric",month:"long"}){return civil(date).setLocale(getLocale()).toLocaleString(options);}
+export function instantLabel(value:string|number,timezone:string,format:"12h"|"24h"="24h",seconds=false){return instant(value,timezone).setLocale(getLocale()).toLocaleString({hour:"2-digit",minute:"2-digit",...(seconds?{second:"2-digit" as const}:{}),hourCycle:format==="12h"?"h12":"h23"});}
+export function dateTimeLabel(value:string|number,timezone:string,format:"12h"|"24h"="24h"){return `${dateLabel(localDate(timezone,value),{day:"numeric",month:"long",year:"numeric"})} · ${instantLabel(value,timezone,format)}`;}
+export function minuteOfDay(value:string,timezone:string){const date=instant(value,timezone);return date.hour*60+date.minute;}
+export function zonedDateTimeInput(value:string|number,timezone:string,seconds=false){return instant(value,timezone).toFormat(seconds?"yyyy-MM-dd'T'HH:mm:ss":"yyyy-MM-dd'T'HH:mm");}
+/** Reject DST gaps; preserve both possible instants in an overlap, earliest first. */
+export function localDateTimeCandidates(value:string,timezone:string):number[]{
+ if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))return [];
+ const date=DateTime.fromISO(value,{zone:timezone});
+ if(!date.isValid||date.toFormat("yyyy-MM-dd'T'HH:mm")!==value)return [];
+ return [...new Set(date.getPossibleOffsets().map(item=>item.toMillis()))].sort((a,b)=>a-b);
 }
-
-export function dayDifference(from: string, to: string) {
-  return Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000);
-}
-
-export function dateLabel(date: string, options: Intl.DateTimeFormatOptions = { day: "numeric", month: "long" }) {
-  return new Intl.DateTimeFormat(getLocale(), { ...options, timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
-}
-
-export function instantLabel(instant: string | number, timezone: string, format: "12h" | "24h" = "24h", seconds = false) {
-  return new Intl.DateTimeFormat(getLocale(), { timeZone: timezone, hour: "2-digit", minute: "2-digit", ...(seconds ? { second: "2-digit" as const } : {}), hourCycle: format === "12h" ? "h12" : "h23" }).format(new Date(instant));
-}
-
-export function dateTimeLabel(instant: string | number, timezone: string, format: "12h" | "24h" = "24h") {
-  return `${dateLabel(localDate(timezone, instant), { day: "numeric", month: "long", year: "numeric" })} · ${instantLabel(instant, timezone, format)}`;
-}
-
-export function minuteOfDay(instant: string, timezone: string) {
-  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: timezone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(instant));
-  return Number(parts.find((part) => part.type === "hour")!.value) * 60 + Number(parts.find((part) => part.type === "minute")!.value);
-}
-
-/** A datetime-local value in the account's selected timezone, never the browser's zone. */
-export function zonedDateTimeInput(instant: string | number, timezone: string, seconds = false) {
-  const date = new Date(instant);
-  const minute = minuteOfDay(date.toISOString(), timezone);
-  return `${localDate(timezone, date)}T${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}${seconds ? `:${String(date.getUTCSeconds()).padStart(2, "0")}` : ""}`;
-}
-export function localDateTimeCandidates(value: string, timezone: string): number[] {
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return [];
-  const naive = Date.parse(`${value}:00Z`);
-  if (!Number.isFinite(naive) || new Date(naive).toISOString().slice(0, 16) !== value) return [];
-  const offsets = new Set<number>();
-  for (let hours = -36; hours <= 36; hours += 6) {
-    const instant = naive + hours * 3_600_000;
-    offsets.add(Date.parse(`${zonedDateTimeInput(instant, timezone)}:00Z`) - instant);
-  }
-  return [...offsets].map((offset) => naive - offset).filter((instant) => zonedDateTimeInput(instant, timezone) === value).sort((a, b) => a - b);
-}
-export function localDateTimeToInstant(value: string, timezone: string): number | null {
-  return localDateTimeCandidates(value, timezone)[0] ?? null;
-}
-
-/** Calendar-only values are validated without interpreting them in the browser timezone. */
-export function isCalendarDate(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
-}
-export function toInstant(value: string | number) { return new Date(value).toISOString(); }
-export function weekday(date: string) { return new Date(`${date}T12:00:00Z`).getUTCDay(); }
-export function shiftMonth(date: string, months: number) {
-  const value = new Date(`${date.slice(0, 7)}-01T12:00:00Z`);
-  value.setUTCMonth(value.getUTCMonth() + months);
-  return value.toISOString().slice(0, 10);
-}
-export function shiftLocalMinutes(value: string, minutes: number) {
-  return new Date(Date.parse(`${value}:00Z`) + minutes * 60_000).toISOString().slice(0, 16);
-}
+export function localDateTimeToInstant(value:string,timezone:string):number|null{return localDateTimeCandidates(value,timezone)[0]??null;}
+export function isCalendarDate(value:string){const date=civil(value);return /^\d{4}-\d{2}-\d{2}$/.test(value)&&date.isValid&&date.toISODate()===value;}
+export function toInstant(value:string|number){return instant(value).toISO()!;}
+export function weekday(date:string){return civil(date).weekday%7;}
+export function shiftMonth(date:string,months:number){return civil(date).startOf("month").plus({months}).toISODate()!;}
+export function shiftLocalMinutes(value:string,minutes:number){return civil(value).plus({minutes}).toFormat("yyyy-MM-dd'T'HH:mm");}
 export function clockFields(instant: string, timezone: string) {
   const local = zonedDateTimeInput(instant, timezone, true);
   return { target_date: local.slice(0, 10), target_time: local.slice(11) };
@@ -79,11 +39,7 @@ export function durationLabel(seconds: number) { return seconds % 60 === 0 ? t("
 export function supportedTimezones() { return Intl.supportedValuesOf("timeZone"); }
 export function defaultTimePreferences() { return { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, time_format: "24h" as const }; }
 
-export function dayStart(date: string, timezone: string): number {
-  const noon = Date.parse(`${date}T12:00:00Z`);let low=Math.floor((noon-48*3_600_000)/60_000);let high=Math.ceil((noon+48*3_600_000)/60_000);
-  while(low<high){const middle=Math.floor((low+high)/2);if(localDate(timezone,middle*60_000)<date)low=middle+1;else high=middle;}
-  return low*60_000;
-}
+export function dayStart(date:string,timezone:string):number{return DateTime.fromISO(date,{zone:timezone}).startOf("day").toMillis();}
 
 /** Add wall-clock minutes; callers can apply the calendar carry to their selected date. */
 export function addClockMinutes(time: string, minutes: number) {
@@ -118,18 +74,19 @@ export function birthdayAges(birth:string|null|undefined,next:string|null|undefi
  return {current,next:Math.max(current,next?Number(next.slice(0,4))-born:current+1),today:today===clamped};
 }
 
-export function isoWeekday(date:string){const day=new Date(`${date}T12:00:00Z`).getUTCDay();return day===0?7:day;}
+export function isoWeekday(date:string){return civil(date).weekday;}
 export type CountdownUnit="days"|"seconds"|"minutes"|"weeks"|"months";
 export function countdownAmount(start:string,end:string,timezone:string,unit:CountdownUnit,precise:boolean){
- const a=localDate(timezone,Date.parse(start)),b=localDate(timezone,Date.parse(end));const days=Math.abs(Date.parse(`${b}T00:00:00Z`)-Date.parse(`${a}T00:00:00Z`))/86400000;const seconds=precise?Math.abs(Date.parse(end)-Date.parse(start))/1000:days*86400;
- if(unit==="months"){const [first,last]=a<=b?[a,b]:[b,a];let months=(Number(last.slice(0,4))-Number(first.slice(0,4)))*12+Number(last.slice(5,7))-Number(first.slice(5,7));const lastDay=new Date(Date.UTC(Number(last.slice(0,4)),Number(last.slice(5,7)),0)).getUTCDate();if(Number(last.slice(8))<Math.min(Number(first.slice(8)),lastDay))months--;return Math.max(0,months);}
+ const a=localDate(timezone,start),b=localDate(timezone,end),days=Math.abs(dayDifference(a,b));
+ const seconds=precise?Math.abs(instant(end).diff(instant(start),"seconds").seconds):days*86400;
+ if(unit==="months"){const [first,last]=a<=b?[civil(a),civil(b)]:[civil(b),civil(a)];return Math.max(0,Math.floor(last.diff(first,"months").months));}
  return Math.floor(seconds/({seconds:1,minutes:60,days:86400,weeks:604800})[unit]);
 }
 
 /** Conventional western zodiac by civil birthday; never shift it through a timezone. */
 export function zodiacCode(birthDate:string|null|undefined){
  if(!birthDate||!/^\d{4}-\d{2}-\d{2}$/.test(birthDate))return null;
- const parsed=new Date(`${birthDate}T12:00:00Z`);if(!Number.isFinite(parsed.getTime())||parsed.toISOString().slice(0,10)!==birthDate)return null;
+ if(!isCalendarDate(birthDate))return null;
  const month=Number(birthDate.slice(5,7)),day=Number(birthDate.slice(8,10));
  const boundaries=[20,19,21,20,21,21,23,23,23,23,22,22];
  const signs=["capricorn","aquarius","pisces","aries","taurus","gemini","cancer","leo","virgo","libra","scorpio","sagittarius","capricorn"] as const;
@@ -140,7 +97,7 @@ export function zodiacCode(birthDate:string|null|undefined){
 export function retryAfterMilliseconds(value:string|null,now=Date.now()){
  if(!value)return 0;const text=value.trim();
  if(/^\d+$/.test(text)){const seconds=Number(text);return Number.isSafeInteger(seconds)?Math.min(seconds*1000,2_147_000_000):0;}
- const at=Date.parse(text);return Number.isFinite(at)?Math.max(0,Math.min(at-now,2_147_000_000)):0;
+ const at=DateTime.fromHTTP(text,{zone:"UTC"}).toMillis();return Number.isFinite(at)?Math.max(0,Math.min(at-now,2_147_000_000)):0;
 }
 export function secondsUntil(instant:number,now=Date.now()){return Math.max(0,Math.ceil((instant-now)/1000));}
 

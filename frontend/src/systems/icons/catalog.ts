@@ -1,8 +1,8 @@
 import {currencyMarks} from "./currencies";
 import {operatorMarks} from "./operators";
 import type { IconifyIcon } from "@iconify/react/offline";
-import ui from "./ui-data.json";
-import manifest from "./manifest.json";
+import ui from "./ui-data.json" with {type:"json"};
+import manifest from "./manifest.json" with {type:"json"};
 import brandSvg from "@/assets/logo.svg?raw";
 
 export type IconPack = "tabler" | "circle-flags" | "simple-icons" | "twemoji" | "lifecycle";

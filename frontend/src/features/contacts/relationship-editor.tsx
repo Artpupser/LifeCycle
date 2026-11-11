@@ -1,3 +1,6 @@
+import {EditorForm} from "@/systems/forms/editor";
+import {useEditorState,useEditorField} from "@/systems/forms/use-editor";
+import {editorSchemas} from "@/systems/forms/schemas";
 import {useMemo,useState} from "react";
 import {Link} from "react-router";
 import {Dialog} from "@/components/dialog";
@@ -6,7 +9,7 @@ import {ErrorState,LoadingState} from "@/components/resource-state";
 import {Button} from "@/components/ui/button";
 import {ChoiceInput,ChoiceField} from "@/components/ui/choice-picker";
 
-import {SaveButton,SaveForm} from "@/components/ui/save";
+import {SaveButton} from "@/components/ui/save";
 import {useResource} from "@/hooks/use-resource";
 import {api,errorMessage} from "@/lib/api";
 import {notify} from "@/lib/feedback";
@@ -20,8 +23,9 @@ import {contactName,type Contact} from "./types";
 export type RelationshipDraft={record?:ContactRelationship;initialSourceId?:string;initialTargetId?:string;initialKind?:RelationshipKind};
 export function RelationshipEditor({contacts,record,initialSourceId="",initialTargetId="",initialKind="parent",close,saved}:RelationshipDraft&{contacts:Contact[];close:()=>void;saved:()=>void}){
  useLanguage();
- const [source,setSource]=useState(record?.source_id??initialSourceId),[target,setTarget]=useState(record?.target_id??initialTargetId);
- const [kind,setKind]=useState<RelationshipKind>(record?.kind??initialKind);
+ const [editorValues,setEditorValues,formEditor]=useEditorState(()=>({source:record?.source_id??initialSourceId,target:record?.target_id??initialTargetId,kind:(record?.kind??initialKind) as RelationshipKind}),editorSchemas.record);
+const [source,setSource]=useEditorField(editorValues,setEditorValues,"source"),[target,setTarget]=useEditorField(editorValues,setEditorValues,"target");
+ const [kind,setKind]=useEditorField(editorValues,setEditorValues,"kind");
  const [busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null);
  const options=contacts.map(contact=>({value:contact.id,label:contactName(contact.data),search:contact.data.phones.join(" "),icon:genderIcon(contact.data.gender),suffix:""}));
  const name=(id:string)=>options.find(option=>option.value===id)?.label??"";
@@ -30,13 +34,13 @@ export function RelationshipEditor({contacts,record,initialSourceId="",initialTa
   try{const data={source_id:source,target_id:target,kind};await api(record?`/contacts/relationships/${record.id}`:"/contacts/relationships",{method:record?"PUT":"POST",body:record?{revision:record.revision,data}:data});notify(t("Связь сохранена."));saved();}
   catch(failure){setError(errorMessage(failure));}finally{setBusy(false);}
  }
- return <Dialog title={t(record?"Изменить связь":"Новая связь")} onClose={()=>{if(!busy)close();}}><SaveForm className="space-y-5" onSubmit={event=>void submit(event)}><fieldset disabled={busy} className="space-y-5">
+ return <Dialog title={t(record?"Изменить связь":"Новая связь")} onClose={()=>{if(!busy)close();}}><EditorForm editor={formEditor} className="space-y-5" onSubmit={event=>void submit(event)}><fieldset disabled={busy} className="space-y-5">
   <p className="text-sm text-muted-foreground">{t("Люди берутся из контактной книжки и вашего профиля. Изменение связи не меняет их данные.")}</p>
   <FormField id="relation-source" label={t("Первый контакт")}><ChoiceInput id="relation-source" value={source} displayValue={name(source)} icon="tabler:user" title={t("Выберите первый контакт")} searchLabel={t("Поиск контактов")} empty={t("Нет контактов с такими условиями поиска.")} options={options} choose={id=>{setSource(id);if(id===target)setTarget("");}}/></FormField>
   <FormField id="relation-kind" label={t("Тип связи")}><ChoiceField id="relation-kind" value={kind} change={next=>setKind(next as RelationshipKind)}><optgroup label={t("Семейные связи")}>{relationshipKinds.filter(item=>relationshipCategory(item)==="family").map(item=><option key={item} value={item}>{relationshipName(item)}</option>)}</optgroup><optgroup label={t("Другие связи")}>{relationshipKinds.filter(item=>relationshipCategory(item)==="social").map(item=><option key={item} value={item}>{relationshipName(item)}</option>)}</optgroup></ChoiceField></FormField>
   {kind==="parent"&&<p className="rounded-xl bg-primary/5 p-3 text-sm text-primary">{t("Первый контакт — родитель, второй — ребёнок.")}</p>}
   <FormField id="relation-target" label={t("Второй контакт")}><ChoiceInput id="relation-target" value={target} displayValue={name(target)} icon="tabler:user" title={t("Выберите второй контакт")} searchLabel={t("Поиск контактов")} empty={t("Нет контактов с такими условиями поиска.")} options={options.filter(option=>option.value!==source)} choose={setTarget}/></FormField>
- </fieldset>{error&&<p role="alert" className="text-sm text-destructive">{error}</p>}<SaveButton type="submit" disabled={busy||!source||!target||source===target}>{busy?t("Сохраняем…"):t("Сохранить связь")}</SaveButton></SaveForm></Dialog>;
+ </fieldset>{error&&<p role="alert" className="text-sm text-destructive">{error}</p>}<SaveButton type="submit" disabled={busy||!source||!target||source===target}>{busy?t("Сохраняем…"):t("Сохранить связь")}</SaveButton></EditorForm></Dialog>;
 }
 
 type RelationshipsProps={contactId:string;contacts:Contact[];relationships:ContactRelationship[];refresh:()=>void;editable?:boolean;onSelect?:(id:string)=>void;projection?:KinshipProjection;sort?:RelationshipSort;changeSort?:(sort:RelationshipSort)=>void};

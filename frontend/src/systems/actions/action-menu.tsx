@@ -1,15 +1,19 @@
+import {EditorForm} from "@/systems/forms/editor";
+import {useEditorState,useEditorField} from "@/systems/forms/use-editor";
+import {editorSchemas} from "@/systems/forms/schemas";
 import "./actions.css";
 import {Children,Fragment,isValidElement,useLayoutEffect,useEffect,useRef,useState,type ReactNode,type MouseEvent} from "react";
 import {useNavigate} from "react-router";
-import {createPortal} from "react-dom";
-import {AnimatedSurface} from "@/systems/animations/surfaces";
+import * as Dropdown from "@radix-ui/react-dropdown-menu";
+import * as ContextMenu from "@radix-ui/react-context-menu";
+import {Dialog} from "@/components/dialog";
 import {AppIcon} from "@/systems/icons/app-icon";
 import {t,useLanguage} from "@/systems/i18n/locale";
 import type {LabelSubject} from "@/systems/labels/context";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {SubjectLabelEditor} from "@/systems/labels/functional";
-import {ActionsContext,useActionMenu,type ContextAction,type Menu} from "./context";
+import {ActionsContext,useActionMenu,type ContextAction} from "./context";
 
 const subjects="article,[data-action-subject],[data-drag-item],[data-note-id]";
 type ReadActions=()=>ContextAction[];
@@ -17,10 +21,10 @@ const scopes=new WeakMap<Element,Map<HTMLElement,ReadActions>>();
 // An explicit key lets alternate representations (e.g. SVG Gantt bars) share a declaration.
 const aliases=new Map<string,Map<HTMLElement,ReadActions>>();
 function subjectActions(target:Element){
- const dialog=target.closest("dialog");
+ const dialog=target.closest("[data-dialog-root]");
  for(let node:Element|null=target;node;node=node.parentElement){
   const groups=scopes.get(node)??aliases.get(node.getAttribute("data-action-key")??"");
-  const active=groups?[...groups].filter(([anchor])=>anchor.closest("dialog")===dialog):[];
+  const active=groups?[...groups].filter(([anchor])=>anchor.closest("[data-dialog-root]")===dialog):[];
   if(active.length)return {actions:active.flatMap(([,read])=>read()).map((action,index)=>({...action,id:`scope-${index}`})),anchor:(active.find(([anchor])=>anchor.getAttribute("data-action-menu-anchor")!=="contribution")??active[0])[0]};
   if(node===dialog)break;
  }
@@ -59,58 +63,42 @@ export function ObjectActions({children,actions=[],label,subject,contribute=fals
  },[key,contribute,placement]);
  return <span ref={anchor} className={contribute?"contents":"inline-flex items-center"}>{!contribute&&<ActionMenuButton label={label} actions={all} readActions={()=>subjectActions(anchor.current!)?.actions??latest.current}/>}{editing&&subject&&<SubjectLabelEditor subject={subject} close={()=>setEditing(false)}/>}</span>;
 }
+type OpenMenu={actions:ContextAction[];x:number;y:number;returnTo:HTMLElement|SVGElement|null;context?:boolean};
+const itemClass="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm outline-none data-[highlighted]:bg-muted data-[disabled]:opacity-40";
+const contentClass="z-[100] max-h-[min(75svh,36rem)] w-64 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-card border border-line bg-surface p-1 text-foreground shadow-xl";
+function MenuItems({actions,context,number,close}:{actions:ContextAction[];context:boolean;number:(action:ContextAction)=>void;close:()=>void}){
+ const {Item,Sub,SubTrigger,SubContent,Portal}=context?ContextMenu:Dropdown;
+ return actions.map(action=>action.children?<Sub key={action.id}><SubTrigger disabled={action.disabled} className={itemClass}>{action.icon&&<AppIcon icon={action.icon}/>}<span>{action.label}</span><AppIcon icon="tabler:chevron-right" className="ml-auto"/></SubTrigger><Portal><SubContent className={contentClass} collisionPadding={8}><MenuItems actions={action.children} context={context} number={number} close={close}/></SubContent></Portal></Sub>:<Item key={action.id} disabled={action.disabled} className={`${itemClass} ${action.danger?"text-destructive":""}`} onSelect={()=>{close();if(action.numberInput)number(action);else action.run();}}>{action.icon&&<AppIcon icon={action.icon}/>}<span>{action.label}</span></Item>);
+}
+function ContextPopup({menu,close,number}:{menu:OpenMenu;close:()=>void;number:(action:ContextAction)=>void}){
+ const trigger=useRef<HTMLSpanElement>(null);
+ useEffect(()=>{trigger.current?.dispatchEvent(new MouseEvent("contextmenu",{bubbles:true,clientX:menu.x,clientY:menu.y}));},[menu]);
+ return <ContextMenu.Root onOpenChange={open=>{if(!open)close();}}><ContextMenu.Trigger ref={trigger} className="fixed pointer-events-none" style={{left:menu.x,top:menu.y}}/><ContextMenu.Portal><ContextMenu.Content className={contentClass} collisionPadding={8} onCloseAutoFocus={event=>{event.preventDefault();menu.returnTo?.focus({preventScroll:true});}}><MenuItems actions={menu.actions} context number={number} close={close}/></ContextMenu.Content></ContextMenu.Portal></ContextMenu.Root>;
+}
 export function ActionMenuProvider({children}:{children:ReactNode}){
- useLanguage();const [menu,setMenu]=useState<Menu|null>(null);const ref=useRef<HTMLDivElement>(null);
+ useLanguage();const [menu,setMenu]=useState<OpenMenu|null>(null);const [entry,setEntry]=useState<ContextAction|null>(null);
  const open=(actions:ContextAction[],x:number,y:number,returnTo:HTMLElement|SVGElement|null=null)=>{if(actions.length)setMenu({actions,x,y,returnTo});};
  useEffect(()=>{
   const show=(event:globalThis.MouseEvent|KeyboardEvent)=>{
-   if(event.defaultPrevented||!(event.target instanceof Element)||event.target.closest('[role=menu]'))return;
-   if(event.target.matches(':disabled'))return;
+   if(event.defaultPrevented||!(event.target instanceof Element)||event.target.closest('[role=menu]')||event.target.matches(':disabled'))return;
    const editable=event.target.closest('input,textarea,select,[contenteditable=true]');
    if(editable&&!(editable.matches('input[type=search]')&&editable.closest('[data-action-search]')))return;
    if(event instanceof KeyboardEvent&&!(event.key==='ContextMenu'||event.shiftKey&&event.key==='F10'))return;
    const found=subjectActions(event.target);if(!found?.actions.length)return;
    event.preventDefault();const bounds=event.target.getBoundingClientRect();
    const origin=(event.target instanceof HTMLElement||event.target instanceof SVGElement)&&event.target.tabIndex>=0?event.target:found.anchor.querySelector<HTMLButtonElement>('button');
-   open(found.actions,event instanceof KeyboardEvent?bounds.left:event.clientX,event instanceof KeyboardEvent?bounds.bottom:event.clientY,origin);
+   setMenu({actions:found.actions,x:event instanceof KeyboardEvent?bounds.left:event.clientX,y:event instanceof KeyboardEvent?bounds.bottom:event.clientY,returnTo:origin,context:true});
   };
   document.addEventListener('contextmenu',show);document.addEventListener('keydown',show);
   return()=>{document.removeEventListener('contextmenu',show);document.removeEventListener('keydown',show);};
  },[]);
- useEffect(()=>{
-  if(!menu||!ref.current)return;
-  const node=ref.current;
-  node.style.left=`${Math.max(8,Math.min(menu.x,innerWidth-node.offsetWidth-8))}px`;
-  node.style.top=`${Math.max(8,Math.min(menu.y,innerHeight-node.offsetHeight-8))}px`;
-  (node.querySelector<HTMLInputElement>('input')??node.querySelector<HTMLButtonElement>('button:not(:disabled)'))?.focus({preventScroll:true});
-  const dismiss=()=>setMenu(null);
-  const outside=(event:Event)=>{if(!node.contains(event.target as Node))dismiss();};
-  window.addEventListener('resize',dismiss);document.addEventListener('pointerdown',outside);
-  document.addEventListener('wheel',outside,{passive:true});document.addEventListener('touchmove',outside,{passive:true});
-  return()=>{window.removeEventListener('resize',dismiss);document.removeEventListener('pointerdown',outside);document.removeEventListener('wheel',outside);document.removeEventListener('touchmove',outside);};
- },[menu]);
- function activate(action:ContextAction){
-  if(!menu||action.disabled)return;
-  if(action.children){setMenu({...menu,actions:action.children,back:menu,entry:undefined});return;}
-  if(action.numberInput){setMenu({...menu,entry:action,back:menu});return;}
-  setMenu(null);menu.returnTo?.focus({preventScroll:true});action.run();
- }
- function keys(event:React.KeyboardEvent){
-  const fields=[...ref.current!.querySelectorAll<HTMLButtonElement|HTMLInputElement>('button:not(:disabled),input:not(:disabled)')];
-  const current=fields.indexOf(document.activeElement as HTMLButtonElement);
-  const input=event.target instanceof HTMLInputElement;
-  if(event.key==='Tab'&&menu?.entry&&current+(event.shiftKey?-1:1)>=0&&current+(event.shiftKey?-1:1)<fields.length){event.preventDefault();fields[current+(event.shiftKey?-1:1)]?.focus();}
-  else if(event.key==='Escape'||event.key==='Tab'){event.preventDefault();menu?.returnTo?.focus({preventScroll:true});setMenu(null);}
-  else if(event.key==='ArrowLeft'&&!input&&menu?.back){event.preventDefault();setMenu(menu.back);}
-  else if(event.key==='ArrowRight'&&!input){const action=menu?.actions.find(action=>`action-${action.id}`===(document.activeElement as HTMLElement)?.dataset.menuAction);if(action?.children){event.preventDefault();activate(action);}}
-  else if(!input&&['ArrowDown','ArrowUp','Home','End'].includes(event.key)){event.preventDefault();fields[event.key==='Home'?0:event.key==='End'?fields.length-1:(current+(event.key==='ArrowDown'?1:-1)+fields.length)%fields.length]?.focus();}
- }
-
- return <ActionsContext value={open}>{children}{menu&&createPortal(<div ref={ref} role="menu" aria-label={t("Действия")} onKeyDown={keys} className="fixed z-[100] max-h-[min(75svh,36rem)] w-64 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-card border border-line bg-surface p-1 text-foreground shadow-xl" style={{left:menu.x,top:menu.y}}><AnimatedSurface>{menu.back&&<button type="button" role="menuitem" className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted" onClick={()=>setMenu(menu.back!)}><AppIcon icon="tabler:chevron-left"/>{t("Назад")}</button>}{menu.entry?.numberInput?<NumberEntry key={menu.entry.id} action={menu.entry} submit={value=>{const action=menu.entry!;setMenu(null);menu.returnTo?.focus({preventScroll:true});action.numberInput!.submit(value);}}/>:menu.actions.map(action=><button key={action.id} data-menu-action={`action-${action.id}`} type="button" role="menuitem" aria-haspopup={action.children?"menu":undefined} disabled={action.disabled} onClick={()=>activate(action)} className={`flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted focus:bg-muted focus:outline-none disabled:opacity-40 ${action.danger?'text-destructive':''}`}>{action.icon&&<AppIcon icon={action.icon}/>}<span>{action.label}</span>{action.children&&<AppIcon icon="tabler:chevron-right" className="ml-auto shrink-0"/>}</button>)}</AnimatedSurface></div>,menu.returnTo?.closest("dialog")??document.body)}</ActionsContext>;
+ const close=()=>setMenu(null);
+ return <ActionsContext value={open}>{children}{menu&&(menu.context?<ContextPopup menu={menu} close={close} number={setEntry}/>:<Dropdown.Root open onOpenChange={open=>{if(!open)close();}}><Dropdown.Trigger className="fixed pointer-events-none" style={{left:menu.x,top:menu.y}}/><Dropdown.Portal><Dropdown.Content className={contentClass} collisionPadding={8} onCloseAutoFocus={event=>{event.preventDefault();menu.returnTo?.focus({preventScroll:true});}}><MenuItems actions={menu.actions} context={false} number={setEntry} close={close}/></Dropdown.Content></Dropdown.Portal></Dropdown.Root>)}{entry&&<Dialog title={entry.label} onClose={()=>setEntry(null)}><NumberEntry action={entry} submit={value=>{setEntry(null);entry.numberInput!.submit(value);}}/></Dialog>}</ActionsContext>;
 }
 function NumberEntry({action,submit}:{action:ContextAction;submit:(value:number)=>void}){
- useLanguage();const spec=action.numberInput!;const [value,setValue]=useState(String(spec.initial??spec.min));const number=Number(value);
- return <form role="group" aria-label={action.label} className="space-y-3 p-3" onSubmit={event=>{event.preventDefault();if((value.trim()!==""&&Number.isFinite(number)&&(spec.step!==undefined||Number.isSafeInteger(number)))&&number>=spec.min&&(spec.max===undefined||number<=spec.max))submit(number);}}><label className="block space-y-2 text-sm"><span>{spec.label}</span><Input autoFocus required type="number" min={spec.min} max={spec.max} step={spec.step??1} value={value} onChange={event=>setValue(event.target.value)}/></label><Button className="w-full" type="submit" disabled={!(value.trim()!==""&&Number.isFinite(number)&&(spec.step!==undefined||Number.isSafeInteger(number)))||number<spec.min||(spec.max!==undefined&&number>spec.max)}>{t("Выбрать")}</Button></form>;
+ useLanguage();const spec=action.numberInput!;const [editorValues,setEditorValues,formEditor]=useEditorState(()=>({value:String(spec.initial??spec.min)}),editorSchemas.record);
+const [value,setValue]=useEditorField(editorValues,setEditorValues,"value");const number=Number(value);
+ return <EditorForm saveControls={false} editor={formEditor} role="group" aria-label={action.label} className="space-y-3 p-3" onSubmit={event=>{event.preventDefault();if((value.trim()!==""&&Number.isFinite(number)&&(spec.step!==undefined||Number.isSafeInteger(number)))&&number>=spec.min&&(spec.max===undefined||number<=spec.max))submit(number);}}><label className="block space-y-2 text-sm"><span>{spec.label}</span><Input autoFocus required type="number" min={spec.min} max={spec.max} step={spec.step??1} value={value} onChange={event=>setValue(event.target.value)}/></label><Button className="w-full" type="submit" disabled={!(value.trim()!==""&&Number.isFinite(number)&&(spec.step!==undefined||Number.isSafeInteger(number)))||number<spec.min||(spec.max!==undefined&&number>spec.max)}>{t("Выбрать")}</Button></EditorForm>;
 }
 
 export function ActionMenuButton({actions,label,readActions}:{actions:ContextAction[];label?:string;readActions?:()=>ContextAction[]}){

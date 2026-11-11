@@ -5,7 +5,7 @@ import refresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", "node_modules"] },
+  { ignores: ["dist", "node_modules", "public/mockServiceWorker.js"] },
   js.configs.recommended,
   {files:["public/*sw.js"],languageOptions:{globals:globals.serviceworker}},
   ...tseslint.configs.recommended,
@@ -51,7 +51,7 @@ export default tseslint.config(
   },
   {
     files:["src/**/*.{ts,tsx}"],
-    ignores:["**/*.test.ts"],
+    ignores:["**/*.test.ts","**/*.test.tsx"],
     plugins:{"central-systems":{rules:{imports:{
       meta:{type:"problem",schema:[]},
       create(context){
@@ -59,6 +59,16 @@ export default tseslint.config(
           const name=node.source?.value;
           if(typeof name!=="string")return;
           const owner=name==="motion"||name.startsWith("motion/")||name==="framer-motion"?"animations":name==="tsparticles"||name.startsWith("@tsparticles/")?"effects":name==="date-holidays"||name.startsWith("date-holidays/")?"holidays":null;
+          const filename=context.filename.replaceAll("\\","/");
+          const allowed=name==="luxon"?filename.endsWith("/src/lib/dates.ts")
+            :name==="i18next"||name==="react-i18next"?filename.includes("/src/systems/i18n/")
+            :name==="react-hook-form"||name.startsWith("@hookform/")||name==="zod"?filename.includes("/src/systems/forms/")
+            :name.startsWith("@dnd-kit/")?filename.includes("/src/systems/animations/")
+            :name==="@tanstack/react-query"?filename.includes("/src/systems/loading/")||filename.endsWith("/src/hooks/use-resource.ts")||filename.endsWith("/src/hooks/use-action.ts")||filename.endsWith("/src/main.tsx")
+            :name==="@tanstack/react-virtual"?filename.endsWith("/src/components/ui/virtual-grid.tsx")
+            :name.startsWith("@radix-ui/react-")&&name!=="@radix-ui/react-slot"?filename.includes("/src/systems/actions/")||filename.endsWith("/src/components/dialog.tsx")
+            :true;
+          if(!allowed)context.report({node,message:"Use the existing centralized adapter for this library."});
           if(owner&&!context.filename.replaceAll("\\","/").includes(`/src/systems/${owner}/`))context.report({node,message:`Use the centralized ${owner} system.`});
         };
         return {ImportDeclaration:check,ImportExpression:check,JSXOpeningElement(node){

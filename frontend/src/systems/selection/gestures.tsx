@@ -6,7 +6,7 @@ import "./selection.css";
 
 type Point = {x:number;y:number};
 type Rectangle = {left:number;top:number;width:number;height:number};
-const interactive = 'a,button,input,textarea,select,label,summary,[contenteditable]:not([contenteditable="false"]),[role="button"],[role="slider"],[role="menu"],[data-selection-ignore],svg,[draggable="true"]';
+const interactive = 'a,button,input,textarea,select,label,summary,[contenteditable]:not([contenteditable="false"]),[role="button"],[role="slider"],[role="menu"],[data-selection-ignore],svg,[data-drag-enabled="true"],[data-drag-handle]';
 
 /** Mouse marquee; a stationary touch hold arms selection without taking ordinary scrolling. */
 export function SelectionGesture<T>({selection, items, itemKey, scope="", disabled=false, children, className}: {
@@ -22,7 +22,7 @@ export function SelectionGesture<T>({selection, items, itemKey, scope="", disabl
     let gesture: {origin:Point;point:Point;base:T[];before:T[];active:boolean;touch:boolean;pointer:number|null;scrollX:number;scrollY:number;scroll:HTMLElement;original:string}|null=null;
     let hold:ReturnType<typeof setTimeout>|undefined;
     let frame=0;let suppressUntil=0;
-    const eligible=(target:EventTarget|null)=>{const dialog=document.querySelector('[role="dialog"],dialog[open]');return target instanceof Element && target.closest("[data-selection-surface]")===element && !target.closest(interactive) && (!dialog||dialog.contains(element));};
+    const eligible=(target:EventTarget|null)=>{const dialog=document.querySelector('[data-dialog-root]');return target instanceof Element && target.closest("[data-selection-surface]")===element && !target.closest(interactive) && (!dialog||dialog.contains(element));};
     const scroller=(target:Element)=>{
       let node:HTMLElement|null=target instanceof HTMLElement?target:target.parentElement;
       while(node&&node!==document.body){const style=getComputedStyle(node);if(/auto|scroll/.test(style.overflowY+style.overflowX)&&(node.scrollHeight>node.clientHeight||node.scrollWidth>node.clientWidth))return node;node=node.parentElement;}

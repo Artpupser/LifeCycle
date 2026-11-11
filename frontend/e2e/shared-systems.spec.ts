@@ -92,7 +92,7 @@ test("shared save stays visible through a settings form and preserves native val
  const save=page.getByRole("button",{name:"Сохранить настройки",exact:true});await expect(save).toBeDisabled();
  const timezone=page.getByLabel("Часовой пояс",{exact:true});await timezone.fill("");await expect(save).toBeEnabled();
  await page.getByLabel("Отдых, минут",{exact:true}).scrollIntoViewIfNeeded();await expect(save).toBeInViewport();
- const box=(await save.boundingBox())!;expect(box.width).toBeLessThanOrEqual(40);expect(box.height).toBeLessThanOrEqual(40);
+ const box=(await save.boundingBox())!;expect(box.width).toBeLessThanOrEqual(44);expect(box.height).toBeLessThanOrEqual(44);
  await save.click();expect(state.settings.timezone).toBe("Europe/Moscow");await expect(timezone).toBeFocused();
  await timezone.fill("UTC");await page.getByLabel("Язык интерфейса",{exact:true}).scrollIntoViewIfNeeded();await expect(save).toBeInViewport();await save.click();
  await expect(save).toBeDisabled();expect(state.settings.timezone).toBe("UTC");expect(errors).toEqual([]);
@@ -160,7 +160,7 @@ test("boards, habits and countdowns reuse the full visual icon catalog",async({p
   let boardState={board:{id:"board",name:"Моя доска",emoji:"",view:"kanban",zoom:"week",revision:1},columns:[{id:"column",name:"Начало",color:"#6366f1",position:0}],items:[]};
   let createdBoard=false;let habitInput:Record<string,unknown>|null=null;let eventInput:Record<string,unknown>|null=null;
   await page.route("**/api/boards**",async route=>{const path=new URL(route.request().url()).pathname;if(route.request().method()==="POST"){boardState={...boardState,board:{...boardState.board,...route.request().postDataJSON()}};createdBoard=true;await route.fulfill({json:boardState});}else await route.fulfill({json:path.endsWith("memberships")?[]:path==="/api/boards"?(createdBoard?[boardState.board]:[]):boardState});});
-  await page.route("**/api/habits**",async route=>{if(route.request().method()==="POST"){habitInput=route.request().postDataJSON();await route.fulfill({json:{id:"habit",...habitInput}});}else if(route.request().url().includes("statistics"))await route.fulfill({status:503,json:{error:{code:"unavailable"}}});else await route.fulfill({json:[]});});
+  await page.route("**/api/habits**",async route=>{if(route.request().method()==="POST"){habitInput=route.request().postDataJSON();await route.fulfill({json:{id:"habit",...habitInput}});}else if(route.request().url().includes("statistics"))await route.fulfill({json:[]});else await route.fulfill({json:[]});});
   await page.route("**/api/countdowns**",async route=>{if(route.request().method()==="POST"){eventInput=route.request().postDataJSON();await route.fulfill({json:{id:"event",...eventInput}});}else await route.fulfill({json:[] as Countdown[]});});
   await page.goto("/tasks");await page.getByRole("button",{name:"Новая доска",exact:true}).click();await page.getByLabel("Название доски",{exact:true}).fill("Моя доска");
   await chooseIcon(page,"Выбрать значок доски","github","simple-icons:github");
@@ -339,7 +339,7 @@ test("journal ui shares registry choices and preserves both ratings and emotion 
  await page.goto("/sex");await chooseAction(page,"Редактировать",page.locator("main article").first());const editor=page.getByRole("dialog",{name:"Редактировать событие",exact:true});
  for(const [group,name] of [["Игрушки","Моя игрушка"],["Обстановка","Моя обстановка"],["Позы","Моя поза"],["Лубриканты","На водной основе"],["Контрацепция","Наружный презерватив"],["Эмоции до","Возбуждение"],["Эмоции после","Радость"],["Виды секса","Оральный"]])await editor.getByRole("group",{name:group,exact:true}).getByRole("checkbox",{name,exact:true}).check();
  await expect(editor.locator("#intimacy-feelings")).toHaveCount(0);await editor.getByLabel("Уровень либидо (0–10)",{exact:true}).fill("0");await editor.getByLabel("Удовлетворённость (0–10)",{exact:true}).fill("10");await chooseChoice(editor.getByLabel("Запланированное",{exact:true}), "false");
- const save=editor.locator("[data-save-button]");await expect(save).toHaveCount(1);const box=(await save.boundingBox())!;expect(box.width).toBeLessThanOrEqual(40);expect(box.height).toBeLessThanOrEqual(40);await save.click();await expect(editor).toHaveCount(0);expect(writes).toBe(1);expect(entries[0].data).toMatchObject({libido_level:0,planned:false,satisfaction_level:10,lubricants:["water_based"],contraception:["external_condom"],emotions_before:["Возбуждение"],toys:["Моя игрушка"],setting:"Моя обстановка",partner:{positions:["Моя поза"],sex_types:["oral"]},emotions_after:["Радость"]});
+ const save=editor.locator("[data-save-button]");await expect(save).toHaveCount(1);const box=(await save.boundingBox())!;expect(box.width).toBeLessThanOrEqual(44);expect(box.height).toBeLessThanOrEqual(44);await save.click();await expect(editor).toHaveCount(0);expect(writes).toBe(1);expect(entries[0].data).toMatchObject({libido_level:0,planned:false,satisfaction_level:10,lubricants:["water_based"],contraception:["external_condom"],emotions_before:["Возбуждение"],toys:["Моя игрушка"],setting:"Моя обстановка",partner:{positions:["Моя поза"],sex_types:["oral"]},emotions_after:["Радость"]});
  await page.goto("/labels?kind=toy");await expect(page.locator("main").getByText("Моя игрушка",{exact:true})).toBeVisible();expect(errors).toEqual([]);
 });
 

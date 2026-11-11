@@ -1,4 +1,4 @@
-import platforms from "../../../../shared/game-platforms.json";
+import platforms from "../../../../shared/game-platforms.json" with {type:"json"};
 export const gamePlatforms=platforms;
 export type Game={provider:string;ownership_verified?:boolean;id:string;name:string;playtime_minutes:number|null;recent_minutes:number|null;last_played_at:string|null;store_url:string;preview?:string|null};
 export type Offer={id:string;platform:string;title:string;app_id:string|null;price:string;regular_price:string|null;currency:string;discount_basis_points:number;free:boolean;url:string;claim_url:string;source:string;ends_at:string|null;preview?:string|null;price_unavailable?:boolean;price_country?:string|null;ownership:"verified"|"marked"|"unknown"|"absent"};

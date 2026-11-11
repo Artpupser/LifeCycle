@@ -1,4 +1,4 @@
-import definitions from "../../../../shared/collections.json";
+import definitions from "../../../../shared/collections.json" with {type:"json"};
 import {t} from "@/systems/i18n/locale";
 import type {Label} from "./types";
 export type CollectionKind="toy"|"emotion"|"setting"|"position"|"porn_source"|"sex_type"|"lubricant"|"contraception";

@@ -1,3 +1,4 @@
+import {dragObject} from "./drag-helpers";
 import {chooseChoice} from "./choice-helpers";
 import {emptyOrigin,emptyFirsts} from "../src/features/profile/types";
 import {expect,test,type Page} from "@playwright/test";
@@ -143,7 +144,7 @@ test("tree actions and drag share relationship editing, gender and generation pr
  state.contacts.find(person=>person.id===ids.parent)!.data.gender="female";
  state.contacts.find(person=>person.id===ids.child)!.data.gender="female";
  await page.goto(`/tree?contact=${ids.child}`);
- const parent=page.locator(`[data-tree-person="${ids.parent}"]`),child=page.locator(`[data-tree-person="${ids.child}"]`);
+ const parent=page.locator(`[data-tree-stage] [data-tree-person="${ids.parent}"]:not([data-dnd-placeholder])`),child=page.locator(`[data-tree-stage] [data-tree-person="${ids.child}"]:not([data-dnd-placeholder])`);
  await expect(parent).toHaveAttribute("data-lineage","ancestor");await expect(parent).toContainText("Мать");
  await child.getByRole("button",{name:"Выбрать контакт Анна",exact:true}).click({button:"right"});
  await page.getByRole("menuitem",{name:"Редактировать древо",exact:true}).click();
@@ -151,7 +152,7 @@ test("tree actions and drag share relationship editing, gender and generation pr
  await page.getByRole("menuitem",{name:"Изменить контакт",exact:true}).click();
  const personEditor=page.getByRole("dialog",{name:"Изменить контакт",exact:true});await chooseChoice(personEditor.getByLabel("Пол",{exact:true}), "male");await personEditor.getByRole("button",{name:"Сохранить контакт",exact:true}).click();await expect(personEditor).toHaveCount(0);
  expect(state.contacts.find(person=>person.id===ids.child)!.data.gender).toBe("male");await expect(child.locator('[data-icon="tabler:gender-male"]')).toHaveCount(1);
- const friend=page.locator(`[data-tree-person="${ids.friend}"]`);await parent.dragTo(friend);
+ const friend=page.locator(`[data-tree-person="${ids.friend}"]`);await dragObject(page,parent,friend);
  const editor=page.getByRole("dialog",{name:"Новая связь",exact:true});await expect(editor.getByLabel("Первый контакт",{exact:true})).toHaveValue("Ольга");await expect(editor.getByLabel("Второй контакт",{exact:true})).toHaveValue("София");
  await chooseChoice(editor.getByLabel("Тип связи",{exact:true}), "romantic_partner");await editor.getByRole("button",{name:"Сохранить связь",exact:true}).click();await expect(editor).toHaveCount(0);
  const created=state.relationships.find(edge=>edge.kind==="romantic_partner")!;expect(created).toMatchObject({source_id:ids.parent,target_id:ids.friend});
@@ -232,15 +233,12 @@ test("tree moves a card onto empty viewport space using scaled canvas coordinate
  await page.getByRole("button",{name:"Редактирование",exact:true}).click();
  for(let step=0;step<5;step++)await page.getByRole("button",{name:"Уменьшить древо",exact:true}).click();
  const viewport=page.getByRole("region",{name:"Интерактивное древо контактов",exact:true});
- const card=page.locator(`[data-tree-person="${ids.parent}"]`);
+ const card=page.locator(`[data-tree-stage] [data-tree-person="${ids.parent}"]:not([data-dnd-placeholder])`);
  const before=await card.boundingBox();const region=await viewport.boundingBox();
- const transfer=await page.evaluateHandle(()=>new DataTransfer());
- const dropX=region!.x+region!.width-40,dropY=region!.y+region!.height-40;
+ const dropX=region!.x+region!.width*.75,dropY=region!.y+region!.height*.75;
  const stage=await page.locator("[data-tree-stage]").boundingBox();
- await card.dispatchEvent("dragstart",{clientX:before!.x+20,clientY:before!.y+20,dataTransfer:transfer});
- await viewport.dispatchEvent("drop",{clientX:dropX,clientY:dropY,dataTransfer:transfer});
- await card.dispatchEvent("dragend",{dataTransfer:transfer});
- await transfer.dispose();
+ await page.mouse.move(before!.x+20,before!.y+20);await page.mouse.down();await expect(card).toHaveAttribute("data-dragging","true");
+ await page.mouse.move(before!.x+28,before!.y+28,{steps:4});await page.mouse.move(dropX,dropY,{steps:20});await page.mouse.up();
  await expect.poll(()=>card.evaluate(element=>Number.parseFloat(element.style.left))).toBeCloseTo((dropX-stage!.x-20)/.5,0);
  await expect.poll(()=>card.evaluate(element=>Number.parseFloat(element.style.top))).toBeCloseTo((dropY-stage!.y-20)/.5,0);
  await expect(page.getByRole("dialog",{name:"Новая связь",exact:true})).toHaveCount(0);

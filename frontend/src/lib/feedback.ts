@@ -31,6 +31,7 @@ export function notifyDesktop(title: string, message: string,options:Omit<Notice
 
 let registration:Promise<ServiceWorkerRegistration|null>|null=null;
 export function notificationRegistration(){
+ if(import.meta.env.DEV&&import.meta.env.VITE_MOCK_API==="true")return Promise.resolve(null);
  if(!globalThis.isSecureContext||!("serviceWorker" in navigator))return Promise.resolve(null);
  registration??=navigator.serviceWorker.register("/feedback-sw.js",{scope:"/",updateViaCache:"none"}).then(()=>navigator.serviceWorker.ready).catch(()=>{registration=null;return null;});
  return registration;

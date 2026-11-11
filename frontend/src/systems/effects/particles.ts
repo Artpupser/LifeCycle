@@ -22,8 +22,8 @@ async function renderParticles(request:EffectRequest,version:number) {
   canvas=document.createElement("canvas");canvas.id="lifecycle-effects";canvas.dataset.effect=request.kind;
   canvas.setAttribute("aria-hidden","true");
   Object.assign(canvas.style,{position:"fixed",inset:"0",width:"100%",height:"100%",pointerEvents:"none",zIndex:"110"});
-  const dialogs=document.querySelectorAll<HTMLDialogElement>("dialog[open]");
-  const dialog=dialogs[dialogs.length-1];(dialog??document.body).append(canvas);
+  const dialogs=document.querySelectorAll<HTMLElement>("[data-dialog-root]");
+  const dialog=dialogs[dialogs.length-1];document.body.append(canvas);
   const css=getComputedStyle(document.documentElement);
   const token=(name:string)=>css.getPropertyValue(`--${name}`).trim();
   const strong=request.kind==="complete",soft=["notice","confirm","error"].includes(request.kind);

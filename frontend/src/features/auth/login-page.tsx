@@ -1,3 +1,6 @@
+import {EditorForm} from "@/systems/forms/editor";
+import {useEditorState,useEditorField} from "@/systems/forms/use-editor";
+import {editorSchemas} from "@/systems/forms/schemas";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { ArrowLeft, ArrowRight, LoaderCircle, Mail } from "@/components/icons";
 import { useEffect, useState, type FormEvent } from "react";
@@ -13,8 +16,9 @@ export function LoginPage() {
   useLanguage();
   const { user, signIn } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
+  const [editorValues,setEditorValues,formEditor]=useEditorState(()=>({email:"",code:""}),editorSchemas.record);
+const [email, setEmail] = useEditorField(editorValues,setEditorValues,"email");
+  const [code, setCode] = useEditorField(editorValues,setEditorValues,"code");
   const [step, setStep] = useState<"email" | "code">("email");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,13 +69,13 @@ export function LoginPage() {
           <CardDescription>{step === "email" ? t("Отправим одноразовый код на ваш email. Пароль не нужен.") : <>{t("Введите код из письма, отправленного на ")}<span className="break-all text-foreground">{email.trim()}</span>.</>}</CardDescription>
         </CardHeader>
         <CardContent className="p-7 pt-2 sm:p-9 sm:pt-2">
-          <form onSubmit={(event) => void submit(event)} className="space-y-5">
+          <EditorForm saveControls={false} editor={formEditor} onSubmit={(event) => void submit(event)} className="space-y-5">
             {step === "email" ? <FormField id="login-email" label={t("Электронная почта")}><Input id="login-email" name="email" type="email" autoComplete="email" maxLength={254} placeholder="you@example.com" required value={email} onChange={(event) => setEmail(event.target.value)} disabled={pending} autoFocus /></FormField> : <FormField id="login-code" label={t("Код подтверждения")}><Input id="login-code" name="code" type="text" inputMode="numeric" pattern="[0-9]{6}" autoComplete="one-time-code" maxLength={6} minLength={6} className="font-mono text-xl tracking-[0.5em]" placeholder="000000" required value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} disabled={pending} autoFocus /></FormField>}
             {error && <p className="rounded-xl border border-destructive/35 bg-destructive/10 p-3 text-sm leading-6 text-destructive" role="alert">{error}</p>}
             {notice && <p className="text-sm leading-6 text-muted-foreground" role="status">{notice}</p>}
             <Button className="w-full" type="submit" disabled={pending}>{pending ? <LoaderCircle className="" aria-hidden="true" /> : <ArrowRight aria-hidden="true" />}{pending ? t("Подождите…") : step === "email" ? t("Получить код") : t("Продолжить")}</Button>
             {step === "code" && <div className="flex flex-wrap justify-between gap-3 text-sm"><button type="button" className="inline-flex items-center gap-1 text-muted-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring" disabled={pending} onClick={() => { setStep("email"); setCode(""); setError(null); setNotice(null); }}><ArrowLeft className="size-3" aria-hidden="true" />{t("Другой email")}</button><button type="button" className="text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50" disabled={pending || remaining > 0} onClick={() => void requestCode()}>{remaining > 0 ? t("Повторить через {v0} с", {v0: remaining}) : t("Отправить ещё раз")}</button></div>}
-          </form>
+          </EditorForm>
           <p className="mt-7 border-t border-border pt-5 text-xs leading-6 text-muted-foreground">{t("Сессия действует 30 дней. На общем устройстве выходите из аккаунта после работы.")}</p>
         </CardContent>
       </Card>

@@ -1,5 +1,8 @@
+import {EditorForm} from "@/systems/forms/editor";
+import {useEditorState} from "@/systems/forms/use-editor";
+import {editorSchemas} from "@/systems/forms/schemas";
 import {ChoiceField} from "@/components/ui/choice-picker";
-import {SaveButton,SaveForm} from "@/components/ui/save";
+import {SaveButton} from "@/components/ui/save";
 import {CollectionPicker} from "@/systems/labels/collections";
 import { useUploadActivity } from "@/systems/media/use-upload-activity";
 import { t, useLanguage } from "@/systems/i18n/locale";
@@ -22,14 +25,14 @@ export function AnswerInput({ id, label, value, change }: { id: string; label: s
 export function EntryEditor({ initial, record, close, saved, conflict }: { initial: EntryData; record?: Entry; close: () => void; saved: () => void; conflict: () => void }) {
   useLanguage();
   const { settings } = usePreferences();
-  const [value, setValue] = useState(() => {
+  const [value, setValue, valueEditor] = useEditorState(() => {
     if (!record) return { ...initial, timezone: settings.timezone };
     const local = zonedDateTimeInput(record.started_at, settings.timezone);
     const candidates = localDateTimeCandidates(local, settings.timezone);
     const instant = Date.parse(record.started_at);
     const occurrence = candidates.findIndex((candidate) => instant >= candidate && instant < candidate + 60_000);
     return { ...initial, local_start: zonedDateTimeInput(record.started_at, settings.timezone, true), timezone: settings.timezone, time_occurrence: occurrence > 0 ? "later" as const : "earlier" as const };
-  });
+  }, editorSchemas.record);
   const [busy, setBusy] = useState(false);
   const {uploading, setUploading} = useUploadActivity();
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +55,7 @@ export function EntryEditor({ initial, record, close, saved, conflict }: { initi
     setValue({ ...value, kind, partner: null, solo: null, contraception: [] });
   }
   const closeEditor = () => { if (!busy && !uploading) close(); };
-  return <Dialog title={record ? t("Редактировать событие") : t("Новое интимное событие")} onClose={closeEditor}><SaveForm onSubmit={(event) => void submit(event)} className="space-y-6" autoComplete="off"><p className="rounded-xl bg-primary/5 p-4 text-sm text-muted-foreground">{t("Одна запись — одно событие. Достаточно выбрать тип и время; остальное можно заполнить позже.")}</p><fieldset disabled={busy || stale} className="min-w-0 space-y-5">
+  return <Dialog title={record ? t("Редактировать событие") : t("Новое интимное событие")} onClose={closeEditor}><EditorForm editor={valueEditor} onSubmit={(event) => void submit(event)} className="space-y-6" autoComplete="off"><p className="rounded-xl bg-primary/5 p-4 text-sm text-muted-foreground">{t("Одна запись — одно событие. Достаточно выбрать тип и время; остальное можно заполнить позже.")}</p><fieldset disabled={busy || stale} className="min-w-0 space-y-5">
     <FormField id="intimacy-kind" label={t("Тип события")}><ChoiceField id="intimacy-kind" value={value.kind} change={(next) => changeKind(next as Kind)}><option value="masturbation">{t("Мастурбация")}</option><option value="sex">{t("Секс")}</option></ChoiceField></FormField>
     <div className="grid gap-4 sm:grid-cols-2"><FormField id="intimacy-start" label={t("Местное время начала")}><Input id="intimacy-start" type="datetime-local" required min="1900-01-01T00:00" step={60} value={value.local_start.slice(0,16)} onChange={(event) => setValue({...value,local_start:event.target.value,time_occurrence:"earlier"})} /></FormField><FormField id="intimacy-duration" label={t("Длительность, минут")}><Input id="intimacy-duration" type="number" min={1} max={1440} step={1} value={value.duration_minutes ?? ""} onChange={(event) => change("duration_minutes", event.target.value === "" ? null : Number(event.target.value))} /></FormField></div>
     <CollectionPicker kind="toy" label={t("Игрушки")} value={value.toys} change={field=>change("toys",field)}/>
@@ -66,5 +69,5 @@ export function EntryEditor({ initial, record, close, saved, conflict }: { initi
     <CollectionPicker kind="emotion" label={t("Эмоции после")} value={value.emotions_after} change={field=>change("emotions_after",field)}/>
     <AnswerInput id="intimacy-repeat" label={t("Хочу повторить")} value={value.repeat_desired} change={(field) => change("repeat_desired", field)} />
     <FormField id="intimacy-note" label={t("Заметка о событии")}><MarkdownEditor id="intimacy-note" value={value.note} onChange={(field) => change("note",field)} onUploading={setUploading} /></FormField>
-  </fieldset>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}{stale && <p className="text-sm">{t("Закройте форму и откройте сохранённую версию из обновлённого списка. Ваш черновик пока остаётся в этой форме.")}</p>}<div className="flex flex-wrap gap-3"><SaveButton type="submit" disabled={busy || uploading || stale}>{busy ? t("Сохраняем…") : t("Сохранить событие")}</SaveButton><Button variant="outline" disabled={busy || uploading} onClick={closeEditor}>{t("Отмена")}</Button></div></SaveForm></Dialog>;
+  </fieldset>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}{stale && <p className="text-sm">{t("Закройте форму и откройте сохранённую версию из обновлённого списка. Ваш черновик пока остаётся в этой форме.")}</p>}<div className="flex flex-wrap gap-3"><SaveButton type="submit" disabled={busy || uploading || stale}>{busy ? t("Сохраняем…") : t("Сохранить событие")}</SaveButton><Button variant="outline" disabled={busy || uploading} onClick={closeEditor}>{t("Отмена")}</Button></div></EditorForm></Dialog>;
 }

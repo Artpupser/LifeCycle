@@ -1,5 +1,8 @@
+import {EditorForm} from "@/systems/forms/editor";
+import {useEditorState} from "@/systems/forms/use-editor";
+import {editorSchemas} from "@/systems/forms/schemas";
 import {ChoiceField} from "@/components/ui/choice-picker";
-import {SaveButton,SaveForm} from "@/components/ui/save";
+import {SaveButton} from "@/components/ui/save";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { PhoneInput } from "@/systems/phone/phone-input";
 import { MarkdownEditor } from "@/components/markdown";
@@ -20,7 +23,7 @@ import {ContactRelationsSection} from "./relationship-editor";
 
 export function ContactEditor({ contact, seed, close, saved }: { contact?: Contact; seed?: ContactData; close: () => void; saved: (contact: Contact) => void }) {
   useLanguage();
-  const [data, setData] = useState<ContactData>(() => contact?.data ?? seed ?? emptyContact());
+  const [data, setData, dataEditor] = useEditorState<ContactData>(() => contact?.data ?? seed ?? emptyContact(), editorSchemas.contact);
   const [uploading,setUploading]=useState(false);
   const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
   const [allowDuplicate, setAllowDuplicate] = useState(false); const [duplicate, setDuplicate] = useState(false);
@@ -36,7 +39,7 @@ export function ContactEditor({ contact, seed, close, saved }: { contact?: Conta
     } catch (failure) { setError(errorMessage(failure)); if (failure instanceof Error && "code" in failure && failure.code === "contact_duplicate") setDuplicate(true); }
     finally { setBusy(false); }
   }
-  return <Dialog title={contact ? t("Изменить контакт") : t("Новый контакт")} onClose={() => { if (!busy&&!uploading) close(); }}><SaveForm onSubmit={event => void save(event)} className="space-y-5">
+  return <Dialog title={contact ? t("Изменить контакт") : t("Новый контакт")} onClose={() => { if (!busy&&!uploading) close(); }}><EditorForm editor={dataEditor} onSubmit={event => void save(event)} className="space-y-5">
     <fieldset disabled={busy} className="min-w-0 space-y-4">
       <div className="grid min-w-0 gap-4 sm:grid-cols-3">{([["last_name", t("Фамилия контакта")], ["first_name", t("Имя контакта")], ["middle_name", t("Отчество контакта")]] as const).map(([key, label]) => <FormField key={key} id={`contact-${key}`} label={t(label)}><Input id={`contact-${key}`} autoFocus={key === "first_name"} maxLength={200} value={data[key]} onChange={e => setData({ ...data, [key]: e.target.value })} /></FormField>)}</div>
       <p className="text-xs text-muted-foreground">{t("Достаточно заполнить хотя бы одно поле имени.")}</p>
@@ -51,5 +54,5 @@ export function ContactEditor({ contact, seed, close, saved }: { contact?: Conta
     </fieldset>
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     <div className="flex flex-wrap gap-2"><SaveButton type="submit" disabled={busy || uploading || ![data.first_name, data.last_name, data.middle_name].some(n => n.trim())}>{busy ? t("Сохраняем…") : t("Сохранить контакт")}</SaveButton><Button variant="outline" disabled={busy || uploading} onClick={close}>{t("Отмена")}</Button></div>
-  </SaveForm>{contact&&<fieldset disabled={busy||uploading} className="mt-6 space-y-4 border-t border-border pt-5"><ContactRelationsSection contactId={contact.id}/></fieldset>}</Dialog>;
+  </EditorForm>{contact&&<fieldset disabled={busy||uploading} className="mt-6 space-y-4 border-t border-border pt-5"><ContactRelationsSection contactId={contact.id}/></fieldset>}</Dialog>;
 }

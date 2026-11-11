@@ -1,8 +1,11 @@
+import {EditorForm} from "@/systems/forms/editor";
+import {useEditorState} from "@/systems/forms/use-editor";
+import {editorSchemas} from "@/systems/forms/schemas";
 import {IntegrationsPanel} from "@/systems/integrations/integrations-panel";
 import {genders,genderName,genderIcon,normalizeGender} from "@/systems/icons/gender";
 import {ChoiceField} from "@/components/ui/choice-picker";
 import {ZodiacBadge} from "@/systems/icons/zodiac-badge";
-import {SaveButton,SaveForm} from "@/components/ui/save";
+import {SaveButton} from "@/components/ui/save";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { CountryInput } from "@/systems/phone/country-input";
 import { LoaderCircle, Save, UserRound } from "@/components/icons";
@@ -36,7 +39,7 @@ function ProfileEditor({ initial }: { initial: Profile }) {
   const { settings } = usePreferences();
   const today = localDate(settings.timezone);
   const [saved, setSaved] = useState(() => profileToDraft(initial));
-  const [draft, setDraft] = useState(() => profileToDraft(initial));
+  const [draft, setDraft, draftEditor] = useEditorState(() => profileToDraft(initial), editorSchemas.profile);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -69,7 +72,7 @@ function ProfileEditor({ initial }: { initial: Profile }) {
 
   const medicalFields: { key: MedicalKey; label: string }[] = [{ key: "conditions", label: t("Заболевания") }, { key: "daily_medications", label: t("Лекарства на ежедневной основе") }, { key: "past_medications", label: t("Лекарства, которые принимали раньше") }, { key: "surgeries", label: t("Перенесённые операции") }];
 
-  return <SaveForm onSubmit={(event) => void submit(event)} className="space-y-6">
+  return <EditorForm editor={draftEditor} onSubmit={(event) => void submit(event)} className="space-y-6">
     <fieldset disabled={pending} className="min-w-0 space-y-6">
       <Section title={t("Основное")} description={t("Все поля анкеты необязательны. Заполняйте только то, что хотите сохранить в своём профиле.")}>
         {textField("nickname", t("Псевдоним"), 80)}{textField("name", t("Имя"), 80)}
@@ -112,7 +115,7 @@ function ProfileEditor({ initial }: { initial: Profile }) {
         <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={pending || !dirty} onClick={() => { setDraft(saved); setError(null); setSuccess(false); }}>{t("Отменить")}</Button><SaveButton type="submit" disabled={pending || !dirty}>{pending ? <LoaderCircle className="" aria-hidden="true" /> : <Save aria-hidden="true" />}{pending ? t("Сохраняем…") : t("Сохранить профиль")}</SaveButton></div>
       </div>
     </div>
-  </SaveForm>;
+  </EditorForm>;
 }
 
 export function ProfilePage() {

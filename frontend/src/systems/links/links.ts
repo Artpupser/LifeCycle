@@ -1,4 +1,4 @@
-import gamePlatforms from "../../../../shared/game-platforms.json";
+import gamePlatforms from "../../../../shared/game-platforms.json" with {type:"json"};
 import {parsePhone} from "@/systems/phone/phone";
 export type LinkService="web"|"whatsapp"|"telegram"|"viber"|"sms"|"call"|"mail";
 export function phoneLinks(value:string){const phone=parsePhone(value);if(!phone?.isPossible())return [];const number=phone.number,digits=number.slice(1);return [

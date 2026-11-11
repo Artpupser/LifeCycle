@@ -1,7 +1,10 @@
+import {EditorForm} from "@/systems/forms/editor";
+import {useEditorState} from "@/systems/forms/use-editor";
+import {editorSchemas} from "@/systems/forms/schemas";
 import {NotificationSettings} from "@/components/notification-settings";
 import {ChoiceInput,ChoiceField} from "@/components/ui/choice-picker";
 import {LanguageInput} from "@/systems/i18n/language-input";
-import {SaveButton,SaveForm} from "@/components/ui/save";
+import {SaveButton} from "@/components/ui/save";
 import { OperatorSettings } from "@/systems/operators/settings";
 import { t, useLanguage, resolveLanguage } from "@/systems/i18n/locale";
 import { ThemeEditor } from "@/systems/themes/theme-editor";
@@ -23,7 +26,7 @@ const timezones = supportedTimezones();
 export function SettingsPage() {
   useLanguage();
   const { settings, updateSettings } = usePreferences();
-  const [draft, setDraft] = useState(()=>({...settings,language:resolveLanguage(settings.language).language}));
+  const [draft, setDraft, draftEditor] = useEditorState(()=>({...settings,language:resolveLanguage(settings.language).language}), editorSchemas.settings);
   const [uploading,setUploading]=useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +46,7 @@ export function SettingsPage() {
 
   return <main id="main" className="mx-auto w-full max-w-4xl px-5 pb-10 pt-10 sm:px-10">
     <div className="mb-8"><p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary"><SlidersHorizontal className="size-4" aria-hidden="true" />{t("Под ваш ритм")}</p><h1 className="text-3xl font-semibold tracking-tight">{t("Настройки")}</h1><p className="mt-3 text-sm leading-7 text-muted-foreground">{t("Предпочтения сохраняются в вашем аккаунте.")}</p></div>
-    <SaveForm onSubmit={(event) => void submit(event)} className="space-y-6">
+    <EditorForm editor={draftEditor} onSubmit={(event) => void submit(event)} className="space-y-6">
       <fieldset disabled={pending} className="space-y-6">
         <Card><CardHeader><CardTitle>{t("Язык интерфейса")}</CardTitle><CardDescription>{t("Выберите язык. Изменение применяется после сохранения настроек.")}</CardDescription></CardHeader><CardContent><FormField id="language" label={t("Язык интерфейса")}><LanguageInput id="language" value={draft.language??settings.language??"ru"} change={language=>update("language",language)}/></FormField></CardContent></Card>
         <Card><CardHeader><CardTitle>{t("Внешний вид")}</CardTitle><CardDescription>{t("Выберите тему и свой фон.")}</CardDescription></CardHeader><CardContent className="space-y-5"><ThemeEditor value={draft} change={value=>{setDraft(value);setSaved(false);}} uploading={setUploading}/></CardContent></Card>
@@ -63,7 +66,7 @@ export function SettingsPage() {
         <div className="text-sm" aria-live="polite">{error ? <span className="text-destructive" role="alert">{error}</span> : saved ? <span className="text-primary">{t("Настройки сохранены")}</span> : <span className="text-muted-foreground">{dirty ? t("Есть несохранённые изменения") : t("Все изменения сохранены")}</span>}</div>
         <SaveButton type="submit" disabled={pending || uploading || !dirty || (draft.theme==="custom"&&!validTheme(draft.custom_theme!))}>{pending ? <LoaderCircle className="" aria-hidden="true" /> : <Save aria-hidden="true" />}{pending ? t("Сохраняем…") : t("Сохранить настройки")}</SaveButton>
       </div>
-    </SaveForm>
+    </EditorForm>
     <div className="my-6"><NotificationSettings/></div>
     <section id="integrations" className="space-y-6">
     <OperatorSettings />

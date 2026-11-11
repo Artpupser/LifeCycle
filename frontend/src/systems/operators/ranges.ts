@@ -1,4 +1,4 @@
 import {parsePhone} from "@/systems/phone/phone";
-import data from "./ranges.json";
+import data from "./ranges.json" with {type:"json"};
 export type OperatorResult={operator:string;source:"online"|"cache"|"range";checked_at?:string;ported?:boolean};
 export function rangeOperator(phone:string):OperatorResult|null {const parsed=parsePhone(phone);if(parsed?.country!=="RU")return null;const number=Number(parsed.nationalNumber);let low=0,high=data.ranges.length-1;while(low<=high){const middle=(low+high)>>1;const [start,end,id]=data.ranges[middle];if(number<start)high=middle-1;else if(number>end)low=middle+1;else {let name=data.operators[id];if(/ТелеСистемы/i.test(name))name="МТС";else if(/МегаФон/i.test(name))name="МегаФон";else if(/Т2 Мобайл|Теле2|Tele2/i.test(name))name="t2";else if(/Вымпел/i.test(name))name="Билайн";else if(/Скартел/i.test(name))name="Yota";return {operator:name,source:"range"};}}return null;}

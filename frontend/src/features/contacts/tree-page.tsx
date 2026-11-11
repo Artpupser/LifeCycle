@@ -1,6 +1,7 @@
+import {DragScope,DragItem,DropTarget,type DragData} from "@/systems/animations/drag-drop";
 import {Dialog} from "@/components/dialog";
 import {useAuth} from "@/features/auth/auth-context";
-import {useEffect,useId,useMemo,useRef,useState,type DragEvent} from "react";
+import {useEffect,useId,useMemo,useRef,useState} from "react";
 import {Link,useNavigate,useSearchParams} from "react-router";
 import {FilterSearch} from "@/components/filter-search";
 import {Markdown} from "@/components/markdown";
@@ -33,7 +34,6 @@ import {contactName,type Contact} from "./types";
 
 const EMPTY_CONTACTS:Contact[]=[];
 const EMPTY_RELATIONSHIPS:ContactRelationship[]=[];
-const DRAG_TYPE="application/x-lifecycle-tree-person";
 
 export function TreePage(){
  useLanguage();const {user}=useAuth();const navigate=useNavigate();
@@ -43,7 +43,7 @@ export function TreePage(){
  // Manual positions are view state only. People and relationships always come from their owners.
  const [fullScreen,setFullScreen]=useState(false),[sort,setSort]=useState<RelationshipSort>("name");
  const [positions,setPositions]=useState<Record<string,{x:number;y:number}>>({});
- const [dragging,setDragging]=useState<string|null>(null);const drag=useRef<{id:string;dx:number;dy:number}|null>(null);
+
  const [busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null);const viewport=useRef<HTMLDivElement>(null);const arrow=useId();
  const contacts=source.resource.status==="ready"?source.resource.data:EMPTY_CONTACTS;
  const relationships=relations.resource.status==="ready"?relations.resource.data:EMPTY_RELATIONSHIPS;
@@ -80,17 +80,10 @@ export function TreePage(){
  async function mutate(operation:()=>Promise<void>){if(busy)return;setBusy(true);setError(null);try{await operation();}catch(failure){setError(errorMessage(failure));}finally{setBusy(false);}}
  function remove(person:Contact){return mutate(async()=>{if(person.id!==user?.id&&await removeContact(person)){if(person.id===selectedId)setParams({},{replace:true});refresh();}});}
  function move(id:string,x:number,y:number){setPositions(current=>({...current,[id]:{x:Math.max(16,x),y:Math.max(48,y)}}));}
- function startDrag(event:DragEvent<HTMLElement>,id:string){
-  if(!editing||busy){event.preventDefault();return;}
-  const box=event.currentTarget.getBoundingClientRect();drag.current={id,dx:(event.clientX-box.left)/zoom,dy:(event.clientY-box.top)/zoom};
-  event.dataTransfer.setData(DRAG_TYPE,id);event.dataTransfer.effectAllowed="move";setDragging(id);
- }
- function drop(event:DragEvent<HTMLElement>,target?:string){
-  const current=drag.current;if(!editing||busy||!current||event.dataTransfer.getData(DRAG_TYPE)!==current.id)return;
-  event.preventDefault();event.stopPropagation();
-  if(target&&target!==current.id)setRelationDraft({initialSourceId:current.id,initialTargetId:target});
-  else if(!target||target===current.id){const box=viewport.current!.querySelector("[data-tree-stage]")!.getBoundingClientRect();move(current.id,(event.clientX-box.left)/zoom-current.dx,(event.clientY-box.top)/zoom-current.dy);}
-  drag.current=null;setDragging(null);
+ function drop(source:DragData,target:DragData,delta:{x:number;y:number}){
+  if(!editing||busy)return;
+  if(target.kind==="tree-person"&&target.id!==source.id)setRelationDraft({initialSourceId:source.id,initialTargetId:target.id});
+  else move(source.id,(source.x??0)+delta.x/zoom,(source.y??0)+delta.y/zoom);
  }
  function personActions(person:Contact):ContextAction[]{
   const node=nodeById.get(person.id);const own=person.id===user?.id;
@@ -120,7 +113,7 @@ export function TreePage(){
   {loading?<LoadingState/>:failure?<ErrorState message={failure} retry={refresh}/>:<div className="grid min-w-0 items-start gap-6 2xl:grid-cols-[minmax(0,1fr)_22rem]">
    <section data-action-subject="tree-canvas" className="min-w-0 space-y-3" aria-label={t("Карта связей")}>
     <div data-action-subject="tree-controls" className="flex min-w-0 flex-wrap items-center justify-between gap-3"><p className="text-xs text-muted-foreground">{t("Контактов: {people} · семейных связей: {family} · других: {social}",{people:numberLabel(contacts.length),family:numberLabel(familyCount),social:numberLabel(relationships.length-familyCount)})}</p><div className="flex flex-wrap items-center gap-1"><Button size="sm" variant="outline" aria-pressed={fullScreen} onClick={()=>setFullScreen(value=>!value)}><AppIcon icon="tabler:arrows-maximize"/>{t(fullScreen?"Выйти из полного экрана":"На весь экран")}</Button><Button size="icon" variant="outline" aria-label={t("Уменьшить древо")} disabled={zoom<=.5} onClick={()=>setZoom(value=>Math.max(.5,Math.round((value-.1)*10)/10))}><AppIcon icon="tabler:arrows-minimize"/></Button><Button size="sm" variant="ghost" aria-label={t("Сбросить масштаб")} onClick={()=>setZoom(1)}>{numberLabel(zoom,{style:"percent"})}</Button><Button size="icon" variant="outline" aria-label={t("Увеличить древо")} disabled={zoom>=1.6} onClick={()=>setZoom(value=>Math.min(1.6,Math.round((value+.1)*10)/10))}><AppIcon icon="tabler:plus"/></Button><Button size="icon" variant="outline" disabled={!selected} aria-label={t("Показать выбранного человека")} onClick={focusSelected}><AppIcon icon="tabler:target"/></Button><ObjectActions placement="inline" actions={[{id:"sort",label:t("Сортировка связей"),children:relationshipSorts.map(item=>({id:item.value,label:t(item.label),icon:sort===item.value?"tabler:check":undefined,run:()=>{setSort(item.value);setPositions({});}})),run:()=>{}},{id:"layout",label:t("Автоматическая раскладка"),icon:"tabler:refresh",run:()=>setPositions({})},{id:"refresh",label:t("Обновить контакты"),run:refresh}]}/></div></div>
-    <div ref={viewport} onDragOver={event=>{if(editing&&drag.current)event.preventDefault();}} onDrop={event=>drop(event)} tabIndex={0} role="region" aria-label={t("Интерактивное древо контактов")} className={`${fullScreen?"h-[calc(100svh-18rem)]":"h-[min(64svh,44rem)]"} isolate min-h-64 overscroll-contain overflow-auto rounded-2xl border border-border bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}>
+    <DropTarget data={{kind:"tree-stage",id:"stage"}} disabled={!editing||busy} accept={["tree-person"]}><div ref={viewport}   tabIndex={0} role="region" aria-label={t("Интерактивное древо контактов")} className={`${fullScreen?"h-[calc(100svh-18rem)]":"h-[min(64svh,44rem)]"} isolate min-h-64 overscroll-contain overflow-auto rounded-2xl border border-border bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}>
      <div data-tree-stage className="relative overflow-hidden" style={{width:layout.width*zoom,height:layout.height*zoom}}>
       <div className="absolute left-0 top-0 origin-top-left" style={{width:layout.width,height:layout.height,transform:`scale(${zoom})`}}>
        <svg width={layout.width} height={layout.height} className="absolute inset-0"><defs><marker id={arrow} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--primary)"/></marker></defs>{layout.edges.map(edge=>{
@@ -133,14 +126,14 @@ export function TreePage(){
         const person=byId.get(node.id)!,active=node.id===selectedId,roles=projection.roles.get(node.id)??[];
         const dimmed=!!query&&!matchingIds.has(node.id)||highlight&&!active&&!roles.length;
         const lineage=active?"self":projection.ancestors.has(node.id)?"ancestor":projection.descendants.has(node.id)?"descendant":"none";
-        return <article key={node.id} data-action-subject="tree-person" data-drag-item data-drag-key={`tree:${node.id}`} data-dragging={dragging===node.id||undefined} data-tree-person={node.id} data-lineage={lineage} draggable={editing&&!busy} onDragStart={event=>startDrag(event,node.id)} onDragEnd={()=>{drag.current=null;setDragging(null);}} onDragOver={event=>{if(editing&&drag.current&&drag.current.id!==node.id)event.preventDefault();}} onDrop={event=>drop(event,node.id)} className={`absolute rounded-2xl border bg-card shadow-sm ${active?"border-primary ring-2 ring-primary/30":highlight&&lineage!=="none"?"border-primary ring-1 ring-primary/25":"border-border"}`} style={{left:node.x,top:node.y,width:treeNodeSize.width,height:treeNodeSize.height}}>
-         <button type="button" data-tree-contact={node.id} aria-label={t("Выбрать контакт {name}",{name:contactName(person.data)})} aria-pressed={active} onClick={()=>select(node.id)} className={`flex size-full min-w-0 flex-col items-start justify-center gap-2 rounded-2xl p-3 pr-12 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${dimmed?"text-muted-foreground":""}`}><span className={`flex w-full min-w-0 shrink-0 items-start gap-2 ${dimmed?"opacity-60":""}`}><AppIcon icon={genderIcon(person.data.gender)} className="mt-0.5 size-4 text-primary"/><span className="min-w-0 line-clamp-2 text-sm font-semibold [overflow-wrap:anywhere]">{contactName(person.data)}{node.id===user?.id&&<span className="ml-1 text-xs font-normal text-primary">· {t("Вы")}</span>}</span></span>{person.data.birth_date&&<ZodiacBadge birthDate={person.data.birth_date}/>}<span className="line-clamp-2 w-full shrink-0 text-xs text-primary [overflow-wrap:anywhere]" title={roles.map(role=>role.label).join(" · ")}>{active?t("Выбранный человек"):roles.map(role=>role.label).join(" · ")||t("Родство не установлено")}</span></button>
+        return <DragItem key={node.id} data={{kind:"tree-person",id:node.id,x:node.x,y:node.y}} disabled={!editing||busy}><article data-action-subject="tree-person" data-drag-item data-drag-key={`tree:${node.id}`} data-tree-person={node.id} data-lineage={lineage}      className={`absolute rounded-2xl border bg-card shadow-sm ${active?"border-primary ring-2 ring-primary/30":highlight&&lineage!=="none"?"border-primary ring-1 ring-primary/25":"border-border"}`} style={{left:node.x,top:node.y,width:treeNodeSize.width,height:treeNodeSize.height}}>
+         <button type="button" data-drag-handle={editing||undefined} data-tree-contact={node.id} aria-label={t("Выбрать контакт {name}",{name:contactName(person.data)})} aria-pressed={active} onClick={()=>select(node.id)} className={`flex size-full min-w-0 flex-col items-start justify-center gap-2 rounded-2xl p-3 pr-12 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${dimmed?"text-muted-foreground":""}`}><span className={`flex w-full min-w-0 shrink-0 items-start gap-2 ${dimmed?"opacity-60":""}`}><AppIcon icon={genderIcon(person.data.gender)} className="mt-0.5 size-4 text-primary"/><span className="min-w-0 line-clamp-2 text-sm font-semibold [overflow-wrap:anywhere]">{contactName(person.data)}{node.id===user?.id&&<span className="ml-1 text-xs font-normal text-primary">· {t("Вы")}</span>}</span></span>{person.data.birth_date&&<ZodiacBadge birthDate={person.data.birth_date}/>}<span className="line-clamp-2 w-full shrink-0 text-xs text-primary [overflow-wrap:anywhere]" title={roles.map(role=>role.label).join(" · ")}>{active?t("Выбранный человек"):roles.map(role=>role.label).join(" · ")||t("Родство не установлено")}</span></button>
          <ObjectActions subject={node.id===user?.id?undefined:{kind:"contacts",id:node.id}} actions={personActions(person)}/>
-        </article>;
+        </article></DragItem>;
        })}
       </div>
      </div>
-    </div>
+    </div></DropTarget>
     {/* SVG and touch/keyboard controls share declarations through the existing action aliases. */}
     <div className="sr-only" aria-hidden="true">{layout.edges.map(edge=><span data-action-subject="tree-edge-actions" key={edge.id}><ObjectActions alias={`tree-edge:${edge.id}`} contribute actions={edgeActions(edge)}/></span>)}</div>
     <p className="text-xs leading-5 text-muted-foreground">{t(editing?"Правый клик открывает действия. Перетащите карточку на человека для связи, на пустое место — для перемещения. Положение карточек временное; связи сохраняются.":"Выберите человека: подписи показывают родство относительно него, подсветка — всех предков и потомков. Правый клик открывает действия.")}</p>
@@ -159,5 +152,5 @@ export function TreePage(){
   {editing&&relationDraft&&<RelationshipEditor contacts={contacts} {...relationDraft} close={()=>setRelationDraft(null)} saved={()=>{setRelationDraft(null);relations.retry();}}/>}
   {editing&&editor&&<ContactEditor contact={editor==="new"?undefined:editor} close={()=>setEditor(null)} saved={person=>{setEditor(null);refresh();select(person.id);notify(t("Контакт сохранён."));}}/>}
  </div>;
- return fullScreen?<Dialog fullScreen title={t("Древо")} onClose={()=>setFullScreen(false)}>{content}</Dialog>:<main id="main" data-layout="workspace" className="mx-auto w-full max-w-[100rem] px-5 py-8 sm:px-10">{content}</main>;
+ return <DragScope drop={drop}>{fullScreen?<Dialog fullScreen title={t("Древо")} onClose={()=>setFullScreen(false)}>{content}</Dialog>:<main id="main" data-layout="workspace" className="mx-auto w-full max-w-[100rem] px-5 py-8 sm:px-10">{content}</main>}</DragScope>;
 }

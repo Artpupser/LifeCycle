@@ -1,5 +1,8 @@
+import {EditorForm} from "@/systems/forms/editor";
+import {useEditorState} from "@/systems/forms/use-editor";
+import {editorSchemas} from "@/systems/forms/schemas";
 import {ChoiceInput,ChoiceField} from "@/components/ui/choice-picker";
-import {SaveButton,SaveForm} from "@/components/ui/save";
+import {SaveButton} from "@/components/ui/save";
 import { t, useLanguage } from "@/systems/i18n/locale";
 import { useState, type FormEvent } from "react";
 import { ShieldCheck } from "@/components/icons";
@@ -13,7 +16,7 @@ import { noPermissions, scopes, providerName, type AiConfig } from "./types";
 
 export function ConfigForm({ config, onSaved, onDirty }: { config: AiConfig; onSaved: () => void; onDirty: () => void }) {
   useLanguage();
-  const [draft, setDraft] = useState(config);
+  const [draft, setDraft, draftEditor] = useEditorState(config, editorSchemas.record);
   const [key, setKey] = useState("");
   const [models,setModels]=useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -34,7 +37,7 @@ export function ConfigForm({ config, onSaved, onDirty }: { config: AiConfig; onS
   function updateModel(model:string){setDraft(current=>({...current,model}));onDirty();}
   return <section aria-label={t("Подключение и разрешения AI")} className="space-y-5 rounded-card border border-line bg-surface p-5">
     <div><h2 className="flex items-center gap-2 text-lg font-semibold"><ShieldCheck className="size-5 text-primary" aria-hidden="true" />{t("Подключение и разрешения")}</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">{t("Выберите подключение: тариф ChatGPT через вход, OpenAI API или OpenRouter API. Стоимость и лимиты определяет выбранный сервис. Разрешения действуют отдельно от локальной аналитики.")}</p></div>
-    <SaveForm onSubmit={(event) => void save(event)} className="space-y-5">
+    <EditorForm editor={draftEditor} onSubmit={(event) => void save(event)} className="space-y-5">
       <fieldset disabled={busy} className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-2"><FormField id="ai-provider" label={t("Провайдер AI")}><ChoiceField id="ai-provider" value={draft.provider} change={(next) => { const provider = next as AiConfig["provider"]; setDraft({ ...draft, provider, auth_mode: "api_key", enabled: false, model: provider === "ollama" ? "qwen3:8b" : provider === "openrouter" ? "openai/gpt-4.1-mini" : "gpt-4.1-mini" }); setKey(""); onDirty(); }}><option value="openai">OpenAI</option><option value="openrouter">OpenRouter</option><option value="ollama">Ollama</option></ChoiceField></FormField>
         {draft.provider === "openai" && <FormField id="ai-auth" label={t("Способ подключения")}><ChoiceField id="ai-auth" value={draft.auth_mode} change={(next) => { setDraft({ ...draft, auth_mode: next as AiConfig["auth_mode"], enabled: false }); setKey(""); onDirty(); }}><option value="api_key">{t("API-ключ")}</option><option value="login">{t("Вход через ChatGPT")}</option></ChoiceField></FormField>}</div>
@@ -47,7 +50,7 @@ export function ConfigForm({ config, onSaved, onDirty }: { config: AiConfig; onS
         <p className="text-xs leading-5 text-muted-foreground">{t("Изменение настроек отменяет ожидающие ответы и исключает прежнюю переписку из новых запросов. История остаётся у вас. Уже переданные внешнему сервису данные отозвать нельзя. Используется store: false; правила хранения провайдера всё равно применяются.")}</p>
         <div className="flex flex-wrap gap-2"><SaveButton type="submit">{busy ? t("Сохранение…") : t("Сохранить настройки AI")}</SaveButton><Button variant="outline" onClick={() => void save(undefined, "revoke")}>{t("Отозвать доступ к данным")}</Button>{config.provider!=="ollama"&&config.auth_mode === "api_key" && config.key_present && <Button variant="outline" onClick={() => void removeConnection(config.provider as "openai"|"openrouter")}>{t("Удалить API-ключ")}</Button>}</div>
       </fieldset>
-    </SaveForm>
+    </EditorForm>
     <div className="space-y-3 border-t border-border pt-4"><h3 className="font-medium">{t("Сохранённые подключения")}</h3>{(["openai", "openrouter"] as const).map((provider) => <div key={provider} className="flex flex-wrap items-center justify-between gap-2 text-sm"><span>{providerName(provider)} API · {config[provider === "openai" ? "openai_key_present" : "openrouter_key_present"] ? t("ключ сохранён") : t("не подключён")}{config.provider === provider && config.auth_mode === "api_key" ? config.enabled ? t(" · отправка включена") : t(" · отправка выключена") : ""}</span>{config[provider === "openai" ? "openai_key_present" : "openrouter_key_present"] && <Button size="sm" variant="outline" disabled={busy} onClick={() => void removeConnection(provider)}>{t("Удалить ключ ")}{providerName(provider)}</Button>}</div>)}</div>
     <LoginAccounts config={config} onSaved={onSaved} onApply={() => void save()} onModel={(model) => { setDraft((current) => ({ ...current, model })); onDirty(); }} />
 
