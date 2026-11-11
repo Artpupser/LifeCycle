@@ -13,9 +13,9 @@ describe("contact import", () => {
     expect(warnings).toEqual([]); expect(contacts[0]).toMatchObject({ first_name: "Анна", last_name: "Иванова", middle_name: "Петровна", birth_date: "2000-02-29", description: "Первая\nвтораястрока", source_keys: ["vcard:stable-id"], categories: ["Семья", "Коллеги, друзья"] });
     expect(contacts[0].phones).toHaveLength(2);
   });
-  it("decodes legacy quoted printable and reports unknown-year dates without inventing a year", () => {
+  it("decodes legacy quoted printable and keeps unknown-year dates without inventing a year", () => {
     const result = parseVcards("BEGIN:VCARD\nVERSION:2.1\nFN;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=90=D0=BD=D0=BD=D0=B0\nBDAY:--0229\nEND:VCARD");
-    expect(result.contacts[0].first_name).toBe("Анна"); expect(result.contacts[0].birth_date).toBeNull(); expect(result.warnings).toHaveLength(1);
+    expect(result.contacts[0].first_name).toBe("Анна"); expect(result.contacts[0].birth_date).toBeNull(); expect(result.contacts[0].birth_month_day).toBe("02-29"); expect(result.warnings).toEqual([]);
     expect(parseVcards("BEGIN:VCARD\nFN:A\nBDAY:2001-02-29\nEND:VCARD").warnings).toHaveLength(1);
   });
   it("preserves local fields and matches formatted numbers or stable source IDs when importing again", () => {

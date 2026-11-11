@@ -240,7 +240,13 @@
     "zodiac-sagittarius",
     "zodiac-scorpio",
     "zodiac-taurus",
-    "zodiac-virgo"
+    "zodiac-virgo",
+    "box-multiple",
+    "armchair",
+    "gender-bigender",
+    "list-check",
+    "square",
+    "square-check"
   ],
   "circle-flags": [
     "aa",

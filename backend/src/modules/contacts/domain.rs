@@ -22,6 +22,7 @@ pub(crate) struct ContactData {
     pub middle_name: String,
     pub phones: Vec<String>,
     pub birth_date: Option<NaiveDate>,
+    pub birth_month_day: Option<String>,
     pub description: String,
     pub relationship: String,
     pub profession: String,
@@ -32,6 +33,14 @@ pub(crate) struct ContactData {
     pub birthday_enabled: bool,
 }
 impl ContactData {
+    /// Leap-year anchor is used only for annual recurrence, never as a birth year.
+    pub(crate) fn birthday_date(&self) -> Option<NaiveDate> {
+        self.birth_date.or_else(|| {
+            self.birth_month_day.as_deref().and_then(|value| {
+                NaiveDate::parse_from_str(&format!("2000-{value}"), "%Y-%m-%d").ok()
+            })
+        })
+    }
     pub fn name(&self) -> String {
         [&self.last_name, &self.first_name, &self.middle_name]
             .into_iter()
@@ -54,6 +63,21 @@ impl ContactData {
         }
         domain::text(&self.name(), 1, 602)?;
         domain::text(&self.description, 0, 8000)?;
+        if self.birth_date.is_some() && self.birth_month_day.is_some() {
+            return Err(ApiError::validation(
+                "Specify a birth date or a month and day",
+            ));
+        }
+        if let Some(value) = &self.birth_month_day {
+            if value.len() != 5
+                || self.birthday_date().is_none()
+                || self
+                    .birthday_date()
+                    .is_some_and(|date| date.format("%m-%d").to_string() != *value)
+            {
+                return Err(ApiError::validation("Invalid birthday month and day"));
+            }
+        }
         if self
             .birth_date
             .is_some_and(|date| date.year() < 1900 || date > today)
@@ -124,7 +148,8 @@ pub(super) fn duplicate(first: &ContactData, second: &ContactData) -> bool {
                 .any(|other_phone| key == PhoneKey::from(other_phone.as_str()))
         })
         || (normalized(&first.name()) == normalized(&second.name())
-            && first.birth_date == second.birth_date)
+            && first.birth_date == second.birth_date
+            && first.birth_month_day == second.birth_month_day)
 }
 #[derive(Clone, Serialize)]
 pub(crate) struct Contact {

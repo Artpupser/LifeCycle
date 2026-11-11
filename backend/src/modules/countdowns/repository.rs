@@ -34,8 +34,9 @@ pub(super) fn apply_contact(row: &mut Row, contact: &contacts::Contact) {
     row.contact_name = Some(name.clone());
     if row.contact_birthday {
         row.title = format!("День рождения: {name}");
-        row.suspended = contact.data.birth_date.is_none();
-        if let Some(date) = contact.data.birth_date {
+        row.birth_year_unknown = contact.data.birth_month_day.is_some();
+        row.suspended = contact.data.birthday_date().is_none();
+        if let Some(date) = contact.data.birthday_date() {
             row.target_date = date;
         }
     }
@@ -75,6 +76,7 @@ fn apply_snapshot(state: &AppState, user: Uuid, row: &mut Row) -> Result<(), Api
         )?)
         .map_err(|error| ApiError::internal_with_context("Deserialize event snapshot", &error))?;
         row.title = snapshot.title;
+        row.birth_year_unknown = snapshot.birth_year_unknown;
         row.suspended = snapshot.target_date.is_none();
         if let Some(date) = snapshot.target_date {
             row.target_date = date;
@@ -167,6 +169,11 @@ pub(super) async fn save(
         ));
     }
     let birthday = old.contact_birthday || input.contact_birthday.unwrap_or(false);
+    if input.birth_year_unknown == Some(true) && !birthday && old.contact_snapshot.is_none() {
+        return Err(ApiError::validation(
+            "Yearless dates require a contact birthday snapshot",
+        ));
+    }
     let binding = ContactBinding::try_from((contact_id, birthday))?;
     let contact_id = binding.contact_id();
     if birthday && !old.contact_birthday {
@@ -213,6 +220,9 @@ pub(super) async fn save(
             user,
             id,
             &Snapshot {
+                birth_year_unknown: input.birth_year_unknown.unwrap_or(
+                    resolved.birth_year_unknown && input.target_date == resolved.target_date,
+                ),
                 title: title.to_owned(),
                 target_date: Some(input.target_date),
                 details: details.clone(),
@@ -347,6 +357,7 @@ async fn detach_one(
         user,
         row.id,
         &Snapshot {
+            birth_year_unknown: row.birth_year_unknown,
             title: row.title,
             target_date: (!row.suspended).then_some(row.target_date),
             details: row.details.0,

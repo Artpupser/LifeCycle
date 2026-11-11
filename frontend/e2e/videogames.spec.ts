@@ -232,3 +232,21 @@ for(const providerId of ["xbox","playstation"] as const){
   expect(errors).toEqual([]);
  });
 }
+
+
+test("game offers reveal more results and explain the end of each filter",async({page})=>{
+ const {state,errors}=await setup(page);state.catalog.offers=Array.from({length:25},(_,index)=>({...offer(`offer-${index}`,false,"unknown"),title:`Game ${index}`}));await page.goto("/videogames");
+ const offers=page.getByRole("region",{name:"Бесплатные игры и скидки",exact:true}),more=offers.getByRole("button",{name:"Показать ещё",exact:true});
+ await expect(more).toBeVisible();await more.click();await expect(more).toBeVisible();await more.click();await expect(more).toHaveCount(0);
+ await expect(offers.getByRole("status")).toHaveText("Больше игр с таким фильтром не найдено");
+ await page.getByLabel("Поиск видеоигр",{exact:true}).fill("Game 2");await expect(offers.getByRole("status")).toBeVisible();
+ await page.getByLabel("Поиск видеоигр",{exact:true}).fill("");await expect(more).toBeVisible();
+ expect(errors).toEqual([]);
+});
+
+test("all integration cards fit their bounds with long account names",async({page},info)=>{
+ const {state,errors}=await setup(page);state.providers.forEach(provider=>{provider.display_name="LongAccountName".repeat(12);provider.revision=1;});await page.goto("/profile#integrations");
+ const panel=page.getByRole("region",{name:"Интеграции",exact:true});
+ for(const width of [375,768,1280,1920]){await page.setViewportSize({width,height:900});await expect(panel).toBeVisible();const overflow=await panel.locator("article").evaluateAll(nodes=>nodes.map(node=>node.scrollWidth-node.clientWidth));expect(overflow.every(value=>value<=1)).toBe(true);expect(await panel.evaluate(node=>node.scrollWidth-node.clientWidth)).toBeLessThanOrEqual(1);}
+ await page.screenshot({path:info.outputPath("integrations-wide.png"),fullPage:true});expect(errors).toEqual([]);
+});

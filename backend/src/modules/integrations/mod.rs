@@ -11,7 +11,7 @@ mod steam;
 mod tests;
 mod xbox;
 pub use handlers::routes;
-pub(crate) use models::{Game, providers};
+pub(crate) use models::{Game, Snapshot, providers};
 pub(crate) use service::{list, snapshots, sync_due};
 
 #[cfg(test)]

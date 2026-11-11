@@ -1,5 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { dateLabel, dayDifference, instantLabel, localDate, minuteOfDay, shiftDate } from "./dates";
+import {calendarMonth,dateInputError,isMonthDay,birthdayLabel,zodiacCode} from "./dates";
+
+it("validates custom date/time input bounds, steps and yearless leap birthdays",()=>{
+ expect(isMonthDay("--02-29")).toBe(true);expect(isMonthDay("--02-30")).toBe(false);
+ expect(birthdayLabel("--02-29")).toBe("29 февраля");expect(zodiacCode("--03-21")).toBe("aries");
+ expect(dateInputError("--02-29","date","1900-01-01","2026-11-11",undefined,true)).toBe("");
+ expect(dateInputError("--02-29","date")).not.toBe("");
+ expect(dateInputError("2025-02-29","date")).not.toBe("");
+ expect(dateInputError("2026-11-12","date",undefined,"2026-11-11")).not.toBe("");
+ expect(dateInputError("2026-11-11","date","2026-11-10",undefined,2)).not.toBe("");
+ expect(dateInputError("12:30","time","12:30:00","12:30:00")).toBe("");
+ expect(dateInputError("24:00","time")).not.toBe("");
+ expect(dateInputError("12:31","time",undefined,undefined,900)).not.toBe("");
+ expect(dateInputError("2026-11-11T12:30:47","datetime-local",undefined,undefined,1)).toBe("");
+ expect(calendarMonth("2026-11-01")[0]).toBe("2026-10-26");
+ expect(calendarMonth("2026-11-01","sunday")[0]).toBe("2026-11-01");
+});
 
 describe("calendar dates and timezones", () => {
   it("uses account timezone around UTC midnight and year boundaries", () => {

@@ -189,10 +189,7 @@ pub async fn catalog(s: &AppState, user: Uuid, manual: bool) -> Result<Catalog, 
         .collect();
     baseline(s, user, &offers, &unavailable_sources).await?;
     let snapshots = integrations::snapshots(s, user).await?;
-    let available = !snapshots.is_empty();
-    let playtime_available =
-        available && snapshots.iter().all(|snapshot| snapshot.playtime_available);
-    let recent_available = !snapshots.is_empty() && snapshots.iter().all(|v| v.recent_available);
+    let stats = Stats::from_snapshots(&snapshots);
     let mut library: Vec<_> = snapshots.into_iter().flat_map(|v| v.games).collect();
     library.sort_by(|a, b| {
         b.playtime_minutes
@@ -288,24 +285,6 @@ pub async fn catalog(s: &AppState, user: Uuid, manual: bool) -> Result<Catalog, 
         }
         .into();
     }
-    let stats = Stats {
-        available,
-        games: library.len(),
-        played: playtime_available.then(|| {
-            library
-                .iter()
-                .filter(|game| game.playtime_minutes.is_some_and(|minutes| minutes > 0))
-                .count()
-        }),
-        playtime_minutes: playtime_available.then(|| {
-            library
-                .iter()
-                .filter_map(|game| game.playtime_minutes)
-                .sum()
-        }),
-        recent_minutes: recent_available
-            .then(|| library.iter().filter_map(|game| game.recent_minutes).sum()),
-    };
     let mut calendar_sales = vec![];
     for sale in &all_sales {
         let exists = crate::modules::countdowns::external_event_exists(

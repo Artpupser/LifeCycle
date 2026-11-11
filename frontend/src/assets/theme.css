@@ -84,6 +84,7 @@
 }
 
 @theme inline {
+ --color-overlay: var(--overlay);
  --color-app: var(--background);
  --color-surface: var(--card);
  --color-surface-2: var(--muted);
@@ -104,7 +105,7 @@
  --text-caption: .8125rem;
  --ease-apple: cubic-bezier(.2,.7,.2,1);
 }
-:root { --page-gutter: 1rem; }
+:root { --overlay: #08090c; --page-gutter: 1rem; }
 @media (min-width: 640px) { :root { --page-gutter: 1.5rem; } }
 
 :root {

@@ -1,5 +1,5 @@
 import {expect,it} from "vitest";
-import {visibleCollectionCatalog,collectionCatalog,collectionDefinition,collectionLabel,collectionOptions,isCollectionKind} from "./collection-catalog";
+import {visibleCollectionCatalog,orderedCollectionCatalog,collectionCatalog,collectionDefinition,collectionLabel,collectionOptions,isCollectionKind} from "./collection-catalog";
 import {resolveIcon} from "@/systems/icons/catalog";
 import type {Label} from "./types";
 
@@ -35,4 +35,10 @@ it("hides private collection definitions without changing journal options or sto
  expect(visibleCollectionCatalog(hidden).map(item=>item.id)).toEqual(["emotion"]);
  const definition=collectionDefinition("lubricant"),entry=definition.entries[0];
  expect(collectionOptions("lubricant",[{id:"water",kind:"lubricant",name:entry.name,value:entry.value,revision:1,color:""}])).toHaveLength(1);
+});
+it("restores a saved collection order, appends new kinds and ignores stale or duplicate IDs",()=>{
+ const ordered=orderedCollectionCatalog(["emotion","unknown","emotion","toy"]);
+ expect(ordered.slice(0,2).map(item=>item.id)).toEqual(["emotion","toy"]);
+ expect(ordered).toHaveLength(collectionCatalog.length);
+ expect(visibleCollectionCatalog(["toy"],["emotion","toy"])[0].id).toBe("emotion");
 });

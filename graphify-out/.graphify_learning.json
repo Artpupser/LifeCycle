@@ -1,114 +1,24 @@
 {
-  "generated_at": "2026-11-02T07:25:55.360537+00:00",
+  "generated_at": "2026-11-11T08:26:33.972816+00:00",
   "nodes": {
-    "backend_src_ai": {
-      "code_fingerprint": "95b88b15b4985e3d065ddbc83d5e84444c352b403ae8f5189a6a5de5940040eb",
-      "label": "ai.rs",
-      "last": "2026-10-29T14:23:25.917726+00:00",
+    "backend_src_modules_ai_settings": {
+      "code_fingerprint": "06660f86f8c6c9bbcaa5c2c4f3f8267aca6e0723ae99c3a1acc757e6a46d47aa",
+      "label": "settings.rs",
+      "last": "2026-10-29T17:03:40.646577+00:00",
       "provenance": [
         {
-          "date": "2026-10-29T14:23:25.917726+00:00",
+          "date": "2026-10-29T17:03:40.646577+00:00",
           "outcome": "useful",
-          "q": "Stage 8 AI recovery and provider authentication"
+          "q": "Stage 9 final integration of LifeCycle after stage 8"
         }
       ],
-      "score": 0.917850591,
-      "source_file": "backend/src/ai.rs",
+      "score": 0.746718735,
+      "source_file": "backend/src/modules/ai/settings.rs",
       "status": "tentative",
       "uses": 1
     },
-    "backend_src_ai_access": {
-      "code_fingerprint": "9addeb509abbbd9636108fd1a54b6be3c2438668d7d10ce4aecd18c584eeff65",
-      "label": "ai_access.rs",
-      "last": "2026-10-31T10:29:06.112403+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-31T10:29:06.112403+00:00",
-          "outcome": "useful",
-          "q": "Какие работы LifeCycle Upgrade v1 1.4–1.5 завершены и где контракты?"
-        }
-      ],
-      "score": 0.95765213,
-      "source_file": "backend/src/ai_access.rs",
-      "status": "tentative",
-      "uses": 1
-    },
-    "backend_src_ai_context": {
-      "code_fingerprint": "80f0fcd0bac843fa6326f8aca15461b4f722c7f7be164397bcc91cce6ea62afc",
-      "label": "ai_context.rs",
-      "last": "2026-10-29T14:23:25.917726+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-29T14:23:25.917726+00:00",
-          "outcome": "useful",
-          "q": "Stage 8 AI recovery and provider authentication"
-        }
-      ],
-      "score": 0.917850591,
-      "source_file": "backend/src/ai_context.rs",
-      "status": "tentative",
-      "uses": 1
-    },
-    "backend_src_ai_login": {
-      "code_fingerprint": "68459881d90fc24f54e43ba5e0a81d55ef5dfee26402347b4dea28b967aec372",
-      "label": "ai_login.rs",
-      "last": "2026-10-29T14:42:23.050781+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-29T14:42:23.050781+00:00",
-          "outcome": "useful",
-          "q": "Stage 8 external ChatGPT acceptance after catalog and composer fixes"
-        },
-        {
-          "date": "2026-10-29T14:23:25.917726+00:00",
-          "outcome": "useful",
-          "q": "Stage 8 AI recovery and provider authentication"
-        }
-      ],
-      "score": 1.835980333,
-      "source_file": "backend/src/ai_login.rs",
-      "status": "preferred",
-      "uses": 2
-    },
-    "backend_src_ai_provider": {
-      "code_fingerprint": "dafe31dd82b420e94ff4b5901856fbc6e6991875dd064af8e8629b7acdefccaa",
-      "label": "ai_provider.rs",
-      "last": "2026-10-29T14:42:23.050781+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-29T14:42:23.050781+00:00",
-          "outcome": "useful",
-          "q": "Stage 8 external ChatGPT acceptance after catalog and composer fixes"
-        },
-        {
-          "date": "2026-10-29T14:23:25.917726+00:00",
-          "outcome": "useful",
-          "q": "Stage 8 AI recovery and provider authentication"
-        }
-      ],
-      "score": 1.835980333,
-      "source_file": "backend/src/ai_provider.rs",
-      "status": "preferred",
-      "uses": 2
-    },
-    "backend_src_boards": {
-      "code_fingerprint": "a1c41a0aec2e7fff0a60a97c466e503db750e7a817195b5f57a38fc8f56d51fd",
-      "label": "boards.rs",
-      "last": "2026-10-31T10:29:06.112403+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-31T10:29:06.112403+00:00",
-          "outcome": "useful",
-          "q": "Какие работы LifeCycle Upgrade v1 1.4–1.5 завершены и где контракты?"
-        }
-      ],
-      "score": 0.95765213,
-      "source_file": "backend/src/boards.rs",
-      "status": "tentative",
-      "uses": 1
-    },
-    "backend_src_crypto": {
-      "code_fingerprint": "3ab3ae5dd761fe4c38155d1e4faf7dea38f3eb4a773e23a6000ce1ce3f7cb54f",
+    "backend_src_shared_crypto": {
+      "code_fingerprint": "7fac99291cd65600c589430297b979fbdcc52e0bd6635a3fc42f1bd917f95b0e",
       "label": "crypto.rs",
       "last": "2026-10-28T13:12:34.462376+00:00",
       "provenance": [
@@ -118,82 +28,13 @@
           "q": "Stage 6 intimacy journal architecture, privacy and integration after Stage 5"
         }
       ],
-      "score": 0.895867749,
-      "source_file": "backend/src/crypto.rs",
+      "score": 0.726963025,
+      "source_file": "backend/src/shared/crypto.rs",
       "status": "tentative",
       "uses": 1
     },
-    "backend_src_domain": {
-      "code_fingerprint": "0bad8739e392c8b64ce516547ce21ba2d4822a60953b2dd7fe6138a099f9668a",
-      "label": "domain.rs",
-      "last": "2026-10-28T13:56:38.377387+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-28T13:56:38.377387+00:00",
-          "outcome": "useful",
-          "q": "Stage 7 analytics and deletion integration with tasks notes calendar schedule Markdown"
-        }
-      ],
-      "score": 0.896501379,
-      "source_file": "backend/src/domain.rs",
-      "status": "tentative",
-      "uses": 1
-    },
-    "backend_src_habits": {
-      "code_fingerprint": "77b7cf8a8c6288d4842ce7d29877a1d2b77829b0d8259b3292e89a37443b6167",
-      "label": "habits.rs",
-      "last": "2026-10-28T12:45:01.194111+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-28T12:45:01.194111+00:00",
-          "outcome": "useful",
-          "q": "Stage 5 workout integration with habits Today calendar and schedule"
-        },
-        {
-          "date": "2026-10-28T12:13:14.066251+00:00",
-          "outcome": "useful",
-          "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
-        }
-      ],
-      "score": 1.790486949,
-      "source_file": "backend/src/habits.rs",
-      "status": "preferred",
-      "uses": 2
-    },
-    "backend_src_intimacy": {
-      "code_fingerprint": "4733c73ce5c7f758688ec6524fbe872e7120c3d627effb794f299929a2d08376",
-      "label": "intimacy.rs",
-      "last": "2026-10-28T13:12:34.462376+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-28T13:12:34.462376+00:00",
-          "outcome": "useful",
-          "q": "Stage 6 intimacy journal architecture, privacy and integration after Stage 5"
-        }
-      ],
-      "score": 0.895867749,
-      "source_file": "backend/src/intimacy.rs",
-      "status": "tentative",
-      "uses": 1
-    },
-    "backend_src_notes": {
-      "code_fingerprint": "d7845049f3232f683dd9e36a5492835ecf4c3ea89eef814bd103dbcd72e989bb",
-      "label": "notes.rs",
-      "last": "2026-10-31T10:29:06.112403+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-31T10:29:06.112403+00:00",
-          "outcome": "useful",
-          "q": "Какие работы LifeCycle Upgrade v1 1.4–1.5 завершены и где контракты?"
-        }
-      ],
-      "score": 0.95765213,
-      "source_file": "backend/src/notes.rs",
-      "status": "tentative",
-      "uses": 1
-    },
-    "backend_src_schedule": {
-      "code_fingerprint": "53bd6b7dd1aaa110b7ce2d2adeb4cb070c319a96571941eef46ea3fda82c87e1",
+    "backend_src_shared_schedule": {
+      "code_fingerprint": "2950b28b21981c01bb9e2bead60de63da598ad712470d54441ae05eb09e2b93f",
       "label": "schedule.rs",
       "last": "2026-10-28T12:45:01.194111+00:00",
       "provenance": [
@@ -208,119 +49,13 @@
           "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
         }
       ],
-      "score": 1.790486949,
-      "source_file": "backend/src/schedule.rs",
+      "score": 1.452912899,
+      "source_file": "backend/src/shared/schedule.rs",
       "status": "preferred",
       "uses": 2
     },
-    "backend_src_settings": {
-      "code_fingerprint": "921b5e98dd22dd4404e6b5369ae8113fa18fe91df5102ca958532143c3345472",
-      "label": "settings.rs",
-      "last": "2026-10-29T17:03:40.646577+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-29T17:03:40.646577+00:00",
-          "outcome": "useful",
-          "q": "Stage 9 final integration of LifeCycle after stage 8"
-        }
-      ],
-      "score": 0.920213559,
-      "source_file": "backend/src/settings.rs",
-      "status": "tentative",
-      "uses": 1
-    },
-    "backend_src_task_tags": {
-      "code_fingerprint": "01e808247b6c5d43a491d2b1e87c608b195ff02fa35d1e0a5fc004cf47701fe1",
-      "label": "task_tags.rs",
-      "last": "2026-10-31T10:29:06.112403+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-31T10:29:06.112403+00:00",
-          "outcome": "useful",
-          "q": "Какие работы LifeCycle Upgrade v1 1.4–1.5 завершены и где контракты?"
-        }
-      ],
-      "score": 0.95765213,
-      "source_file": "backend/src/task_tags.rs",
-      "status": "tentative",
-      "uses": 1
-    },
-    "backend_src_tasks": {
-      "code_fingerprint": "23aa2e61d14180cc22a70b92b2c4b67be3aeeb4946d070bc3c394ee32c45b8e3",
-      "label": "tasks.rs",
-      "last": "2026-10-31T10:29:06.112403+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-31T10:29:06.112403+00:00",
-          "outcome": "useful",
-          "q": "Какие работы LifeCycle Upgrade v1 1.4–1.5 завершены и где контракты?"
-        },
-        {
-          "date": "2026-10-29T17:03:40.646577+00:00",
-          "outcome": "useful",
-          "q": "Stage 9 final integration of LifeCycle after stage 8"
-        },
-        {
-          "date": "2026-10-28T12:13:14.066251+00:00",
-          "outcome": "useful",
-          "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
-        }
-      ],
-      "score": 2.772880876,
-      "source_file": "backend/src/tasks.rs",
-      "status": "preferred",
-      "uses": 3
-    },
-    "backend_src_workout_plan": {
-      "code_fingerprint": "92b6bb60cac208fb8016a3d9b1d7a4d764f7efa347fa9a0b7c0da9fa94495ebb",
-      "label": "workout_plan.rs",
-      "last": "2026-10-28T12:45:01.194111+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-28T12:45:01.194111+00:00",
-          "outcome": "useful",
-          "q": "Stage 5 workout integration with habits Today calendar and schedule"
-        }
-      ],
-      "score": 0.895471762,
-      "source_file": "backend/src/workout_plan.rs",
-      "status": "tentative",
-      "uses": 1
-    },
-    "backend_src_workout_sessions": {
-      "code_fingerprint": "d3304fd1c3ca4811320138cd17b767a657b4bf9d6d896d554aca6672fb9714c4",
-      "label": "workout_sessions.rs",
-      "last": "2026-10-28T12:45:01.194111+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-28T12:45:01.194111+00:00",
-          "outcome": "useful",
-          "q": "Stage 5 workout integration with habits Today calendar and schedule"
-        }
-      ],
-      "score": 0.895471762,
-      "source_file": "backend/src/workout_sessions.rs",
-      "status": "tentative",
-      "uses": 1
-    },
-    "backend_src_workouts": {
-      "code_fingerprint": "75659b511fe37fe90f10ce69862e0ee2b80b35fdc9a0331bc18a369491f6cf9e",
-      "label": "workouts.rs",
-      "last": "2026-10-28T12:45:01.194111+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-28T12:45:01.194111+00:00",
-          "outcome": "useful",
-          "q": "Stage 5 workout integration with habits Today calendar and schedule"
-        }
-      ],
-      "score": 0.895471762,
-      "source_file": "backend/src/workouts.rs",
-      "status": "tentative",
-      "uses": 1
-    },
     "frontend_src_app": {
-      "code_fingerprint": "009dba1e0d6caa02e2c1621fede085d1627810206b6d6fdc01f7d5791cbddf80",
+      "code_fingerprint": "990e4eba75ee40913f467dfa9559e5b67136a581da4dc624e39791266f0e278a",
       "label": "app.tsx",
       "last": "2026-10-28T13:12:34.462376+00:00",
       "provenance": [
@@ -330,13 +65,77 @@
           "q": "Stage 6 intimacy journal architecture, privacy and integration after Stage 5"
         }
       ],
-      "score": 0.895867749,
+      "score": 0.726963025,
+      "source_file": "frontend/src/app.tsx",
+      "status": "tentative",
+      "uses": 1
+    },
+    "frontend_src_app_calendarpage": {
+      "code_fingerprint": "990e4eba75ee40913f467dfa9559e5b67136a581da4dc624e39791266f0e278a",
+      "label": "CalendarPage",
+      "last": "2026-10-27T12:35:40.090348+00:00",
+      "provenance": [
+        {
+          "date": "2026-10-27T12:35:40.090348+00:00",
+          "outcome": "useful",
+          "q": "Каково фактическое состояние этапа 3 LifeCycle после прерывания и восстановления?"
+        }
+      ],
+      "score": 0.709938643,
+      "source_file": "frontend/src/app.tsx",
+      "status": "tentative",
+      "uses": 1
+    },
+    "frontend_src_app_pomodoropage": {
+      "code_fingerprint": "990e4eba75ee40913f467dfa9559e5b67136a581da4dc624e39791266f0e278a",
+      "label": "PomodoroPage",
+      "last": "2026-10-27T12:35:40.090348+00:00",
+      "provenance": [
+        {
+          "date": "2026-10-27T12:35:40.090348+00:00",
+          "outcome": "useful",
+          "q": "Каково фактическое состояние этапа 3 LifeCycle после прерывания и восстановления?"
+        }
+      ],
+      "score": 0.709938643,
+      "source_file": "frontend/src/app.tsx",
+      "status": "tentative",
+      "uses": 1
+    },
+    "frontend_src_app_settingspage": {
+      "code_fingerprint": "990e4eba75ee40913f467dfa9559e5b67136a581da4dc624e39791266f0e278a",
+      "label": "SettingsPage",
+      "last": "2026-10-29T14:23:25.917726+00:00",
+      "provenance": [
+        {
+          "date": "2026-10-29T14:23:25.917726+00:00",
+          "outcome": "useful",
+          "q": "Stage 8 AI recovery and provider authentication"
+        }
+      ],
+      "score": 0.744801275,
+      "source_file": "frontend/src/app.tsx",
+      "status": "tentative",
+      "uses": 1
+    },
+    "frontend_src_app_todaypage": {
+      "code_fingerprint": "990e4eba75ee40913f467dfa9559e5b67136a581da4dc624e39791266f0e278a",
+      "label": "TodayPage",
+      "last": "2026-10-27T12:35:40.090348+00:00",
+      "provenance": [
+        {
+          "date": "2026-10-27T12:35:40.090348+00:00",
+          "outcome": "useful",
+          "q": "Каково фактическое состояние этапа 3 LifeCycle после прерывания и восстановления?"
+        }
+      ],
+      "score": 0.709938643,
       "source_file": "frontend/src/app.tsx",
       "status": "tentative",
       "uses": 1
     },
     "frontend_src_components_markdown_markdown": {
-      "code_fingerprint": "b587109699c57043e4a44fdd87ebaef4befb4e17f815b80893733c1e6633b0f3",
+      "code_fingerprint": "b985e17cc5ee9619ac067c53c8cab852973c5fc476b85a580320d3a9c493b271",
       "label": "Markdown()",
       "last": "2026-10-28T13:56:38.377387+00:00",
       "provenance": [
@@ -346,13 +145,13 @@
           "q": "Stage 7 analytics and deletion integration with tasks notes calendar schedule Markdown"
         }
       ],
-      "score": 0.896501379,
+      "score": 0.727477192,
       "source_file": "frontend/src/components/markdown.tsx",
       "status": "tentative",
       "uses": 1
     },
     "frontend_src_features_auth_auth_provider": {
-      "code_fingerprint": "f9342681842df7f6169a0f8768567edb512eec9f88d8b4a152ba8ca3bd5adf74",
+      "code_fingerprint": "1db2333292022b73ce9cc6f9b33d709b9230aa86e0b582288af75416f8af6aaf",
       "label": "auth-provider.tsx",
       "last": "2026-10-29T17:03:40.646577+00:00",
       "provenance": [
@@ -362,13 +161,13 @@
           "q": "Stage 9 final integration of LifeCycle after stage 8"
         }
       ],
-      "score": 0.920213559,
+      "score": 0.746718735,
       "source_file": "frontend/src/features/auth/auth-provider.tsx",
       "status": "tentative",
       "uses": 1
     },
     "frontend_src_features_planning_task_gantt_taskgantt": {
-      "code_fingerprint": "b328ced9311b708f4ed002cf0dcac666603dc0a42cba3d5023688aa4f8b9b1d7",
+      "code_fingerprint": "e3b37a483e911c2e5ded5a8bc2c6aa52aea58f7b490d6b7bb58cf54eca095fb1",
       "label": "TaskGantt()",
       "last": "2026-10-31T10:29:06.112403+00:00",
       "provenance": [
@@ -378,13 +177,13 @@
           "q": "Какие работы LifeCycle Upgrade v1 1.4–1.5 завершены и где контракты?"
         }
       ],
-      "score": 0.95765213,
+      "score": 0.777098729,
       "source_file": "frontend/src/features/planning/task-gantt.tsx",
       "status": "tentative",
       "uses": 1
     },
     "frontend_src_hooks_use_resource": {
-      "code_fingerprint": "709ddada479bba600c11af41fc481feea32458050313884a7de2c66f6f07b3e7",
+      "code_fingerprint": "059d3b1c1e4e29355cd78ef7d307e7764f70a4f69d3b2b4188418cd3db814baa",
       "label": "use-resource.ts",
       "last": "2026-10-29T17:03:40.646577+00:00",
       "provenance": [
@@ -394,36 +193,10 @@
           "q": "Stage 9 final integration of LifeCycle after stage 8"
         }
       ],
-      "score": 0.920213559,
+      "score": 0.746718735,
       "source_file": "frontend/src/hooks/use-resource.ts",
       "status": "tentative",
       "uses": 1
-    },
-    "project_project_progress": {
-      "code_fingerprint": "ca6b59243c27d247af1c50a0b797983d9bdc749c8e30c58219a7621994056e69",
-      "label": "project_progress.md",
-      "last": "2026-10-29T17:03:40.646577+00:00",
-      "provenance": [
-        {
-          "date": "2026-10-29T17:03:40.646577+00:00",
-          "outcome": "useful",
-          "q": "Stage 9 final integration of LifeCycle after stage 8"
-        },
-        {
-          "date": "2026-10-28T13:12:34.462376+00:00",
-          "outcome": "useful",
-          "q": "Stage 6 intimacy journal architecture, privacy and integration after Stage 5"
-        },
-        {
-          "date": "2026-10-28T12:13:14.066251+00:00",
-          "outcome": "useful",
-          "q": "Восстановить LifeCycle после этапа 3 и выполнить этап 4"
-        }
-      ],
-      "score": 2.711096496,
-      "source_file": "project/project_progress.md",
-      "status": "preferred",
-      "uses": 3
     }
   },
   "version": 1

@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 #[serde(default, deny_unknown_fields)]
 pub struct Settings {
     pub hidden_collections: Vec<String>,
+    pub collection_order: Vec<String>,
     pub timezone: String,
     pub time_format: String,
     pub language: String,
@@ -90,6 +91,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             hidden_collections: Vec::new(),
+            collection_order: Vec::new(),
             timezone: "UTC".to_owned(),
             time_format: "24h".to_owned(),
             language: "ru".to_owned(),
@@ -121,6 +123,16 @@ impl Settings {
             })
         {
             return Err(ApiError::validation("Unsupported hidden collection"));
+        }
+        let catalog = crate::modules::labels::collection_catalog();
+        let mut seen = std::collections::HashSet::new();
+        if self.collection_order.len() > catalog.len()
+            || self
+                .collection_order
+                .iter()
+                .any(|kind| !seen.insert(kind) || !catalog.iter().any(|item| item.id == *kind))
+        {
+            return Err(ApiError::validation("Unsupported collection order"));
         }
         if self.timezone.parse::<chrono_tz::Tz>().is_err() {
             return Err(ApiError::validation(

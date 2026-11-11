@@ -1,3 +1,8 @@
+# Progress
+Record progress in the `project/project_progress` file
+- Keep the information as concise and brief as possible; there's no need to go into detail on every point. 
+- Be sure to include a brief description of what has changed, separated by a semicolon, using the Git commit formatting style. 
+
 ## Skill Routing
 - For frontend tasks, use `$frontend-skill`
 
@@ -11,11 +16,6 @@ Knowledge graph lives in `graphify-out/`. Use it when `graphify-out/graph.json` 
 - Dirty `graphify-out/` files are expected; do not skip graphify because of them and do not flag large `graph.json` diffs as churn.
 - Pass these rules to any subagent that explores code.
 - `/graphify` invokes the installed graphify skill; follow it first.
-
-# Progress
-Record progress in the `project/project_progress` file
-- Keep the information as concise and brief as possible; there's no need to go into detail on every point. 
-- Be sure to include a brief description of what has changed, separated by a semicolon, using the Git commit formatting style. 
 
 
 # Test Budget Policy

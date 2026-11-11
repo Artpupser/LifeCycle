@@ -1,7 +1,7 @@
 import "./controls.css";
 import { useContext, type ComponentProps, type CSSProperties } from "react";
 import {FormFieldContext} from "../form-field-context";
-import { DateTimeInput } from "./date-time-input";
+import { DateTimeInput, type DateTimeInputProps } from "./date-time-input";
 import { cn } from "@/lib/utils";
 import { AppIcon } from "@/systems/icons/app-icon";
 import { numberLabel, t, useLanguage } from "@/systems/i18n/locale";
@@ -18,11 +18,11 @@ export function RatingScale({id,label,value,change,kind="satisfaction"}:{id:stri
   </div>;
 }
 
-export function Input({ className, ...props }: ComponentProps<"input">) {
+export function Input({ className, allowUnknownYear, ...props }: DateTimeInputProps) {
   const field=useContext(FormFieldContext);
   const describedBy=props["aria-describedby"]??(props.id===field?.id?field?.hintId:undefined);
   if(className?.split(/\s+/).includes("sr-only"))return <input {...props} aria-describedby={describedBy} className={className}/>;
-  if (["date", "time", "datetime-local"].includes(props.type ?? "")) return <DateTimeInput className={className} {...props} aria-describedby={describedBy}/>;
+  if (["date", "time", "datetime-local"].includes(props.type ?? "")) return <DateTimeInput className={className} {...props} allowUnknownYear={allowUnknownYear} aria-describedby={describedBy}/>;
   if(props.type==="checkbox"||props.type==="radio")return <span className={cn("relative inline-flex size-5 shrink-0 align-middle",className)}><input {...props} aria-describedby={describedBy} className={cn("lc-toggle peer m-0 size-full",props.type==="radio"?"rounded-full":"rounded-md")}/>{props.type==="checkbox"?<AppIcon data-toggle-mark icon="tabler:check" className="pointer-events-none absolute inset-0 m-auto size-3.5 text-primary-foreground opacity-0 peer-checked:opacity-100"/>:<span data-toggle-mark className="pointer-events-none absolute inset-0 m-auto size-2.5 rounded-full bg-primary opacity-0 peer-checked:opacity-100"/>}</span>;
   if(props.type==="range")return <input {...props} aria-describedby={describedBy} className={cn("lc-range min-h-11 w-full min-w-0 accent-primary",className)}/>;
   if(props.type==="hidden")return <input {...props}/>;

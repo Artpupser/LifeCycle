@@ -5,6 +5,7 @@ import { themes, themeStyle, isDarkTheme } from "@/systems/themes/themes";
 import { notify } from "@/lib/feedback";
 import { t } from "@/systems/i18n/locale";
 import { setLanguage } from "@/systems/i18n/locale";
+import {mutateResource} from "@/systems/loading/cache";
 import { SoundProvider } from "@/systems/sounds/sound-provider";
 import { useEffect, useState, type ReactNode } from "react";
 import { PreferencesContext } from "./preferences-context";
@@ -13,7 +14,7 @@ import type { Settings } from "./types";
 export function PreferencesProvider({ initial, children }: { initial: Settings; children: ReactNode }) {
   const [saved, setSaved] = useState<{ source: Settings; value: Settings } | null>(null);
   const settings = saved?.source === initial ? saved.value : initial;
-  const updateSettings = (value: Settings) => setSaved({ source: initial, value });
+  const updateSettings = (value: Settings) => {setSaved({ source: initial, value });mutateResource<Settings>("/settings",()=>value);};
   useEffect(()=>{configureAnimations(settings.animations_enabled!==false);configureEffects(settings.effects_enabled!==false);return()=>{configureAnimations(true);configureEffects(false);};},[settings.animations_enabled,settings.effects_enabled]);
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");

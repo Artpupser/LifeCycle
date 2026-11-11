@@ -4,28 +4,32 @@
     "name": "Игрушки",
     "expandable": true,
     "icon": "tabler:puzzle",
-    "entries": []
+    "entries": [],
+    "sensitive": true
   },
   {
     "id": "setting",
     "name": "Обстановка",
     "expandable": true,
     "icon": "tabler:armchair",
-    "entries": []
+    "entries": [],
+    "sensitive": true
   },
   {
     "id": "position",
     "name": "Позы",
     "expandable": true,
     "icon": "tabler:stretching",
-    "entries": []
+    "entries": [],
+    "sensitive": true
   },
   {
     "id": "porn_source",
     "name": "Источники порно",
     "expandable": true,
     "icon": "tabler:books",
-    "entries": []
+    "entries": [],
+    "sensitive": true
   },
   {
     "id": "lubricant",
@@ -57,7 +61,8 @@
         "description": "Смазка со смешанной основой, например водно-силиконовой; состав указан на упаковке.",
         "icon": "tabler:blend-mode"
       }
-    ]
+    ],
+    "sensitive": true
   },
   {
     "id": "contraception",
@@ -143,7 +148,8 @@
         "description": "Метод, основанный на наблюдении признаков фертильного периода цикла.",
         "icon": "tabler:calendar-heart"
       }
-    ]
+    ],
+    "sensitive": true
   },
   {
     "id": "emotion",
@@ -211,7 +217,8 @@
         "description": "Переживание несоответствия ожиданиям.",
         "icon": "twemoji:disappointed-face"
       }
-    ]
+    ],
+    "sensitive": false
   },
   {
     "id": "sex_type",
@@ -243,6 +250,7 @@
         "description": "Другие формы: например взаимная ручная стимуляция или трение без проникновения.",
         "icon": "tabler:dots"
       }
-    ]
+    ],
+    "sensitive": true
   }
 ]

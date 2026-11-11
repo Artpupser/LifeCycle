@@ -9,7 +9,7 @@ import {ErrorState,LoadingState} from "@/components/resource-state";
 import {Button} from "@/components/ui/button";
 import {useResource} from "@/hooks/use-resource";
 import {errorMessage} from "@/lib/api";
-import {dateLabel} from "@/lib/dates";
+import {birthdayLabel} from "@/lib/dates";
 import {matchesFilter,parseFilterQuery,categoryFilter,tagFilter} from "@/lib/filter-query";
 import {notify} from "@/lib/feedback";
 import {ObjectActions} from "@/systems/actions/action-menu";
@@ -30,7 +30,7 @@ import {ContactEditor} from "./contact-editor";
 import {ContactRelationships,RelationshipEditor,type RelationshipDraft} from "./relationship-editor";
 import {relationshipSorts,type RelationshipSort,useRelationshipPeople,kinshipProjection,isParentKind,relationshipName,removeRelationship,type ContactRelationship} from "./relationships";
 import {contactTreeEdgePath,layoutContactTree,treeNodeSize} from "./tree-layout";
-import {contactName,type Contact} from "./types";
+import {contactName,contactBirthDate,type Contact} from "./types";
 
 const EMPTY_CONTACTS:Contact[]=[];
 const EMPTY_RELATIONSHIPS:ContactRelationship[]=[];
@@ -127,7 +127,7 @@ export function TreePage(){
         const dimmed=!!query&&!matchingIds.has(node.id)||highlight&&!active&&!roles.length;
         const lineage=active?"self":projection.ancestors.has(node.id)?"ancestor":projection.descendants.has(node.id)?"descendant":"none";
         return <DragItem key={node.id} data={{kind:"tree-person",id:node.id,x:node.x,y:node.y}} disabled={!editing||busy}><article data-action-subject="tree-person" data-drag-item data-drag-key={`tree:${node.id}`} data-tree-person={node.id} data-lineage={lineage}      className={`absolute rounded-2xl border bg-card shadow-sm ${active?"border-primary ring-2 ring-primary/30":highlight&&lineage!=="none"?"border-primary ring-1 ring-primary/25":"border-border"}`} style={{left:node.x,top:node.y,width:treeNodeSize.width,height:treeNodeSize.height}}>
-         <button type="button" data-drag-handle={editing||undefined} data-tree-contact={node.id} aria-label={t("Выбрать контакт {name}",{name:contactName(person.data)})} aria-pressed={active} onClick={()=>select(node.id)} className={`flex size-full min-w-0 flex-col items-start justify-center gap-2 rounded-2xl p-3 pr-12 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${dimmed?"text-muted-foreground":""}`}><span className={`flex w-full min-w-0 shrink-0 items-start gap-2 ${dimmed?"opacity-60":""}`}><AppIcon icon={genderIcon(person.data.gender)} className="mt-0.5 size-4 text-primary"/><span className="min-w-0 line-clamp-2 text-sm font-semibold [overflow-wrap:anywhere]">{contactName(person.data)}{node.id===user?.id&&<span className="ml-1 text-xs font-normal text-primary">· {t("Вы")}</span>}</span></span>{person.data.birth_date&&<ZodiacBadge birthDate={person.data.birth_date}/>}<span className="line-clamp-2 w-full shrink-0 text-xs text-primary [overflow-wrap:anywhere]" title={roles.map(role=>role.label).join(" · ")}>{active?t("Выбранный человек"):roles.map(role=>role.label).join(" · ")||t("Родство не установлено")}</span></button>
+         <button type="button" data-drag-handle={editing||undefined} data-tree-contact={node.id} aria-label={t("Выбрать контакт {name}",{name:contactName(person.data)})} aria-pressed={active} onClick={()=>select(node.id)} className={`flex size-full min-w-0 flex-col items-start justify-center gap-2 rounded-2xl p-3 pr-12 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${dimmed?"text-muted-foreground":""}`}><span className={`flex w-full min-w-0 shrink-0 items-start gap-2 ${dimmed?"opacity-60":""}`}><AppIcon icon={genderIcon(person.data.gender)} className="mt-0.5 size-4 text-primary"/><span className="min-w-0 line-clamp-2 text-sm font-semibold [overflow-wrap:anywhere]">{contactName(person.data)}{node.id===user?.id&&<span className="ml-1 text-xs font-normal text-primary">· {t("Вы")}</span>}</span></span>{contactBirthDate(person.data)&&<ZodiacBadge birthDate={contactBirthDate(person.data)}/>}<span className="line-clamp-2 w-full shrink-0 text-xs text-primary [overflow-wrap:anywhere]" title={roles.map(role=>role.label).join(" · ")}>{active?t("Выбранный человек"):roles.map(role=>role.label).join(" · ")||t("Родство не установлено")}</span></button>
          <ObjectActions subject={node.id===user?.id?undefined:{kind:"contacts",id:node.id}} actions={personActions(person)}/>
         </article></DragItem>;
        })}
@@ -140,7 +140,7 @@ export function TreePage(){
    </section>
    {selected&&<article role="region" aria-label={t("Выбранный контакт")} className="min-w-0 space-y-5 self-start rounded-card border border-line bg-surface p-5"><header className="flex items-start justify-between gap-3"><h2 className="flex min-w-0 items-start gap-2 text-xl font-semibold"><GenderBadge gender={selected.data.gender}/><span className="min-w-0 [overflow-wrap:anywhere]">{contactName(selected.data)}</span></h2><ObjectActions subject={selectedIsProfile?undefined:{kind:"contacts",id:selected.id}} actions={personActions(selected)}/></header>
     <Link className="inline-flex text-sm text-primary underline underline-offset-4" to={selectedIsProfile?"/profile":`/contacts?contact=${encodeURIComponent(selected.id)}`}>{t(selectedIsProfile?"Открыть профиль":"Открыть контакт")}</Link>
-    {selected.data.birth_date&&<div className="space-y-2"><p className="text-sm">{dateLabel(selected.data.birth_date,{day:"numeric",month:"long",year:"numeric"})}</p><ZodiacBadge birthDate={selected.data.birth_date}/></div>}
+    {contactBirthDate(selected.data)&&<div className="space-y-2"><p className="text-sm">{birthdayLabel(contactBirthDate(selected.data)!)}</p><ZodiacBadge birthDate={contactBirthDate(selected.data)}/></div>}
     {[selected.data.relationship,selected.data.activity,selected.data.profession].filter(Boolean).map((value,index)=><p key={index} className="break-words text-sm text-muted-foreground">{value}</p>)}
     {selected.data.phones.map(phone=><div key={phone} className="space-y-2"><p className="break-words text-sm">{phone}</p><OperatorBadge phone={phone}/><ContactActions phone={phone}/></div>)}
     {selected.data.description&&<details className="[overflow-wrap:anywhere]"><summary className="cursor-pointer text-sm">{t("Описание контакта")}</summary><Markdown value={selected.data.description}/></details>}

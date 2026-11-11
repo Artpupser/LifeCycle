@@ -146,6 +146,7 @@ pub(super) fn computed(
     let timezone = zone.to_owned();
     let repeat_yearly = row.recurrence == "yearly";
     Ok(Countdown {
+        birth_year_unknown: row.birth_year_unknown,
         id: row.id,
         title: row.title,
         category: row.category,
@@ -162,11 +163,20 @@ pub(super) fn computed(
         next_date: (!row.suspended).then_some(next_date),
         days_remaining: (!row.suspended).then_some((next_date - today).num_days()),
         next_at: (!row.suspended).then_some(next_at),
-        original_at: (!row.suspended).then_some(original_at),
+        original_at: (!row.suspended && !row.birth_year_unknown).then_some(original_at),
         seconds_remaining: (!row.suspended).then_some((next_at - now).num_seconds().max(0)),
-        seconds_elapsed: (!row.suspended).then_some((now - original_at).num_seconds().max(0)),
-        full_years: if row.suspended { None } else { full_years },
-        repetitions: if row.suspended { 0 } else { repetitions },
+        seconds_elapsed: (!row.suspended && !row.birth_year_unknown)
+            .then_some((now - original_at).num_seconds().max(0)),
+        full_years: if row.suspended || row.birth_year_unknown {
+            None
+        } else {
+            full_years
+        },
+        repetitions: if row.suspended || row.birth_year_unknown {
+            0
+        } else {
+            repetitions
+        },
         computed_at: now,
         created_at: row.created_at,
         updated_at: row.updated_at,

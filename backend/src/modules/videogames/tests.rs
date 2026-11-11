@@ -1,5 +1,58 @@
 use super::{models, providers};
 #[test]
+fn mixed_platform_statistics_keep_available_time_and_deduplicate_games() {
+    use crate::modules::integrations::{Game, Snapshot};
+    let game = |provider: &str, id: &str, time, recent, played: bool| Game {
+        provider: provider.into(),
+        ownership_verified: true,
+        id: id.into(),
+        name: id.into(),
+        playtime_minutes: time,
+        recent_minutes: recent,
+        last_played_at: played.then(chrono::Utc::now),
+        store_url: String::new(),
+        preview: None,
+        image_url: None,
+    };
+    let steam = Snapshot {
+        games: vec![
+            game("steam", "1", Some(600), Some(120), true),
+            game("steam", "2", Some(0), Some(0), false),
+        ],
+        playtime_available: true,
+        recent_available: true,
+    };
+    let epic = Snapshot {
+        games: vec![game("epic", "3", None, None, false)],
+        playtime_available: false,
+        recent_available: false,
+    };
+    let stats = models::Stats::from_snapshots(&[steam.clone(), epic.clone(), steam]);
+    assert_eq!(stats.games, 3);
+    assert_eq!(stats.played, Some(1));
+    assert_eq!(stats.playtime_minutes, Some(600));
+    assert_eq!(stats.recent_minutes, Some(120));
+    let unknown = models::Stats::from_snapshots(&[epic]);
+    assert!(unknown.available);
+    assert_eq!(unknown.playtime_minutes, None);
+    assert_eq!(unknown.recent_minutes, None);
+    let history = Snapshot {
+        games: vec![game("xbox", "4", None, None, true)],
+        playtime_available: false,
+        recent_available: false,
+    };
+    assert_eq!(models::Stats::from_snapshots(&[history]).played, Some(1));
+    let empty = Snapshot {
+        games: vec![],
+        playtime_available: true,
+        recent_available: true,
+    };
+    assert_eq!(
+        models::Stats::from_snapshots(&[empty]).playtime_minutes,
+        Some(0)
+    );
+}
+#[test]
 fn official_steam_deals_cover_the_full_discount_range_without_resellers() {
     let data = serde_json::json!({"specials":{"items":[
     {"id":400,"type":0,"name":"Portal","original_price":10000,"final_price":8000,"currency":"USD","header_image":"https://cdn.akamai.steamstatic.com/a.jpg"},

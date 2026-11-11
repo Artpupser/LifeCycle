@@ -13,9 +13,12 @@ import {useSelectionBatch} from "./batch";
 type ItemContext={props:(id:string)=>Record<string,unknown>;actions:(id:string)=>ContextAction[];subjectKind?:LabelSubject["kind"]};
 const Items=createContext<ItemContext|null>(null);
 /** Declarative marker: geometry and menu contributions refer to the same registered entity. */
-export function SelectionItem({id,children}:{id:string;children:ReactElement<HTMLAttributes<HTMLElement>>}){
-  const context=useContext(Items);const props=context?.props(id);if(!context||!props?.["data-selection-key"])return children;
-  return cloneElement(children,{...props,children:<>{children.props.children}<ObjectActions contribute alias={context.subjectKind?`${context.subjectKind}:${id}`:undefined} actions={context.actions(id)}/></>});
+export function SelectionItem({id,children,wrap}:{id:string;children:ReactElement<HTMLAttributes<HTMLElement>>;wrap?:(element:ReactElement<HTMLAttributes<HTMLElement>>)=>ReactElement}){
+  const context=useContext(Items);const props=context?.props(id);
+  // Mark the DOM surface before composing behavior wrappers such as DragItem.
+  // Injecting the contribution into a wrapper's children would give its Slot a Fragment.
+  const item=!context||!props?.["data-selection-key"]?children:cloneElement(children,{...props,children:<>{children.props.children}<ObjectActions contribute alias={context.subjectKind?`${context.subjectKind}:${id}`:undefined} actions={context.actions(id)}/></>});
+  return wrap?wrap(item):item;
 }
 export function EntitySelectionArea<T>({items,itemKey,scope="",disabled=false,remove,removeMessage,refresh,subjectKind,selectable,actions,children,className}: {
   items:T[];itemKey:(item:T)=>string;scope?:string;disabled?:boolean;remove?:(item:T)=>Promise<unknown>;removeMessage?:string;refresh:()=>void;

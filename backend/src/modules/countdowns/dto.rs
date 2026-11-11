@@ -30,6 +30,7 @@ pub(super) struct CountdownInput {
     #[serde(default, deserialize_with = "nullable_id")]
     pub(super) contact_id: Option<Option<Uuid>>,
     pub(super) contact_birthday: Option<bool>,
+    pub(super) birth_year_unknown: Option<bool>,
 }
 fn nullable_id<'de, D: Deserializer<'de>>(display: D) -> Result<Option<Option<Uuid>>, D::Error> {
     Ok(Some(Option::<Uuid>::deserialize(display)?))

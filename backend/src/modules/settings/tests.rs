@@ -82,3 +82,18 @@ fn collection_visibility_uses_catalog_and_preserves_legacy_settings() {
     settings.hidden_collections.push("unknown".into());
     assert!(settings.validate().is_err());
 }
+#[test]
+fn collection_order_validates_unique_catalog_identifiers() {
+    let mut settings = Settings {
+        collection_order: vec!["emotion".into(), "toy".into()],
+        ..Default::default()
+    };
+    assert!(settings.validate().is_ok());
+    let restored: Settings =
+        serde_json::from_str(&serde_json::to_string(&settings).unwrap()).unwrap();
+    assert_eq!(settings.collection_order, restored.collection_order);
+    settings.collection_order.push("toy".into());
+    assert!(settings.validate().is_err());
+    settings.collection_order = vec!["unknown".into()];
+    assert!(settings.validate().is_err());
+}

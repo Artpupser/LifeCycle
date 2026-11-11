@@ -14,4 +14,8 @@ export function collectionOptions(kind:CollectionKind,labels:Label[],selected:st
  return [...saved,...selected.filter(value=>!saved.some(item=>item.value===value)).map(value=>({value,name:value,description:"",legacy:true}))];
 }
 
-export const visibleCollectionCatalog=(hidden:readonly string[])=>collectionCatalog.filter(item=>!hidden.includes(item.id));
+export function orderedCollectionCatalog(order:readonly string[]=[]){
+ const ids=[...new Set([...order,...collectionCatalog.map(item=>item.id)])];
+ return ids.flatMap(id=>collectionCatalog.find(item=>item.id===id)??[]);
+}
+export const visibleCollectionCatalog=(hidden:readonly string[],order:readonly string[]=[])=>orderedCollectionCatalog(order).filter(item=>!hidden.includes(item.id));

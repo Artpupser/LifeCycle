@@ -107,6 +107,7 @@ mod tests {
             contact_snapshot: None,
             suspended: false,
             contact_name: None,
+            birth_year_unknown: false,
         }
     }
     fn now(value: &str) -> DateTime<Utc> {
@@ -213,6 +214,48 @@ mod tests {
         assert!(!c.suspended);
         assert_eq!(c.full_years, Some(27));
         assert_eq!(c.next_date.unwrap().to_string(), "2027-02-28");
+    }
+    #[test]
+    fn yearless_contact_birthday_recurs_without_age_or_elapsed_time() {
+        let mut r = row("1900-01-01", "yearly");
+        r.contact_birthday = true;
+        let contact = contacts::Contact {
+            id: Uuid::new_v4(),
+            data: contacts::ContactData {
+                first_name: "Anna".into(),
+                birth_month_day: Some("02-29".into()),
+                birthday_enabled: true,
+                ..Default::default()
+            },
+            revision: 1,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        };
+        apply_contact(&mut r, &contact);
+        let c = computed(r, now("2027-02-28T12:00:00Z"), "UTC").unwrap();
+        assert!(!c.suspended);
+        assert!(c.birth_year_unknown);
+        assert_eq!(c.next_date.unwrap().to_string(), "2027-02-28");
+        assert!(c.full_years.is_none());
+        assert!(c.original_at.is_none());
+        assert!(c.seconds_elapsed.is_none());
+        assert_eq!(c.repetitions, 0);
+    }
+    #[test]
+    fn yearless_birthday_snapshots_keep_precision_and_read_legacy_snapshots() {
+        let old = serde_json::json!({"title":"Birthday", "target_date":"1980-02-29", "details":{}});
+        let legacy: model::Snapshot = serde_json::from_value(old).unwrap();
+        assert!(!legacy.birth_year_unknown);
+        let snapshot = model::Snapshot {
+            title: "Birthday".into(),
+            target_date: Some("2000-02-29".parse().unwrap()),
+            details: Details::default(),
+            birth_year_unknown: true,
+        };
+        let restored: model::Snapshot =
+            serde_json::from_value(serde_json::to_value(&snapshot).unwrap()).unwrap();
+        assert!(restored.birth_year_unknown);
+        assert_eq!(restored.target_date, snapshot.target_date);
     }
 }
 

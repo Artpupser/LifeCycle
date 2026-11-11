@@ -55,4 +55,26 @@ mod tests {
         c.birth_date = Some("2027-01-01".parse().unwrap());
         assert!(c.clean(today).is_err());
     }
+    #[test]
+    fn yearless_birthdays_validate_without_assigning_a_birth_year() {
+        let today = "2026-11-11".parse().unwrap();
+        let mut contact = ContactData {
+            first_name: "Anna".into(),
+            birth_month_day: Some("02-29".into()),
+            ..Default::default()
+        };
+        assert!(contact.clean(today).is_ok());
+        assert_eq!(contact.birthday_date().unwrap().to_string(), "2000-02-29");
+        assert!(contact.birth_date.is_none());
+        let restored: ContactData =
+            serde_json::from_value(serde_json::to_value(&contact).unwrap()).unwrap();
+        assert_eq!(restored.birth_month_day.as_deref(), Some("02-29"));
+        for invalid in ["02-30", "2-29", "13-01", "00-00", "2000-02-29"] {
+            contact.birth_month_day = Some(invalid.into());
+            assert!(contact.clean(today).is_err());
+        }
+        contact.birth_month_day = Some("02-29".into());
+        contact.birth_date = Some("2000-02-29".parse().unwrap());
+        assert!(contact.clean(today).is_err());
+    }
 }

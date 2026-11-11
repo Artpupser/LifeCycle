@@ -127,7 +127,7 @@ You senior backend rust developer
 // git commit -m "changes: Game tab. Integrations with 'EpicGames', 'Steam' platforms. Collect data about games - discount, prices and direct access to card"
 
 
-Так все круто но нужны правки.
+Так все круто но обнаружил ряд моментов где требуются правки
 # Правки
 Обнаружил ряд функций, которые требуют доработки приложения.
 - Твоя задача найти все UI баги в приложении и пофиксить их

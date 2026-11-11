@@ -54,15 +54,20 @@ pub(super) struct Row {
     pub(super) suspended: bool,
     #[sqlx(skip)]
     pub(super) contact_name: Option<String>,
+    #[sqlx(skip)]
+    pub(super) birth_year_unknown: bool,
 }
 #[derive(Serialize, Deserialize)]
 pub(super) struct Snapshot {
     pub(super) title: String,
     pub(super) target_date: Option<NaiveDate>,
     pub(super) details: Details,
+    #[serde(default)]
+    pub(super) birth_year_unknown: bool,
 }
 #[derive(Serialize)]
 pub(crate) struct Countdown {
+    pub(super) birth_year_unknown: bool,
     pub(super) id: Uuid,
     pub(super) title: String,
     pub(super) category: String,

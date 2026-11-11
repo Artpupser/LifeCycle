@@ -1,6 +1,6 @@
 import { t } from "@/systems/i18n/locale";
-import { isCalendarDate } from "@/lib/dates";
-import { emptyContact, type ContactData } from "./types";
+import { isCalendarDate, isMonthDay } from "@/lib/dates";
+import { emptyContact, contactBirthdayFields, type ContactData } from "./types";
 
 function split(value: string, separator: string) {
   const parts = []; let part = ""; let escaped = false;
@@ -43,8 +43,11 @@ export function parseVcards(text: string): { contacts: ContactData[]; warnings: 
         if (key === "BDAY") {
           const match = /^(\d{4})-?(\d{2})-?(\d{2})(?:T.*)?$/.exec(value);
           const date = match ? `${match[1]}-${match[2]}-${match[3]}` : null;
-          if (date && isCalendarDate(date)) data.birth_date = date;
-          else warnings.push(t("Карточка {v0}: дата рождения без полного года или в неизвестном формате пропущена.", {v0: index + 1}));
+          const partial = /^--(\d{2})-?(\d{2})$/.exec(value);
+          const monthDay = partial ? `--${partial[1]}-${partial[2]}` : "";
+          if (date && isCalendarDate(date)) Object.assign(data,contactBirthdayFields(date));
+          else if (isMonthDay(monthDay)) Object.assign(data,contactBirthdayFields(monthDay));
+          else warnings.push(t("Карточка {v0}: дата рождения в неизвестном формате пропущена.", {v0: index + 1}));
         }
         if (key === "NOTE") data.description = unescape(value);
         if (key === "TITLE") data.profession = unescape(value);
@@ -72,7 +75,7 @@ export function parseContactFile(text: string) {
       const value: unknown = (item as Record<string, unknown>)[key];
       if (key === "gender") { if (!["unspecified","female","male","other"].includes(String(value))) throw new Error(t("Неверный пол в JSON.")); data.gender=value as ContactData["gender"]; }
       else if (key === "birthday_enabled") { if (typeof value !== "boolean") throw new Error(t("Неверное разрешение дня рождения в JSON.")); data[key] = value; }
-      else if (key === "birth_date") { if (value !== null && typeof value !== "string") throw new Error(t("Неверная дата в JSON.")); data[key] = value; }
+      else if (key === "birth_date" || key === "birth_month_day") { if (value !== null && typeof value !== "string") throw new Error(t("Неверная дата в JSON.")); data[key] = value; }
       else if (key === "phones" || key === "categories" || key === "tags" || key === "source_keys") { if (!Array.isArray(value) || !value.every(x => typeof x === "string")) throw new Error(t("Неверный список в JSON.")); data[key] = value; }
       else { if (typeof value !== "string") throw new Error(t("Неверное поле контакта в JSON.")); data[key] = value; }
     }

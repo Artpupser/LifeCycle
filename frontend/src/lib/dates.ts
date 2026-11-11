@@ -22,6 +22,42 @@ export function localDateTimeCandidates(value:string,timezone:string):number[]{
 }
 export function localDateTimeToInstant(value:string,timezone:string):number|null{return localDateTimeCandidates(value,timezone)[0]??null;}
 export function isCalendarDate(value:string){const date=civil(value);return /^\d{4}-\d{2}-\d{2}$/.test(value)&&date.isValid&&date.toISODate()===value;}
+/** A birthday without a year is stored as --MM-DD, never as an invented birth year. */
+export function isMonthDay(value:string){return /^--\d{2}-\d{2}$/.test(value)&&isCalendarDate(`2000-${value.slice(2)}`);}
+export function birthdayAnchor(value:string){return isMonthDay(value)?`2000-${value.slice(2)}`:value;}
+export function withoutBirthYear(value:string){return isCalendarDate(value)?`--${value.slice(5)}`:value;}
+export function replaceDateYear(value:string,year:number){return civil(value).set({year}).toISODate()!;}
+export function birthdayLabel(value:string){return isMonthDay(value)?dateLabel(`2000-${value.slice(2)}`):dateLabel(value,{day:"numeric",month:"long",year:"numeric"});}
+export function calendarMonth(date:string,weekStartsOn:"monday"|"sunday"="monday"){
+ const first=civil(date).startOf("month");const offset=(first.weekday-(weekStartsOn==="monday"?1:7)+7)%7;
+ return Array.from({length:42},(_,index)=>first.minus({days:offset}).plus({days:index}).toISODate()!);
+}
+export function clockInputFields(time:string,format:"12h"|"24h"){
+ const [h="0",minute="00",second="00"]=time.split(":");const hour=Number(h);
+ return {hour:String(format==="12h"?hour%12||12:hour),minute,second,period:hour>=12?"pm":"am"};
+}
+export function clockInputValue(fields:ReturnType<typeof clockInputFields>,format:"12h"|"24h",seconds=false){
+ const {hour,minute,second,period}=fields;
+ if(![hour,minute,...seconds?[second]:[]].every(value=>/^\d{1,2}$/.test(value))||Number(hour)<(format==="12h"?1:0)||Number(hour)>(format==="12h"?12:23)||Number(minute)>59||Number(second)>59)return "";
+ const h=format==="12h"?Number(hour)%12+(period==="pm"?12:0):Number(hour);
+ return [String(h),minute,...seconds?[second]:[]].map(value=>value.padStart(2,"0")).join(":");
+}
+export function dateInputError(value:string,kind:string,min?:string|number,max?:string|number,step?:string|number,partial=false){
+ if(!value)return "";
+ if(partial&&isMonthDay(value))return "";
+ const valid=kind==="date"?isCalendarDate(value):kind==="time"?/^\d{2}:\d{2}(:\d{2})?$/.test(value)&&civil(`2000-01-01T${value}`).toFormat(value.length>5?"HH:mm:ss":"HH:mm")===value:/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(value)&&civil(value).toFormat(value.length>16?"yyyy-MM-dd'T'HH:mm:ss":"yyyy-MM-dd'T'HH:mm")===value;
+ if(!valid)return t("Укажите корректную дату или время.");
+ const normalized=kind==="date"?value:value.length===(kind==="time"?5:16)?`${value}:00`:value;
+ const boundary=(v:string|number)=>kind==="date"?String(v):String(v).length===(kind==="time"?5:16)?`${v}:00`:String(v);
+ if(min&&normalized<boundary(min)||max&&normalized>boundary(max))return t("Значение вне допустимого диапазона.");
+ if(step!=="any"){
+  const quantum=Number(step??(kind==="date"?1:60));
+  const numeric=(v:string)=>kind==="date"?civil(v).toMillis()/86400000:civil(kind==="time"?`1970-01-01T${v}`:v).toMillis()/1000;
+  const distance=numeric(value)-numeric(min?String(min):kind==="date"?"1970-01-01":kind==="time"?"00:00":"1970-01-01T00:00");
+  if(quantum>0&&Math.abs(distance/quantum-Math.round(distance/quantum))>0.00001)return t("Значение не соответствует шагу поля.");
+ }
+ return "";
+}
 export function toInstant(value:string|number){return instant(value).toISO()!;}
 export function weekday(date:string){return civil(date).weekday%7;}
 export function shiftMonth(date:string,months:number){return civil(date).startOf("month").plus({months}).toISODate()!;}
@@ -85,6 +121,7 @@ export function countdownAmount(start:string,end:string,timezone:string,unit:Cou
 
 /** Conventional western zodiac by civil birthday; never shift it through a timezone. */
 export function zodiacCode(birthDate:string|null|undefined){
+ if(birthDate&&isMonthDay(birthDate))birthDate=`2000-${birthDate.slice(2)}`;
  if(!birthDate||!/^\d{4}-\d{2}-\d{2}$/.test(birthDate))return null;
  if(!isCalendarDate(birthDate))return null;
  const month=Number(birthDate.slice(5,7)),day=Number(birthDate.slice(8,10));
